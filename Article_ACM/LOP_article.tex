@@ -1,0 +1,165 @@
+% v2-acmtog-sample.tex, dated March 7 2012
+% This is a sample file for ACM Transactions on Graphics
+%
+% Compilation using 'acmtog.cls' - version 1.2 (March 2012), Aptara Inc.
+% (c) 2010 Association for Computing Machinery (ACM)
+%
+% Questions/Suggestions/Feedback should be addressed to => "acmtexsupport@aptaracorp.com".
+% Users can also go through the FAQs available on the journal's submission webpage.
+%
+% Steps to compile: latex, bibtex, latex latex
+%
+% For tracking purposes => this is v1.2 - March 2012
+\documentclass{article} % V1.2
+
+\usepackage[nonumberlist]{glossaries}
+\setacronymstyle{long-short}
+\makenoidxglossaries
+% Load acronyms list
+\loadglsentries{acronyms}
+\usepackage{bm}
+\usepackage{prettyref}
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage[utf8]{inputenc} % Required for including letters with accent
+\usepackage{graphicx} % Required for including images
+\graphicspath{{Figures/}} % Set the default folder for images
+\usepackage{enumitem} % Required for manipulating the whitespace between and within lists
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+\usepackage{amsmath,amssymb} % For including math equations, theorems, symbols, etc
+\usepackage{varioref} % More descriptive referencing
+
+%\acmVolume{VV}
+%\acmNumber{N}
+%\acmYear{YYYY}
+%\acmMonth{Month}
+%\acmArticleNum{XXX}
+%\acmdoi{10.1145/XXXXXXX.YYYYYYY}
+
+
+\begin{document}
+
+\markboth{V. F. Pamplona et al.}{Photorealistic Models for Pupil Light Reflex and Iridal Pattern Deformation}
+
+\title{A conditional model for automatic orchestration\\Application to a real-time Live Orchestral Piano} % title
+\author{Philippe Esling and Léopold Crestel}
+
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+\section{Introduction}
+% Orchestration classique
+\textit{Musical orchestration} is the subtle art of of writing musical pieces for orchestra, by combining the spectral properties specific to each instrument in order to achieve a particular sonic goal. This complex discipline involves a wide set of intricate mechanisms, most of which have not yet been satisfactorily theorized. Indeed, famous composers often conjectured that orchestration would mainly remain an empirical discipline, which could only be learned through experience and never axiomatized in books. Even if several famous musicians have written orchestration treatises \cite{berlioz_orch,koechli_orch}, those mostly remain recommendations and sets of existing orchestration examples from which one can draw inspiration.
+We focus more specifically in this work on \textit{projective} orchestration, which is the transformation from a piano score to an orchestral piece. Many composers have worked in a projective manner, and a large amount of example can be found in the repertoire. For instance, one of the most famous is the orchestration of \textit{Les tableaux d'une exposition}, a Modest Moussorgsky piano piece, by Maurice Ravel.
+
+% Automatic orch, state of the art
+The objective in this work is to be able to automatically perform in real-time the \textit{projective} orchestration of a piano performance.
+More specifically, such a system rely on the task of inferring an orchestration (output of our system) from a piano score (input).
+The vast combinatorial set of instrument possibilities added to the complex temporal structure of polyphonic music make this problem a particularly daunting task. Several attempts to build an automatic orchestration system can be found in the literature. Orchestration can be viewed as assigning the different notes of the piano score to a certain number of instrument according to constraints over the number of instruments, their tessitura, a certain voice leading inside an instrument. Interpreting  orchestration as a Constraint Solving Problem (CSP) lead to a first solution \cite{Truchet2011Constraint-Prog}. However, as Steven McAdams pointed it out, timbre is "a structuring force in music" \cite{mcadams2013timbre} in the sense that it should be used to emphasize the already existing movements of the original piano piece. We believe that a system only built only on symbolic constraint will undoubtedly fail at grasping this underlying structure. Hence, orchestrating first require to understand the harmonic, rhythmic and melodic structure of the original piano piece.
+\textit{Orchids} (\cite{Esling2010}) is an other interesting work set in an other paradigm called \textit{injective} orchestration. It consists in trying to reconstruct a target timbre for a small temporal frame. The major drawback being that the orchestration is limited to short (less than 10 seconds) examples.
+% Why statistical inference ?
+In order to build an automatic orchestration system being able to work on a macro-temporal timescale while structuring the musical discourse, statistical inference appeared us as a promising solution. Their should indeed exist strong correlation between the information contained in the original piano score and the orchestral rendering we want to produce. Statistical inference would allow us to extract the knowledge and rules underlying in the many orchestration proposed by famous composers over the years.
+
+% What model and why ?
+We decided to work with a set of models called conditional models \cite{taylor2009composable}, which derive from a particular type of Markov Random Field called the Restricted Boltzmann Machine (RBM) \cite{fischer2014training}. While being able to model complex distribution through a multi-layer architecture of latent units, those models implement a notion of context which is interesting in our case in order to model the influence of the past over the present and of the piano over the orchestra.
+Those models are generative which is a requirement in our case. In conditional models, it means that once trained on a dataset, an input vector can be recreated given a certain context. This is through this mechanism that orchestral inference can be performed.
+% Data representation
+To model sequences of symbolic music, the pianoroll representation is often used. A pianoroll is a matrix whose rows and columns are a discretisation of pitch and time \prettyref{fig:pianoroll}. Note that this discretisation flows naturally from the scores notation in western since notes are aligned on a discrete pitch scale and rhythmically on the beat. The pitch $p$ being played at time $t$  is then represented in the pianoroll representation by $Pianoroll(p,t) = 1$, $0$ meaning that no note is played . The dynamics are ignored and each time frame is a binary vector that indicates either a pitch is on or off.
+\label{sec:orchestral_vect_def}
+This representation, usually defined for a single polyphonic instrument can easily be extended to an orchestra composed by N instruments by simply concatenating the pianoroll of each instrument. Note that we respect the usual simplifications used when writing orchestral scores which consists in grouping all the instruments of a same section (e.g. violin 1) as a unique instrument.
+
+% Evaluation framework
+We propose in this article a new evaluation framework for the orchestral inference task in order to evaluate the different model we proposed. Building a quantitative evaluation framework for generative models is rarely straightforward, especially since computing the likelihood of a test sample is intractable in the model we used. Hence, we rely on a frame-level accuracy measure to compare the orchestration proposed by our model with a \textit{reference} orchestration.
+% Results -> LOP
+The results of the proposed model are then presented. We picked out the best model and included it in a real-time orchestration system called \textit{LOP}.
+
+This paper is organized as follows. In sections 2, 3 and 4 we introduce  the RBM, the CRBM and the FGCRBM architectures. The orchestration inference task is presented in the section 5 along with an evaluation framework based on a frame-level accuracy measure. The previously introduced models are then evaluated in this framework and the results displayed. The section 7 introduces a real-time \textit{projective} orchestration system using the presented architectures.
+
+\section{State of the art}
+\subsection{Restricted-Boltzmann Machine}
+A \gls{RBM} \cite{Hinton:2006:FLA:1161603.1161605} is an energy-based model that represent the joint distribution of a visible vector $\textbf{v} = (v_{1},...,v_{m})$ and a hidden vector $\textbf{h} = (h_{1},...,h_{n})$. This distribution is given by $p(v,h) = \frac{\exp^{-E(v,h)}}{Z}$ where
+\begin{equation}
+E(\textbf{v},\textbf{h}) = - \sum_{i=1}^{m} a_{i} v_{i} - \sum_{j = 1}^{n} b_{j} h_{j} - \sum_{i=1}^{m} \sum_{j=1}^{n} v_{i} W_{ij} h_{j}
+\end{equation}
+and $Z = \sum_{v,h}\exp^{-E(v,h)}$ is a usually intractable partition function. $\Theta = \left\lbrace W , a , b \right\rbrace$ are the weights of the network.
+Each unit represent an activation function which is a simple non-linear function. Unfortunately, the gradient of the negative log-likelihood of a vector from the training database $\textbf{v}^{(l)}$ is intractable. A training algorithm called \gls{CD} \cite{hinton2002training} rely on an approximation of the model driven term of this equation by running a k-step Gibbs chain to obtain a sample $v^{(l,k)}$ (\prettyref{eq:log-lik-grad})
+\begin{align}
+\label{eq:log-lik-grad}
+- \frac{\partial \ln(p(\bm{v^{(l)}}|\bm{\Theta}))}{\partial \bm{\Theta}}  &=  \mathbb{E}_{p(\textbf{h}|\bm{v^{(l)}})} \left[ \frac{\partial E(\bm{v^{(l)}},\textbf{h})}{\partial \bm{\Theta}} \right] - \mathbb{E}_{p(\textbf{h},\textbf{v})} \left[ \frac{\partial E(\textbf{v},\textbf{h})}{\partial \bm{\Theta}} \right]\\
+& \approx \mathbb{E}_{p(\textbf{h}|\bm{v^{(l)}})} \left[ \frac{\partial E(\bm{v^{(l)}},\textbf{h})}{\partial \bm{\Theta}} \right] - \mathbb{E}_{p(\textbf{h} | \bm{v^{(l,k)}})} \left[ \frac{\partial E(\bm{v^{(l,k)}},\textbf{h})}{\partial \bm{\Theta}} \right]
+\end{align}
+Running a Gibbs sampling chain consists in alternatively sampling the hidden units knowing the visible units then the visible units knowing the inferred hidden units by using the marginal probabilities (\prettyref{eq:marginal_RBM}).
+\begin{align}
+\label{eq:marginal_RBM}
+p(v_{i}=1|\textbf{h}) &= sigm \left( b_{i}^{(v)} + \sum_{j}W_{ij}h_{j} \right)\\
+p(h_{j}=1|\textbf{v}) &= sigm \left( b_{j}^{(h)} + \sum_{i}W_{ij}v_{i} \right)
+\end{align}
+where $sigm$ is the sigmoid function.
+It has been proved that the samples we obtain after an infinite number of iteration will be drawn from the joint distribution of the visible and hidden units of our model. An other approximation consists in starting the Gibbs chain from the sample $v^{(l)}$, which increases the convergence of the chain, and to limit the number of alternate sampling steps to a fixed number K, which leads to the CD-K algorithm used to train a \gls{RBM}.
+
+\subsection{Conditional RBM}
+The \gls{CRBM} model (\cite{taylor2009composable}) is a standard \gls{RBM} in which a dynamic biases conditioned is added to the visible and hidden units. The dynamic bias linearly depends of context units $\bm{x}$.
+To model time series, if we consider that the visible units represent the current time frame, those context units can be defined as the concatenation of the N last time frames. We call this vector $\bm{v}_{k<t} = \left( v_{1}^{(t-N)} , ... , v_{m}^{(t-N)}, ... , v_{1}^{(t)} ... , v_{m}^{(t)} \right)$, where N denotes the order of the model.
+The energy function of the Conditional RBM is given by (\prettyref{eq:energy_CRBM})
+\begin{equation}
+\label{eq:energy_CRBM}
+E(v_{t},h_{t}|v_{<t}) = - \sum_{i} \hat{a}_{i,t}v_{i,t} - \sum_{ij}W_{ij}v_{i,t}h_{j,t} - \sum_{j} \hat{b}_{j,t}h_{j,t} 
+\end{equation}
+where the biases are defined by $\hat{a}_{i} = a_{i} + \sum_{k}A_{ki}v_{k,<t}$ and $\hat{b}_{j} = b_{j} + \sum_{k}B_{kj}v_{k,<t}$.
+This model appeared as an interesting solution in order to model the strong temporal relations underlying in symbolic music data. It can be trained by contrastive divergence, since the marginal probability of visible and hidden units can be easily obtained from the energy distribution.
+
+\subsection{Factored Gated Conditional RBM}
+The Factored Gated Conditional RBM model \cite{taylor2009factored} proposes to extend the Conditional RBM model by adding a layer of feature unit $z_{l}$ which modulate the weights of the conditional architecture in a multiplicative way. Hence, the weights of the networks become $\Theta = \left\lbrace W_{ijl} , A_{ikl} , B_{jkl} , \hat{a}_{i} , \hat{b}_{j} \right\rbrace$. This multiplicative influence can be understood as a modification of the energy landscape of the model. Since the number of parameter to train becomes high, the 3 dimensional tensors can be factorized into a product of three matrices by including factors $W_{ijl} = W_{if} . W_{jf} . W_{lf}$.
+The energy function of this Factored Gated Conditional RBM is then given by
+\begin{equation}
+E(v_{t},h_{t}|v_{<t},y_{t}) = -\sum_{f}\sum_{ijl} W_{if}^{v} W_{jf}^{h} W_{lf}^{z} v_{i,t}h_{j,t}z_{l,t} 
+- \sum_{i} \hat{a}_{i,t}v_{i,t} - \sum_{j} \hat{b}_{j,t}h_{j,t}
+\end{equation}
+where the dynamic biases of the visible and hidden units are defined by
+\begin{equation}
+\hat{a}_{i,t} = a_{i} + \sum_{m} \sum_{kl}A_{im}^{v}A_{km}^{v<t}A_{lm}^{z}v_{k,<t}z_{l,t}
+\end{equation}
+\begin{equation}
+\hat{b}_{j,t} = b_{j} + \sum_{n} \sum_{kl}B_{jn}^{h}B_{kn}^{v<t}B_{ln}^{z}v_{k,<t}z_{l,t}
+\end{equation}
+
+\subsection{Generative models}
+%% Role des unités conditionelles et tout le tralala dans les modèles
+The previously introduced models are generative models. After the training phase, the distribution represented by the networks is supposed to be close to the underlying distribution of the data. It is then possible to sample from this distribution to reproduce data that are alike the data of the training set.
+Conditional models allow to impose a certain context, which enables to generate sequences of data under a certain context. We remind that our objective is to transform a sequence of binary vectors drawn from a piano score (refered to as piano vectors) into a sequence of orchestral vectors (\prettyref{sec:orchestral_vect_def}). (SCH2MA)
+If we consider that the visible units represent the orchestral vector for the time frame $t$, conditional units can be used to model the influence of the past orchestral vector $t-1 , ... , t-N$ (the concatenation of those N orchestral frames are then referred to as past orchestral vector) and the (strong) influence of the piano frame at time $t$ over the visible units.
+In the CRBM model, the conditional units are the concatenation of the past orchestral vector and the current piano vector. The FGCRBM offer the possibility to distinguish between the influence of the current piano vector and the past orchestral vectors by assigning the first one to the features units $z_{l}$ and the second to the context units $x_{k}$.
+
+\section{Orchestration inference}
+An orchestration inference task is introduced in this section, along with an evaluation framework and the performances of our model in this framework. The evaluation is a frame-level prediction task that rely on an accuracy measure.
+
+\subsection{Formalization}
+\subsection{Evaluation}
+\subsubsection{Frame-level accuracy}
+% Probleme que pas qu'une orch par piano score, Mais ca permet quand même d'avoir une idée.
+\subsubsection{Event-level accuracy}
+
+\subsection{Database}
+We used a parallel database of piano scores and their orchestration by famous composers. The database consists of 76 \textit{XML} files. Given the complexity of the distribution we wanted to model and the reduced size of the fatabase we have accessed to, we decided to keep as a test dataset only the last half of one track from our database. Hence 75 and a half files were used to train our model. We chose to do so in order to have the best generation ability.
+For each instrument, the pitch range is reduced to the tessitura observed in the training dataset. We used a rhythmic quantization of 8 frame per beat, which means that the smallest symbolic rhythm is a $32^{th}$ note.
+
+\subsection{Results}
+
+
+\section{Live Orchestral Piano}
+
+
+\section{Conclusion and future works}
+
+% Bibliography
+\bibliographystyle{alpha}
+\bibliography{../../biblio}
+                                % Sample .bib file with references that match those in
+                                % the 'Specifications Document (V1.5)' as well containing
+                                % 'legacy' bibs and bibs with 'alternate codings'.
+                                % Gerry Murray - March 2012
+
+\end{document}
+% End of v2-acmtog-sample.tex (March 2012) - Gerry Murray, ACM

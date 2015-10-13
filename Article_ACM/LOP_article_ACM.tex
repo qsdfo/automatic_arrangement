@@ -146,10 +146,11 @@ We then propose in this article a new evaluation framework for the orchestral pr
 % Results -> LOP
 The results of the proposed model are then presented. We picked out the best model and included it in a real-time orchestration system called \textit{LOP}.
 
-This paper is organized as follows. In sections 2 we introduce the state of the art in conditional models through three well known models: the RBM, the CRBM and the FGCRBM. The orchestration projection task is presented in the section 3 along with an evaluation framework based on a frame-level accuracy measure. The previously introduced models are then evaluated in this framework and the results displayed. The section 4 introduces a real-time \textit{projective} orchestration system using the presented architectures.
+This paper is organized as follows. In sections 2 we introduce the state of the art in conditional models through three well known models: the RBM, the CRBM and the \textit{FGCRBM}. The orchestration projection task is presented in the section 3 along with an evaluation framework based on a frame-level accuracy measure. The previously introduced models are then evaluated in this framework and the results displayed. The section 4 introduces a real-time \textit{projective} orchestration system using the presented architectures.
 
 \section{State of the art}
-The three model we have used in our work are the Restricted Boltzmann Machine (RBM), the Conditional RBM (CRBM) and the Factored Gated Conditional RBM (FGCRBM). They derive from the Graphical Probabilistic Model (GPM) theory and more specifically from a class of models called Markov Random Fields (MRF) (\cite{fischer2014training}). They are presented by increasing level of complexity, each model adding a new \textit{degree of freedom} to the previous one.
+\label{sec:state_of_the_art}
+The three model we have used in our work are the Restricted Boltzmann Machine (RBM), the Conditional RBM (CRBM) and the Factored Gated Conditional RBM (\textit{FGCRBM}). They derive from the Graphical Probabilistic Model (GPM) theory and more specifically from a class of models called Markov Random Fields (MRF) (\cite{fischer2014training}). They are presented by increasing level of complexity, each model adding a new \textit{degree of freedom} to the previous one.
 
 \subsection{Restricted-Boltzmann Machine}
 \begin{figure}
@@ -217,7 +218,7 @@ The following updates rules are obtained
 \begin{figure}
 \centering
 \includegraphics[scale=0.25]{FGCRBM_orchestration}
-\caption{FGCRBM model. The features units ($bm{z}$) modify the energy landscape of the model by a multiplicative influence over the weights $\bm{A}$, $\bm{B}$ and $\bm{W}$. Here, the role of each units in order to perform orchestration is indicated.}
+\caption{\textit{FGCRBM} model. The features units ($bm{z}$) modify the energy landscape of the model by a multiplicative influence over the weights $\bm{A}$, $\bm{B}$ and $\bm{W}$. Here, the role of each units in order to perform orchestration is indicated.}
 \label{fig:FGCRBM}
 \end{figure}
 The Factored Gated Conditional RBM model \cite{taylor2009factored} proposes to extend the Conditional RBM model by adding a layer of feature units $\bm{z}$ which modulate the weights of the conditional architecture in a multiplicative way. Hence, the weights of the networks become $\bm{\Theta} = \left\lbrace \bm{W} , \bm{A} , \bm{B} , \bm{a} , \bm{b} \right\rbrace$, where $\bm{W} = (W)_{ijl}$, $\bm{A}=(A)_{ikl}$ and $\bm{B}=(B)_{jkl}$ are three dimensional tensors.
@@ -236,7 +237,7 @@ where the dynamic biases of the visible and hidden units are defined by
 \hat{b}_{j}(t) = b_{j} + \sum_{n} \sum_{kl}B_{jn}^{h}B_{kn}^{x}B_{ln}^{z}x_{k}(t)z_{l}(t)
 \end{equation}
 
-The FGCRBM model can be trained by contrastive divergence which lead to the following update rules for the parameter
+The \textit{FGCRBM} model can be trained by contrastive divergence which lead to the following update rules for the parameter
 \begin{align*}
 \Delta b_{i}^{(v)} &= <v_{i}>_{data} - <v_{i}>_{model}\\
 \Delta b_{j}^{(h)} &= <h_{j} >_{data} - <h_{j} >_{model}\\
@@ -316,7 +317,7 @@ This data representation can be directly used in the previously introduced condi
 In the CRBM model, we consider that the visible units represent the orchestral vector for the time frame $t$, conditional units are be used to model the influence of the past orchestral vectors $Orch(t-1) , ... , Orch(t-N)$ and the influence of the piano frame at time $Piano(t)$ over the visible units. The context units are then defined by the concatenation of the past orchestral frames and the current piano frame
 $ Context(t) = \left[ Piano(t)^{T} , Orch(t-1)^{T} , ... , Orch(t-N)^{T}\right]^{T}$.
 
-The FGCRBM model allows to separate the influence of the current piano frame and the past orchestral frames. The current piano frame defines the feature units ($z$) $ Features(t) = Piano(t)^{T} $, and the concatenation of the past orchestral frames define the context units ($x$) $ Context(t) = \left[ Orch(t-1)^{T} , ... , Orch(t-N)^{T} \right]^{T}$ (\prettyref{fig:FGCRBM}).
+The \textit{FGCRBM} model allows to separate the influence of the current piano frame and the past orchestral frames. The current piano frame defines the feature units ($z$) $ Features(t) = Piano(t)^{T} $, and the concatenation of the past orchestral frames define the context units ($x$) $ Context(t) = \left[ Orch(t-1)^{T} , ... , Orch(t-N)^{T} \right]^{T}$ (\prettyref{fig:FGCRBM}).
 
 One might be surprised that for each time frame $t$, we do not restrain the possible pitches of each instrument to the pitches seen in the piano score at the same time $t$. This i because orchestrating a piano score can not be reduced to the simple projection of the notes that are already written on the piano score. Instead, the harmonic structure is often densified by adding extra notes, from a simple octaviation to an harmonic expansion (more complex chords with a more specific colour), the melody might be doubled by several instruments at different octave or the rhythmic structure slightly modified (held note instead of a staccato).
 
@@ -337,20 +338,57 @@ A major flaw in the frame-level accuracy measure is its dependence to the rhythm
 
 A musical event is defined as a change in the orchestral score, either a note being switched on or off. The predictive event-level accuracy measure relies on the same accuracy measure previously defined \prettyref{eq:accuracy}. The only difference is that it occurs at each new event instead of each new time frame. Since the task is slightly different, the training phase has been consequently changed so that a model is trained only on new event frames.
 
+% Be careful, event level not on the context
+
 \subsection{Database}
 We used a parallel database of piano scores and their orchestration by famous composers. The database consists of 76 \textit{XML} files. Given the complexity of the distribution we wanted to model and the reduced size of the database we have accessed to, we decided to keep as a test dataset only the last half of one track from our database. Hence 75 and a half files were used to train our model. We chose to do so in order to have the best generation ability.
 The contrastive-divergence algorithm has been applied on mini-batches of size $100$ during the training phase. Thus we obtained $335$ mini-batches for the frame-level measure, and $89$ for the event-level measure.
 For each instrument, the pitch range is reduced to the \textit{tessitura} observed in the training dataset (\label{sec:data_representation}). We used a rhythmic quantization of 8 frames per beat.
 
 \subsection{Results}
+We evaluated the \textit{CRBM} and \textit{FGCRBM} previously presented \prettyref{sec:state_of_the_art} in both the frame-level and event-level frameworks. Those two models are compared to a random prediction of each frame and to a simple model that outputs the previous frame as the current frame prediction (i.e. a untrained 1 order linear predictor). The results are presented in the following tables \pretryref{fig:result_frame} and \pretryref{fig:result_event}.
 
+\begin{figure}
+\centering
+\begin{tabular}{c c}
+\hline
+\multirow{2}{*}{Model} & Orchestral Frame-level Acc \%\\
+& DOSIM \\
+\hline
+Random & 0.51\%\\ 
+Repeat & 93.25\%\\ 
+\hline \hline
+CRBM & 45.07\%\\ 
+FGCRBM & 2.05\%\\ 
+\end{tabular}
+\caption{Frame-level expected accuracy for various musical models}
+\label{fig:result_frame}
+\end{figure}
+
+\begin{figure}
+\centering
+\begin{tabular}{c c}
+\hline
+\multirow{2}{*}{Model} & Orchestral Event-level Acc \%\\
+& DOSIM \\
+\hline
+Random & 0.50\%\\ 
+Repeat & 93.25\%\\ 
+\hline \hline
+CRBM & 27.78\%\\ 
+FGCRBM & \%\\ 
+\end{tabular}
+\caption{Frame-level expected accuracy for various musical models}
+\label{fig:result_frame}
+\end{figure}
+%% C'est de la merde, même le edvent-level ça règle pas du tout le problème : soit on prédit l'event mais avec un context basé sur les frames, et dans ce cas là le modèle repeat est bon, soit on prends que les event mais ça n'a aucun sens (pas de rythme...)
 
 \section{Live Orchestral Piano}
 
 
 \section{Conclusion and future works}
-
-% Start of "Sample References" section
+% Better DB
+% Change the data representation (Braids POWA)
 
 \section{Typical references in new ACM Reference Format}
 A paginated journal article \cite{Abril07}, an enumerated

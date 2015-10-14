@@ -37,6 +37,7 @@
 \usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
 \usepackage{amsmath,amssymb} % For including math equations, theorems, symbols, etc
 \usepackage{varioref} % More descriptive referencing
+\usepackage{array,multirow}
 \allowdisplaybreaks
 
 % Copyright
@@ -346,7 +347,14 @@ The contrastive-divergence algorithm has been applied on mini-batches of size $1
 For each instrument, the pitch range is reduced to the \textit{tessitura} observed in the training dataset (\label{sec:data_representation}). We used a rhythmic quantization of 8 frames per beat.
 
 \subsection{Results}
-We evaluated the \textit{CRBM} and \textit{FGCRBM} previously presented \prettyref{sec:state_of_the_art} in both the frame-level and event-level frameworks. Those two models are compared to a random prediction of each frame and to a simple model that outputs the previous frame as the current frame prediction (i.e. a untrained 1 order linear predictor). The results are presented in the following tables \pretryref{fig:result_frame} and \pretryref{fig:result_event}.
+We evaluated the \textit{CRBM} and \textit{FGCRBM} previously presented \prettyref{sec:state_of_the_art} in both the frame-level and event-level frameworks. Those two models are compared to a random prediction of each frame and to a simple model that outputs the previous frame as the current frame prediction (i.e. a untrained 1 order linear predictor). The results are presented in the following tables \prettyref{fig:result_frame} and \prettyref{fig:result_event}.
+
+% Frame
+% Event
+%
+% Precision et accuracy
+%
+% Séparer repeat et change true/false positive
 
 \begin{figure}
 \centering

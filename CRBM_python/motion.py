@@ -67,6 +67,7 @@ def preprocess_data(Motion):
     data_mean = batchdata.mean(axis=0)
     data_std = batchdata.std(axis=0)
 
+    # Normalization
     batchdata = (batchdata - data_mean) / data_std
 
     # get sequence lengths

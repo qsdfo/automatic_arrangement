@@ -120,45 +120,38 @@ Typically, projective orchestration can be seen as the projection of a piano sco
 Computer-based tool for orchestration have already been developed in the injective framework. Orchids \cite{esling2010dynamic} is a system based on a genetic algorithm which try to find a mixture of instrument as close as possible of a given timbre target. Several measures based on spectro-temporal descriptors of the instruments are used to build a multi-objective criterion.
 
 % Our objective
-The objective of our work is to produce a system able to automatically perform the projective orchestration of a piano score. To our best knowledge, this problem has never been tackled before. 
+The objective of our work is to produce a system able to automatically perform the projective orchestration of a piano score. Practically, for a given piano score as an input it produces an orchestra score. To our best knowledge, this problem has never been tackled before. 
 % How = Deep learning
-Practically, our system will rely on statistical inference and more precisely on the most recent advent in machine learning. We will focus on a set of model called conditional Restricted Boltzmann Machine (cRBM).
-% Explain mapping piano -> orchestra
-The system we try to build take in input a piano score and produce an orchestra score and is hence set in a purely symbolic world (i.e. only music scores and no audio signal).
-The following question arise : what are our motivations for using deep learning ? Isn't it pretentious to try to build an automatic system for orchestration even though our knowledge of its inner mechanism is very limited ? How could we obtain interesting results by considering a purely symbolic information if, as we stated it before, notation are not sufficient to express the complexity showed at the signal level ?
-
+Our system will rely on statistical inference and more precisely on the most recent advent in machine learning. We will focus on a set of model called conditional Restricted Boltzmann Machine (\textit{cRBM}).
 
 %Stat inf ?
 Statistical inference refers to methods which suppose that a set of data has been drawn from a probability distribution. The objective is to deduce properties of this underlying distribution, by observing a subset of those data. In our case, the objective is to infer rules of orchestration by observing pieces written by famous composers (experts). Inferring properties about this underlying probability distribution is called the \textit{learning} phase.
-Our motivations for using statistical inference are the following. First, it seems to be an elegant solution to overcome our difficulty in grasping the many facets of musical orchestration. Those methods present a pleasant analogy with empirical learning in the sense that they will automatically learn by observing the vast amount of already existing orchestrations. Those methods are tailored to take advantage of the huge amount of information contained in the already existing orchestration performed by famous composers. The training procedure of our system can then be seen as trying to find the correlations between a piano score and its projective orchestration by a composer. It is important to note that many different orchestrations can be drawn from a given piano score, but that they will undoubtedly share a common structure. The probabilistic framework provide us the tool to model this variability.
-% Deep learning :
-Statistical inference actually covers a wide range of domains. Among them, deep learning recently appeared as a most promising field in intelligence artificial and representation learning. Its impressive results when dealing with huge amount of data, and high dimensional problems let us think that it might be a particularly fitted method for projective orchestration of symbolic sequences. In particular, the recent advent in text modelling (ref text model ing sutskever...) and symbolic music generation (ref boulanger).
-% Which model and why ?
-class of model called conditional models \cite{taylor2009composable}, which derive from a particular type of Markov Random Field called the Restricted Boltzmann Machine (\textit{RBM}) \cite{fischer2014training}. More precisely, we investigated a model called conditional RBM (\textit{cRBM}), which is trained to model a set of data by statistical inference.
-While being able to model complex distributions through latent units, those models implement a notion of context which allow us to model the influence of the past over the present and of the piano over the orchestra. 
+Our motivations for using statistical inference are the following. First, it seems to be an elegant solution to overcome our difficulty in grasping the many facets of musical orchestration. Those methods present a pleasant analogy with empirical learning in the sense that they will automatically learn by observing the vast amount of already existing orchestrations. Those methods are tailored to take advantage of the huge amount of information contained in the already existing orchestration performed by famous composers. The training procedure of our system can then be seen as trying to find the correlations between a piano score and its projective orchestration by a composer.
 
-% Parler de l'échange on gérnère <-> on apprend (nous humain) des règles inférées par la machine
-If trying to build an automatic system for orchestration may seem to ambitious, we actually believe that this  is rather the starting point of the knowledge quarry task we want to accomplish. By trying to mimic famous composer, we might discover the higher level knowledge we are trying to discover.
-
-
-
-
-Hence, The training phase consists in trying to discover the correlation between the original piano score and its orchestration . Statistical inference would allow us to extract rules from the vast knowledge embodied in the many orchestration proposed by famous composers over the years. 
-
-% Why only symbolic
+% Only symbolic ?
 In the light of what has been said about the multi-modal aspect of orchestration, it can seems absurd to 
-% Why DL : requirement = observing the learnt knowledge
-Humans have difficulties fail at explaining and formalizing the complex and high level knowledge they invoke when writing an orchestration, we could observe from such a system the rules and structures it has discovered and then use it to increase our understanding of orchestration.
-Our motivations are then double : being able to automatically produce orchestration, but above all discovering and formalizing the knowledge implied by orchestration. This article constitutes a first step toward this aspiration.
+try to build a system based on the mere symbolic information. Indeed, acoustic properties are not described by the limited musical notation used in scores. However, if the acoustic properties are not explicitly described in the score, a composer will write with a deep awareness of them. Hence, if we consider orchestration made by famous composers, their knowledge of acoustic and spectral properties of instrument mixtures is embodied in the purely symbolic transformation between the piano and orchestra score. By learning on such a set of orchestration, we believe that a purely symbolic system will be able to infer this embodied knowledge.
 
-% Motivations
-			% Pourquoi ça peut marcher (emboddied knowledge)...
-
+% Deep learning :
+Statistical inference actually covers a wide range of domains. Among them, deep learning recently appeared as a most promising field in intelligence artificial and representation learning. Its impressive results when dealing with huge amount of data, and high dimensional problems let us think that it might be a particularly fitted method for projective orchestration of symbolic sequences. In particular, the recent advent in text modelling (ref text modeling sutskever...) and symbolic music generation (ref boulanger) 
+% Which model and why ?
+In this work we introduce a specifically tailored model based on the Restricted Boltzmann Machine (\textit{RBM}). More precisely, we investigated a model called conditional RBM (\textit{cRBM}) \cite{taylor2009composable}.
+While being able to model complex distributions through latent units, those models implement a notion of context which allow us to model the influence of the past over the present and of the piano over the orchestra.
 
 % Evaluation framework
-We then propose in this article a new evaluation framework for the orchestral projection task in order to evaluate the different model previously introduced.  This evaluation rely on a frame-level predictive task based on an accuracy measure.
-% Results -> LOP
-The results of the proposed model are then presented. We picked out the best model and included it in a real-time orchestration system called \textit{LOP}.
+To evaluate the performance of this model, we define for the first time a quantitative evaluation framework for projective orchestration systems. We took inspiration from the many previous works in automatic music composition (REFS BOUL ET BAHCLSTM) and first used a frame-level predictive task based on an accuracy measure. This measure suffer from major flaws and we propose an other 
+evaluation framework based on an event-level measurement.
+
+% LOP
+LOP = autre truc cool des networks = génération rapide.
+Framework eval permet de choisir le meilleur.
+This objective criterion allowed us to tune the hyper-parameter of the model and find a good solution. 
+it in a real-time orchestration system called \textit{LOP}.
+
+
+% Knowledge discovery
+Rather than an objective, building an automatic system for orchestration is a starting point in the knowledge quarry task we want to accomplish. By trying to mimic famous composer, we might discover the higher level knowledge we are trying to discover. The long-term goal is to be able to extract from the system we have built a better understanding of orchestration toward its theorization.
+One advantage of the \textit{cRBM} model is that we can easily observe the correlations and structures learnt by the system and then have a insight into the knowledge extracted by the system.
 
 This paper is organized as follows. In sections 2 we introduce the state of the art in conditional models through three well known models: the RBM, the CRBM and the \textit{FGCRBM}. The orchestration projection task is presented in the section 3 along with an evaluation framework based on a frame-level accuracy measure. The previously introduced models are then evaluated in this framework and the results displayed. The section 4 introduces a real-time \textit{projective} orchestration system using the presented architectures.
 
@@ -293,9 +286,6 @@ The following update rules are unchanged for $\bm{W}$, $\bm{a}$ and $\bm{b}$, an
 \label{fig:FGCRBM_sampling}
 \end{figure}
 %% Role des unités conditionelles et tout le tralala dans les modèles
-
-STACK ????
-
 Once trained on a dataset using CD, those models represent a probability distribution $p$. If correctly trained, this distribution is supposed to be close (in the sense of the Kullback-Leibler divergence \cite{hinton2002training}) to the underlying probability distribution of the data. Then, by sampling from $p$, we are able to reproduce data \textit{similar} to the one observed in the training dataset.
 This sampling process is called the generative step.
 

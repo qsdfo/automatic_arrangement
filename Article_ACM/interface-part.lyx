@@ -1,0 +1,274 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass acmsmall
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Live orchestral piano
+\end_layout
+
+\begin_layout Section
+Live Orchestral Piano (LOP)
+\end_layout
+
+\begin_layout Standard
+We introduce in this section the 
+\emph on
+Live Orchestral Piano
+\emph default
+ (LOP) application, which is the first software able to provide a way to
+ compose music with a full classical orchestra in real-time by simply playing
+ on a MIDI piano.
+ The goal of this framework is to rely on the knowledge learned by the model
+ introduced in the previous sections in order to perform the projection
+ from a piano melody to the orchestra.
+\end_layout
+
+\begin_layout Subsection
+Workflow
+\end_layout
+
+\begin_layout Standard
+The software is implemented on a client/server paradigm.
+ This choice allows to separate the orchestral computation part from the
+ interface and sound rendering engine.
+ That way, multiple interfaces can easily be implemented.
+ It should also be noted that separating the computing and rendering on
+ different computers, can allow to use high-quality and CPU-intensive orchestral
+ rendering plugins.
+ This can allow a more realistic orchestral rendering with heavy amounts
+ of computation performed while ensuring the real-time constraint on the
+ overall system (preventing degradation of the computing part).
+ The complete implementation workflow is presented in Figure
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Live-orchestral-piano"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide true
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename workflow.pdf
+	scale 55
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Live-orchestral-piano"
+
+\end_inset
+
+Live orchestral piano (L.O.P) implementation workflow.
+ The user inputs a melody which is transcribed into a score and send via
+ OSC from the Max/Msp client.
+ Then, the MATLAB server uses this vector of notes and process it following
+ the aforementioned techniques in order to obtain the orchestration.
+ This information is then sent back to Max/Msp which performs the real-time
+ audio rendering 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+As we can see, the user can input a melody (single notes or chords) through
+ a MIDI keyboard, which is retrieved inside the Max/Msp interface.
+ The interface transmits this symbolic information (as a variable-length
+ vector of active notes) via OSC to the MATLAB server.
+ The interface performs a real-time transcription of the piano score to
+ the screen in parallel.
+ The server uses this vector of events to produce an 88 vector of binary
+ input note activations (as defined in Section
+\begin_inset space ~
+\end_inset
+
+
+\series bold
+XXX
+\series default
+).
+ This vector is then processed by using the orchestration algorithms presented
+ in Section
+\begin_inset space ~
+\end_inset
+
+
+\series bold
+XXX
+\series default
+ in order to obtain a projection of a specific symbolic piano melody to
+ the full orchestra (an operation defined as 
+\emph on
+projective orchestration
+\emph default
+).
+ The resulting orchestration is then sent back to the client interface which
+ performs both the real-time audio rendering and score transcription.
+ 
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+NB: A good thing would be to compute the end-to-end latency in the system
+ ! And also to compute this with a variable number of Gibbs steps ...
+ all of this to show that we respect real-time constraints / requirements.
+\end_layout
+
+\begin_layout Subsection
+Interface
+\end_layout
+
+\begin_layout Standard
+The interface has been developed in Max/Msp, to facilitate both the score
+ and audio rendering aspects in a real-time environment.
+ The score rendering is handled by the 
+\emph on
+Bach 
+\emph default
+library environment 
+\series bold
+[INSERT REF]
+\series default
+.
+ This interface provides a way to easily switch between different orchestration
+ models, while controling other meta-parameters of the sampling.
+ For instance the 
+\emph on
+cutoff probability 
+\emph default
+gives a direct access to the density of the generated orchestration (in
+ terms of number of played instruments).
+ Indeed, a low cutoff probability implies that most activation of notes
+ will be taken into account in the playback, while a high cutoff will produce
+ more sparse orchestration.
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+[INCLUDE FIGURE WITH LIVE EXAMPLE]
+\end_layout
+
+\begin_layout Subsection
+Examples
+\end_layout
+
+\begin_layout Standard
+Score and videos ?
+\end_layout
+
+\begin_layout Subsection
+Offline generation
+\end_layout
+
+\begin_layout Standard
+Retry to generate full orchestral scores from piano scores.
+ (with new threshold and unit-variance transform) 
+\end_layout
+
+\begin_layout Standard
++ Assess various thresholds of generation
+\end_layout
+
+\begin_layout Standard
++ Try on Moussorgski and Beethoven
+\end_layout
+
+\end_body
+\end_document

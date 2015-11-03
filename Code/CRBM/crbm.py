@@ -7,7 +7,6 @@ http://www.uoguelph.ca/~gwtaylor/publications/nips2006mhmublv/motion.mat
 
 @author Graham Taylor"""
 
-import numpy
 import numpy as np
 import matplotlib.pyplot as plt
 import time

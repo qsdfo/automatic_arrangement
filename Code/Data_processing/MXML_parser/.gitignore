@@ -1,3 +1,4 @@
 # Everything except python files
 *
 !*.py
+!*.md

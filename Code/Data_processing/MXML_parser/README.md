@@ -10,7 +10,6 @@ the we can distinguish between a long note or several repeated occurences of the
 
 Written in python 2.7
 
-
 ## Packages dependencies :
 - xml.sax
 - Numpy
@@ -18,6 +17,8 @@ Written in python 2.7
 
 ## Files
 ### mxml_parser :
-Main function which parse a database and save the built pianoroll in a json format.
+Main function which parse each file in a given database and save the data in
 ### scoreToPianoroll.py :
-Implements the main
+Build the three matrices. Implements open, close and content fonctions for a SAX parser
+### totalLengthHandler.py :
+Small SAX parser to get the total length in number of quarter notes of a score

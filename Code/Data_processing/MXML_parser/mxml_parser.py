@@ -38,17 +38,9 @@ def build_db(database, quantization, instru_dict_path=None):
     else:
         raise NameError(instru_dict_path + " is not a json file")
 
-    # Each pianoroll for each instrument is stored in a dictionnary indexed by
-    # the name of the instruments
-    pianoroll = {}
-    articulation = {}
-    dynamics = {}
-
-    # Keep a record of the transition between two tracks
-    transition = []
-    counter = 0
+    # Data are stored in a dictionnary
     data = {}
-    global_time = 0
+    counter = 0
 
     # Browse database folder
     for dirname, dirnames, filenames in os.walk(database):

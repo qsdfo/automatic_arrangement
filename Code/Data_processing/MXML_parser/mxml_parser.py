@@ -18,11 +18,10 @@ import re
 from scoreToPianoroll import ScoreToPianorollHandler
 from totalLengthHandler import TotalLengthHandler
 # Debug
-import pdb
-import numpy as np
-import cPickle as pickle
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
+# import pdb
+import cPickle
+# import matplotlib.pyplot as plt
+# from matplotlib.backends.backend_pdf import PdfPages
 # import mpldatacursor
 
 
@@ -145,7 +144,7 @@ def build_db(database, quantization, instru_dict_path=None):
     if instru_dict_path is None:
         instru_dict_path = 'instrument_dico.json'
     save_data_json(instru_dict, instru_dict_path)
-    pickle.dump(data, open('data.p', 'wb'))
+    cPickle.dump(data, open('../../Data/data.p', 'wb'))
     # data = {}
     # data['pianoroll'] = pianoroll
     # data['articulation'] = articulation

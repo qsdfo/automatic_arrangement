@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf8 -*-
-
 # Class to parse a MusicXML score into a pianoroll
 # Input :
 #       - division : the desired quantization in the pianoroll
@@ -19,8 +16,10 @@ import numpy as np
 import sys
 import xml.sax
 import re
+from smooth_dynamic import smooth_dyn
 # Debug
 import pdb
+
 
 mapping_step_midi = {
     'C': 0,
@@ -98,8 +97,8 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
 
         # Time evolution of the dynamics
         self.writting_dynamic = False
-        self.fp = False
         self.dynamics = np.zeros([total_length * division], dtype=np.float)
+        self.dyn_flag = np.zeros([total_length * division], dtype=np.float)
         # Directions
         self.direction_type = None
         self.direction_start = None
@@ -128,6 +127,7 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
             self.articulation[instrument] = np.zeros([self.total_length * self.division_pianoroll, 128], dtype=np.int)
             # Initialize the dynamics
             self.dynamics = np.zeros([self.total_length * self.division_pianoroll], dtype=np.float)
+            self.dyn_flag = {}
 
         if tag == u'rest':
             self.rest = True
@@ -151,17 +151,20 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
         # Dynamics
         if tag in mapping_dyn_number:
             self.dynamics[self.time:] = mapping_dyn_number[tag]
+            self.dyn_flag[self.time] = 'N'
         elif tag in (u"sf", u"sfz", u"sffz", u"fz"):
             self.dynamics[self.time] = mapping_dyn_number[u'fff']
+            self.dyn_flag[self.time] = 'N'
         elif tag == u'fp':
-            self.dynamics[self.time:] = mapping_dyn_number[u'f']
-            self.fp = True
+            self.dynamics[self.time] = mapping_dyn_number[u'f']
+            self.dynamics[self.time + 1:] = mapping_dyn_number[u'p']
+            self.dyn_flag[self.time] = 'N'
+            self.dyn_flag[self.time + 1] = 'N'
 
         # Directions
         # Cresc end dim are written with an arbitrary slope, then adjusted after the file
         # has been parsed by a smoothing function
         if tag == u'wedge':
-            instru = self.part_instru_mapping[self.identifier]
             if attributes[u'type'] in (u'diminuendo', u'crescendo'):
                 self.direction_start = int(self.time * self.division_pianoroll / self.division_score)
                 self.direction_type = attributes[u'type']
@@ -174,10 +177,14 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
                     ending_dyn = min(starting_dyn + 0.1, 1)
                     self.dynamics[self.direction_start:self.direction_stop] = \
                         np.linspace(starting_dyn, ending_dyn, self.direction_stop - self.direction_start)
+                    self.dyn_flag[self.direction_start] = 'Cresc_start'
+                    self.dyn_flag[self.direction_stop] = 'Cresc_stop'
                 elif self.direction_type == u'diminuendo':
                     ending_dyn = max(starting_dyn - 0.1, 0)
                     self.dynamics[self.direction_start:self.direction_stop] = \
                         np.linspace(starting_dyn, ending_dyn, self.direction_stop - self.direction_start)
+                    self.dyn_flag[self.direction_start] = 'Dim_start'
+                    self.dyn_flag[self.direction_stop] = 'Dim_stop'
                 # Fill the end of the score with the ending value
                 self.dynamics[self.direction_stop:] = ending_dyn
                 self.direction_start = None
@@ -250,12 +257,6 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
                     self.articulation[instru][start_time:end_time, midi_pitch] = int(1)
                 if staccato:
                     self.articulation[instru][start_time:start_time + 1, midi_pitch] = int(1)
-                ####################################################################
-                # Forte-piano
-                if self.fp:
-                    self.dynamics[start_time:] = mapping_dyn_number[u'p']
-                    self.fp = False
-                ####################################################################
 
             # Increment the time counter
             if not self.grace:
@@ -321,10 +322,11 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
         if tag == u'part':
             instru = self.part_instru_mapping[self.identifier]
             # Smooth the dynamics
-            # dynamics = smooth_dyn(self.dynamics)
+            horizon = 4  # in number of quarter notes
+            dynamics = smooth_dyn(self.dynamics, self.dyn_flag, self.division_pianoroll, horizon)
             # Apply them on the pianoroll and articulation
-            self.pianoroll[instru] = np.transpose(np.multiply(np.transpose(self.pianoroll[instru]), self.dynamics))
-            self.articulation[instru] = np.transpose(np.multiply(np.transpose(self.articulation[instru]), self.dynamics))
+            self.pianoroll[instru] = np.transpose(np.multiply(np.transpose(self.pianoroll[instru]), dynamics))
+            self.articulation[instru] = np.transpose(np.multiply(np.transpose(self.articulation[instru]), dynamics))
         ####################################################################
 
         ####################################################################

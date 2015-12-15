@@ -2,6 +2,7 @@
 <meta charset="utf-8">
 <style>
     .pianoroll rect {
+        stroke-width: 3;
         pointer-events: all;
     }
 
@@ -30,7 +31,7 @@
 
 <body>
     <svg class="pianoroll"></svg>
-    <script src="d3.js" charset="utf-8"></script>
+    <script src=" http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
     <script>
         var mapping_midi = [
             "C",
@@ -153,7 +154,7 @@
         function handleMouseOver_rect(d, i) {
             console.log(i);
             d3.select(this)
-                .attr("fill", "red")
+                .attr("fill", "black")
                 .attr("stroke", "red");
 
             // Specify where to put label of text

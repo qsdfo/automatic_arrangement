@@ -17,13 +17,10 @@
 
 import numpy as np
 import sys
-import os
 import xml.sax
 import re
 # Debug
 import pdb
-import matplotlib.pylab as plt
-# from mpldatacursor import datacursor
 
 mapping_step_midi = {
     'C': 0,
@@ -102,7 +99,7 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
         # Time evolution of the dynamics
         self.writting_dynamic = False
         self.fp = False
-        self.dynamics = {}
+        self.dynamics = np.zeros([total_length * division], dtype=np.float)
         # Directions
         self.direction_type = None
         self.direction_start = None
@@ -130,7 +127,7 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
             self.tying = {}  # Contains voice -> tie_on?
             self.articulation[instrument] = np.zeros([self.total_length * self.division_pianoroll, 128], dtype=np.int)
             # Initialize the dynamics
-            self.dynamics[instrument] = np.zeros([self.total_length * self.division_pianoroll], dtype=np.float)
+            self.dynamics = np.zeros([self.total_length * self.division_pianoroll], dtype=np.float)
 
         if tag == u'rest':
             self.rest = True
@@ -153,14 +150,11 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
         ####################################################################
         # Dynamics
         if tag in mapping_dyn_number:
-            instru = self.part_instru_mapping[self.identifier]
-            self.dynamics[instru][self.time:] = mapping_dyn_number[tag]
+            self.dynamics[self.time:] = mapping_dyn_number[tag]
         elif tag in (u"sf", u"sfz", u"sffz", u"fz"):
-            instru = self.part_instru_mapping[self.identifier]
-            self.dynamics[instru][self.time] = mapping_dyn_number[u'fff']
+            self.dynamics[self.time] = mapping_dyn_number[u'fff']
         elif tag == u'fp':
-            instru = self.part_instru_mapping[self.identifier]
-            self.dynamics[instru][self.time:] = mapping_dyn_number[u'f']
+            self.dynamics[self.time:] = mapping_dyn_number[u'f']
             self.fp = True
 
         # Directions
@@ -175,17 +169,17 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
                 self.direction_stop = int(self.time * self.division_pianoroll / self.division_score)
                 if self.direction_start is None:
                     raise NameError('Stop flag for a direction, but no direction has been started')
-                starting_dyn = self.dynamics[instru][self.direction_start]
+                starting_dyn = self.dynamics[self.direction_start]
                 if self.direction_type == u'crescendo':
                     ending_dyn = min(starting_dyn + 0.1, 1)
-                    self.dynamics[instru][self.direction_start:self.direction_stop] = \
+                    self.dynamics[self.direction_start:self.direction_stop] = \
                         np.linspace(starting_dyn, ending_dyn, self.direction_stop - self.direction_start)
                 elif self.direction_type == u'diminuendo':
                     ending_dyn = max(starting_dyn - 0.1, 0)
-                    self.dynamics[instru][self.direction_start:self.direction_stop] = \
+                    self.dynamics[self.direction_start:self.direction_stop] = \
                         np.linspace(starting_dyn, ending_dyn, self.direction_stop - self.direction_start)
                 # Fill the end of the score with the ending value
-                self.dynamics[instru][self.direction_stop:] = ending_dyn
+                self.dynamics[self.direction_stop:] = ending_dyn
                 self.direction_start = None
                 self.direction_stop = None
 
@@ -226,18 +220,6 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
                 midi_pitch = mapping_step_midi[self.step] + self.octave * 12 + self.alter
                 # Write it in the pianoroll
                 self.pianoroll[instru][start_time:end_time, midi_pitch] = int(1)
-
-                ####################################################################
-                ############################
-                ############################
-                # # # # D  E  B  U   G
-                # print self.step
-                # print start_time
-                # print end_time
-                # if instru == 'Piano':
-                #     pdb.set_trace()
-                ############################
-                ############################
 
                 voice = u'1'
                 if self.voice_set:
@@ -335,6 +317,14 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
             print (u"@@ " + self.content + u"   :   " + this_instru_name).encode('utf8')
             self.content = u""
             self.part_instru_mapping[self.identifier] = this_instru_name
+
+        if tag == u'part':
+            instru = self.part_instru_mapping[self.identifier]
+            # Smooth the dynamics
+            # dynamics = smooth_dyn(self.dynamics)
+            # Apply them on the pianoroll and articulation
+            self.pianoroll[instru] = np.transpose(np.multiply(np.transpose(self.pianoroll[instru]), self.dynamics))
+            self.articulation[instru] = np.transpose(np.multiply(np.transpose(self.articulation[instru]), self.dynamics))
         ####################################################################
 
         ####################################################################
@@ -374,14 +364,13 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
                 is_cresc = re.match(u'$[cC]res.*', content)
                 is_dim = re.match(u'$[dD]im.*', content)
                 if is_dim or is_cresc:
-                    instru = self.part_instru_mapping[self.identifier]
                     t_start = int(self.time * self.division_pianoroll / self.division_score)
                     t_end = t_start + 4 * self.division_pianoroll
-                    start_dyn = self.dynamics[instru][t_start]
+                    start_dyn = self.dynamics[t_start]
                     if is_cresc:
-                        self.dynamics[instru][t_start:t_end] = np.linspace(start_dyn, max(start_dyn + 0.1, 1), t_end - t_start)
+                        self.dynamics[t_start:t_end] = np.linspace(start_dyn, max(start_dyn + 0.1, 1), t_end - t_start)
                     if is_dim:
-                        self.dynamics[instru][t_start:t_end] = np.linspace(start_dyn, min(start_dyn - 0.1, 0), t_end - t_start)
+                        self.dynamics[t_start:t_end] = np.linspace(start_dyn, min(start_dyn - 0.1, 0), t_end - t_start)
 
 
 def search_re_list(string, expression):
@@ -390,29 +379,3 @@ def search_re_list(string, expression):
         if result_re is not None:
             return True
     return False
-
-
-if __name__ == "__main__":
-    instru_dict = {
-        'Voice': ['Voice'],
-        'Piano': ['Piano']
-    }
-    # create an XMLReader
-    parser = xml.sax.make_parser()
-    # turn off namepsaces
-    parser.setFeature(xml.sax.handler.feature_namespaces, 0)
-
-    # override the default ContextHandler
-    Handler_score = ScoreToPianorollHandler(4, instru_dict, 120)
-    parser.setContentHandler(Handler_score)
-
-    print "cest parti\n"
-    if(os.path.isfile("BeetAnGeSample.xml")):
-        parser.parse("BeetAnGeSample.xml")
-    else:
-        print "Not a file"
-
-    data = Handler_score.pianoroll['Piano']
-    np.savetxt("foo.csv", data, delimiter=";", fmt='%1i')
-    plt.imshow(data, interpolation='nearest', cmap='bone', origin='lower')
-    plt.show()

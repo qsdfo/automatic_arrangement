@@ -70,72 +70,9 @@ def build_db(database, quantization, instru_dict_path=None):
 
             data[counter] = {'pianoroll': Handler_score.pianoroll,
                              'articulation': Handler_score.articulation,
-                             'dynamics': Handler_score.dynamics,
-                             'filename': filename}
+                             'filename': filename,
+                             'quantization': quantization}
             counter += 1
-
-            # track_length = Handler_score.pianoroll['Piano'].shape[0]
-            # pianoroll_keys = set(pianoroll.keys())
-            #
-            # for instru in Handler_score.pianoroll.keys():
-            #     this_pianoroll = Handler_score.pianoroll[instru]
-            #     this_articulation = Handler_score.articulation[instru]
-            #     this_dynamics = Handler_score.dynamics[instru]
-            #     ################################################
-            #     ################################################
-            #     ################################################
-            #     # Debug plot
-            #     f, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
-            #     ax1.imshow(np.transpose(this_pianoroll), cmap=plt.cm.gray, interpolation='nearest', vmin=0, vmax=1)
-            #     ax1.invert_yaxis()
-            #     ax2.imshow(np.transpose(this_articulation), cmap=plt.cm.gray, interpolation='nearest', vmin=0, vmax=1)
-            #     ax2.invert_yaxis()
-            #     ax3.plot(this_dynamics)
-            #     # mpldatacursor.datacursor(display='single')
-            #     # plt.show()
-            #     save_dir = 'PDF_DEBUG/' + filename_test.group(1)
-            #     if not os.path.isdir(save_dir):
-            #         os.mkdir(save_dir)
-            #     with PdfPages(save_dir + '/' + instru + '.pdf') as pp:
-            #         pp.savefig()
-            #     plt.close(f)
-            #
-            #     # Dump debug
-            #     non_ze_pianoroll = np.nonzero(this_pianoroll)
-            #     te_pianoroll = np.concatenate((non_ze_pianoroll[0], non_ze_pianoroll[1])).reshape(2, non_ze_pianoroll[0].shape[0])
-            #     non_ze_articulation = np.nonzero(this_articulation)
-            #     te_articulation = np.concatenate((non_ze_articulation[0], non_ze_articulation[1])).reshape(2, non_ze_articulation[0].shape[0])
-            #     save_dir = 'DUMP_MATRICES/' + filename_test.group(1)
-            #     if not os.path.isdir(save_dir):
-            #         os.mkdir(save_dir)
-            #     with open(save_dir + '/' + instru + '_pianoroll.csv', 'w') as f_handle:
-            #         np.savetxt(f_handle, te_pianoroll, delimiter=";", fmt='%1i')
-            #     with open(save_dir + '/' + instru + '_articulation.csv', 'w') as f_handle:
-            #         np.savetxt(f_handle, te_articulation, delimiter=";", fmt='%1i')
-            #     ################################################
-            #     ################################################
-            #     ################################################
-            #     if instru in pianoroll_keys:
-            #         pianoroll[instru] = np.concatenate((pianoroll[instru], this_pianoroll))
-            #         articulation[instru] = np.concatenate((articulation[instru], this_articulation))
-            #         dynamics[instru] = np.concatenate((dynamics[instru], this_dynamics))
-            #         pianoroll_keys.remove(instru)
-            #     else:
-            #         # Fill with zeros the beginnig of this newly instanciated instrument
-            #         pianoroll[instru] = np.concatenate((np.zeros((global_time, 128)), this_pianoroll))
-            #         articulation[instru] = np.concatenate((np.zeros((global_time, 128)), this_articulation))
-            #         dynamics[instru] = np.concatenate((np.zeros((global_time)), this_dynamics))
-            #
-            # # Scan through the instrument missing in this particular score
-            # # And fill their pianorolls with the necessary number of zeros
-            # for instru in pianoroll_keys:
-            #     pianoroll[instru] = np.concatenate((pianoroll[instru], np.zeros((track_length, 128))))
-            #     articulation[instru] = np.concatenate((articulation[instru], np.zeros((track_length, 128))))
-            #     dynamics[instru] = np.concatenate((dynamics[instru], np.zeros((track_length))))
-            #
-            # # Increment the time counter
-            # global_time += track_length
-            # transition.append(global_time + 1)
 
     ################################################
     # Save the instrument dictionary with its,
@@ -144,7 +81,7 @@ def build_db(database, quantization, instru_dict_path=None):
     if instru_dict_path is None:
         instru_dict_path = 'instrument_dico.json'
     save_data_json(instru_dict, instru_dict_path)
-    cPickle.dump(data, open('../../Data/data.p', 'wb'))
+    cPickle.dump(data, open('../../../Data/data.p', 'wb'))
     # data = {}
     # data['pianoroll'] = pianoroll
     # data['articulation'] = articulation

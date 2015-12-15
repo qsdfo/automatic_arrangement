@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+    .pianoroll rect {
+        pointer-events: all;
+    }
+
+    .axis path,
+    .axis line {
+        fill: none;
+        shape-rendering: crispEdges;
+        stroke-width: 0.5;
+        stroke-width: ;
+        stroke: #0000ff;
+        opacity: 0.2;
+        /* Round any decimal pixels so it'll render nicely */
+    }
+
+    .axis text {
+        font-family: sans-serif;
+        font-size: 10px;
+    }
+
+    .note_label {
+        font-size: 15px;
+        font-family: sans-serif;
+    }
+
+</style>
+
+<body>
+    <svg class="pianoroll"></svg>
+    <script src="d3.js" charset="utf-8"></script>
+    <script>
+        var mapping_midi = [
+            "C",
+            "C#",
+            "D",
+            "D#",
+            "E",
+            "F",
+            "F#",
+            "G",
+            "G#",
+            "A",
+            "A#",
+            "B",
+        ]
+
+
+        var width = window.innerWidth-20,
+            height = window.innerHeight-20;
+        margin = {
+                top: 30,
+                right: 30,
+                bottom: 30,
+                left: 30
+            },
+            barHeight = (height - margin.top - margin.bottom) / 128;
+
+        var T = d3.scale.linear()
+            .range([margin.left, width - margin.right]);
+        var T_dt = d3.scale.linear()
+            .range([0, width - margin.right - margin.left]);
+
+        var H = d3.scale.linear()
+            .range([height - margin.top, margin.bottom])
+            .domain([0, 128]);
+
+        var pianoroll = d3.select(".pianoroll")
+            .attr("width", width)
+            .attr("height", height);
+
+        d3.csv("data.csv", type, function(data) {
+            var filename = data[0]['filename'];
+            var quantization = data[0]['quantization'];
+
+            var maxDt = d3.max(data, function(d) {
+                return d.dt;
+            });
+            T.domain([0, d3.max(data, function(d) {
+                return d.t0 + maxDt;
+            })]);
+            T_dt.domain([0, d3.max(data, function(d) {
+                return d.t0 + maxDt;
+            })]);
+
+            // Adds X-Axis as a 'g' element
+            var xAxis = d3.svg.axis()
+                .scale(T)
+                .orient("bottom")
+                .ticks(20)
+                .tickSize(-height + margin.top + margin.bottom, 10)
+                .tickFormat(function(d) {
+                    return d / quantization;
+                });
+
+            pianoroll.append("g").attr({
+                "class": "axis", // Give class so we can style it
+                "transform": "translate(" + [0, height - margin.bottom] + ")" // Translate just moves it down into position (or will be on top)
+            }).call(xAxis); // Call the xAxis function on the group
+
+            // Adds Y-Axis as a 'g' element
+            var yAxis = d3.svg.axis()
+                .scale(H)
+                .orient("left")
+                .ticks(9)
+                .tickSize(-width + margin.right + margin.left, 10)
+                .tickFormat(function(d) {
+                    var pitch_class = d % 12;
+                    var octave = (d - pitch_class) / 12;
+                    return mapping_midi[pitch_class] + octave;
+                });
+
+            pianoroll.append("g").attr({
+                "class": "axis",
+                "transform": "translate(" + [margin.left, 0] + ")"
+            }).call(yAxis); // Call the yAxis function on the group
+
+            // Add a title
+            pianoroll.append("text")
+                .attr("x", ((width + margin.left) / 2))
+                .attr("y", margin.top / 2)
+                .attr("text-anchor", "middle")
+                .text("Pianoroll of : " + filename);
+
+            // Draw the notes ! (Youhou)
+            var rectAttrs = {
+                x: function(d) {
+                    return T(d.t0);
+                },
+                y: function(d) {
+                    return H(d.pitch);
+                },
+                width: function(d) {
+                    return T_dt(d.dt);
+                },
+                height: barHeight,
+                opacity: function(d) {
+                    return d.dyn;
+                }
+            };
+            var notes_rect = pianoroll.selectAll("rect")
+                .data(data)
+                .enter()
+                .append("rect")
+                .attr(rectAttrs)
+                .on("mouseover", handleMouseOver_rect)
+                .on("mouseout", handleMouseOut_rect);
+        });
+
+        // // Define event functions
+        function handleMouseOver_rect(d, i) {
+            console.log(i);
+            d3.select(this)
+                .attr("fill", "red")
+                .attr("stroke", "red");
+
+            // Specify where to put label of text
+            pianoroll.append("text").attr({
+                    id: "text" + i, // Create an id for text so we can select it later for removing on mouseout
+                    x: function() {
+                        return T(d.t0) - 10;
+                    },
+                    y: function() {
+                        return H(d.pitch) - 15;
+                    }
+                })
+                .text(function() {
+                    var pitch_class = d.pitch % 12;
+                    var octave = (d.pitch - pitch_class) / 12;
+                    return "t : " + (d.t0 / d['quantization']) + "-" + ((d.t0 + d.dt) / d['quantization']) +
+                        "   pitch : " + (mapping_midi[pitch_class] + octave) +
+                        "  dyn : " + (d.dyn); // Value of the text
+                })
+                .attr("class","note_label");
+        }
+
+        function handleMouseOut_rect(d, i) {
+            console.log(i);
+            d3.select(this)
+                .attr({
+                    fill: "black",
+                    stroke: "black"
+                });
+            // Select text by id and then remove
+            d3.select("#text" + i).remove();// Remove text location
+        }
+        // mouseleave(d) {
+        //     d3.select(this)
+        //         .attr('display', 'none')
+        // }
+
+        function type(d) {
+            d.t0 = +d.t0;
+            d.dt = +d.dt;
+            d.pitch = +d.pitch;
+            d.dyn = +d.dyn;
+            d.quantization = +d.quantization;
+            return d;
+        }
+    </script>
+</body>

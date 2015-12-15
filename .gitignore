@@ -1,3 +1,9 @@
 Database
 Results
 Data
+**/*.pdf
+**/*.csv
+
+# Also ignore all the D3.js files, wich are just the package for d3.js
+**/d3.js
+**/d3.min.js

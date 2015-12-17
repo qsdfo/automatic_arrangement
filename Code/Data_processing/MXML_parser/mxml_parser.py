@@ -25,11 +25,11 @@ import cPickle
 # import mpldatacursor
 
 
-def build_db(database, quantization, instru_dict_path=None):
+def build_db(database_path, quantization, instru_dict_path=None, output_path='data.p'):
     # First load the instrument dictionnary
     if instru_dict_path is None:
         # Create a defaut empty file if not indicated
-        instru_dict_path = database + u"instrument_dico.json"
+        instru_dict_path = database_path + u"instrument_dico.json"
         instru_dict = {}
     elif os.path.isfile(instru_dict_path):
         with open(instru_dict_path) as f:
@@ -41,8 +41,8 @@ def build_db(database, quantization, instru_dict_path=None):
     data = {}
     counter = 0
 
-    # Browse database folder
-    for dirname, dirnames, filenames in os.walk(database):
+    # Browse database_path folder
+    for dirname, dirnames, filenames in os.walk(database_path):
         for filename in filenames:
             # Is it a music xml file ?
             filename_test = re.match("(.*)\.xml", filename, re.I)
@@ -81,7 +81,7 @@ def build_db(database, quantization, instru_dict_path=None):
     if instru_dict_path is None:
         instru_dict_path = 'instrument_dico.json'
     save_data_json(instru_dict, instru_dict_path)
-    cPickle.dump(data, open('../../../Data/data.p', 'wb'))
+    cPickle.dump(data, open(output_path, 'wb'))
     # data = {}
     # data['pianoroll'] = pianoroll
     # data['articulation'] = articulation
@@ -96,7 +96,7 @@ def save_data_json(data, file_path):
 
 
 if __name__ == '__main__':
-    build_db('../../../Database/LOP_db_small/', 4, '../../../Database/LOP_db_small/instrument_dico.json')
+    build_db('../../../Database/LOP_db_small/', 4, '../../../Database/LOP_db_small/instrument_dico.json', '../../../Data/data.p')
 
 # data = Handler_score.pianoroll['Piano']
 # non_ze = np.nonzero(data)

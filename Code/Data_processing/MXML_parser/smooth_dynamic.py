@@ -14,23 +14,25 @@ def smooth_dyn(dynamic, flag, quantization, horizon):
                 start_time = t
             elif flag[t] == 'Cresc_stop':
                 for h in range(0, T):
-                    if flag[t + h] == 'N':
-                        stop_dyn = dynamic[t + h]
-                        # Just a little check
-                        if stop_dyn < start_dyn:
+                    if (t + h) in flag.keys():
+                        if flag[t + h] == 'N':
+                            stop_dyn = dynamic[t + h]
+                            # Just a little check
+                            if stop_dyn < start_dyn:
+                                stop_dyn = min(start_dyn + 0.5, 1)
+                        else:
                             stop_dyn = min(start_dyn + 0.5, 1)
-                    else:
-                        stop_dyn = min(start_dyn + 0.5, 1)
                 dynamic[start_time:t] = np.linspace(start_dyn, stop_dyn, t - start_time)
             elif flag[t] == 'Dim_stop':
                 for h in range(0, T):
-                    if flag[t + h] == 'N':
-                        stop_dyn = dynamic[t + h]
-                        # Just a little check
-                        if stop_dyn > start_dyn:
+                    if (t + h) in flag.keys():
+                        if flag[t + h] == 'N':
+                            stop_dyn = dynamic[t + h]
+                            # Just a little check
+                            if stop_dyn > start_dyn:
+                                stop_dyn = max(start_dyn - 0.5, 0)
+                        else:
                             stop_dyn = max(start_dyn - 0.5, 0)
-                    else:
-                        stop_dyn = max(start_dyn - 0.5, 0)
                 dynamic[start_time:t] = np.linspace(start_dyn, stop_dyn, t - start_time)
 
     return dynamic

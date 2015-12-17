@@ -17,9 +17,6 @@ import sys
 import xml.sax
 import re
 from smooth_dynamic import smooth_dyn
-# Debug
-import pdb
-
 
 mapping_step_midi = {
     'C': 0,
@@ -82,11 +79,13 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
         self.discard_grace = discard_grace
 
         # Pianoroll
-        self.pianoroll = {}
         self.total_length = total_length
+        self.pianoroll = {}
+        self.pianoroll_local = np.zeros([self.total_length * self.division_pianoroll, 128], dtype=np.int)
 
         # Stop flags
         self.articulation = {}
+        self.articulation_local = np.zeros([self.total_length * self.division_pianoroll, 128], dtype=np.int)
         # Tied notes (not phrasing)
         self.tie_type = None
         self.tying = {}  # Contains voice -> tie_on?
@@ -119,12 +118,12 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
             self.time = 0
             self.division_score = -1
             # Initialize the pianoroll
-            instrument = self.part_instru_mapping[self.identifier]
-            self.pianoroll[instrument] = np.zeros([self.total_length * self.division_pianoroll, 128], dtype=np.int)
+            # Check if this instrument has already been seen
+            self.pianoroll_local = np.zeros([self.total_length * self.division_pianoroll, 128], dtype=np.int)
             # Initialize the articulations
             self.tie_type = None
-            self.tying = {}  # Contains voice -> tie_on?
-            self.articulation[instrument] = np.zeros([self.total_length * self.division_pianoroll, 128], dtype=np.int)
+            self.tying = {}  # Contains {voice -> tie_on} ?
+            self.articulation_local = np.zeros([self.total_length * self.division_pianoroll, 128], dtype=np.int)
             # Initialize the dynamics
             self.dynamics = np.zeros([self.total_length * self.division_pianoroll], dtype=np.float)
             self.dyn_flag = {}
@@ -144,7 +143,6 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
             self.tie_type = attributes[u'type']
 
         if tag == u'staccato':
-            # pdb.set_trace()
             self.staccato = True
 
         ####################################################################
@@ -213,8 +211,6 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
                 if not self.pitch_set:
                     print "XML misformed, a Pitch tag is missing"
                     return
-                # Get instru
-                instru = self.part_instru_mapping[self.identifier]
                 # Start and end time for the note
                 start_time = int(self.time * self.division_pianoroll / self.division_score)
                 if self.grace:
@@ -226,7 +222,7 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
                 # Its pitch
                 midi_pitch = mapping_step_midi[self.step] + self.octave * 12 + self.alter
                 # Write it in the pianoroll
-                self.pianoroll[instru][start_time:end_time, midi_pitch] = int(1)
+                self.pianoroll_local[start_time:end_time, midi_pitch] = int(1)
 
                 voice = u'1'
                 if self.voice_set:
@@ -252,11 +248,11 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
                 staccato = self.staccato
 
                 if (not tie) and (not staccato):
-                    self.articulation[instru][start_time:end_time - 1, midi_pitch] = int(1)
+                    self.articulation_local[start_time:end_time - 1, midi_pitch] = int(1)
                 if tie:
-                    self.articulation[instru][start_time:end_time, midi_pitch] = int(1)
+                    self.articulation_local[start_time:end_time, midi_pitch] = int(1)
                 if staccato:
-                    self.articulation[instru][start_time:start_time + 1, midi_pitch] = int(1)
+                    self.articulation_local[start_time:start_time + 1, midi_pitch] = int(1)
 
             # Increment the time counter
             if not self.grace:
@@ -325,8 +321,12 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
             horizon = 4  # in number of quarter notes
             dynamics = smooth_dyn(self.dynamics, self.dyn_flag, self.division_pianoroll, horizon)
             # Apply them on the pianoroll and articulation
-            self.pianoroll[instru] = np.transpose(np.multiply(np.transpose(self.pianoroll[instru]), dynamics))
-            self.articulation[instru] = np.transpose(np.multiply(np.transpose(self.articulation[instru]), dynamics))
+            if instru in self.pianoroll.keys():
+                self.pianoroll[instru] = np.maximum(self.pianoroll[instru], np.transpose(np.multiply(np.transpose(self.pianoroll_local), dynamics)))
+                self.articulation[instru] = np.maximum(self.articulation[instru], np.transpose(np.multiply(np.transpose(self.articulation_local), dynamics)))
+            else:
+                self.pianoroll[instru] = np.transpose(np.multiply(np.transpose(self.pianoroll_local), dynamics))
+                self.articulation[instru] = np.transpose(np.multiply(np.transpose(self.articulation_local), dynamics))
         ####################################################################
 
         ####################################################################
@@ -381,3 +381,25 @@ def search_re_list(string, expression):
         if result_re is not None:
             return True
     return False
+
+if __name__ == '__main__':
+    from totalLengthHandler import TotalLengthHandler
+    import json
+
+    with open('dict_test.json') as f:
+        instru_dict = json.load(f)
+
+    # Get the total length in quarter notes of the track
+    pre_parser = xml.sax.make_parser()
+    pre_parser.setFeature(xml.sax.handler.feature_namespaces, 0)
+    Handler_length = TotalLengthHandler()
+    pre_parser.setContentHandler(Handler_length)
+    pre_parser.parse('test.xml')
+    total_length = Handler_length.total_length
+
+    # Now parse the file and get the pianoroll, articulation and dynamics
+    parser = xml.sax.make_parser()
+    parser.setFeature(xml.sax.handler.feature_namespaces, 0)
+    Handler_score = ScoreToPianorollHandler(4, instru_dict, total_length, False)
+    parser.setContentHandler(Handler_score)
+    parser.parse('test.xml')

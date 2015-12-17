@@ -34,6 +34,7 @@ Live Orchestral Project
 - Faire un set-up de test pour les CRBM :
         - Sur du training un peu bidon (MNIST), et sans supervised training à la fin
         - Tester différents sampling : mean-field values or sampled binary values ?
+
 ### Visualization
         - Créer des exemples bidons :
                 - Telle ligne mélodique simple = ??

@@ -398,11 +398,11 @@ def train_crbm(learning_rate=1e-3, training_epochs=300,
 
     # the purpose of train_crbm is solely to update the CRBM parameters
     train_crbm = theano.function([index, index_hist], cost,
-           updates=updates,
-           givens={x: batchdata[index], \
-                      x_history: batchdata[index_hist].reshape((
-                       batch_size, delay * n_dim))},
-           name='train_crbm')
+                                 updates=updates,
+                                 givens={x: batchdata[index],
+                                 x_history: batchdata[index_hist].reshape((
+                                         batch_size, delay * n_dim))},
+                                 name='train_crbm')
 
     plotting_time = 0.
     start_time = time.clock()

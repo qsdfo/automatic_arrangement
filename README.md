@@ -7,7 +7,6 @@ Live Orchestral Project
 - Insérer un formulaire dans la visualisation pour facilement passer d'un CSV à un autre
 		- D'ailleurs disp_pr sera inutile dans ce cas
 		- on pourra directement browser le répertoire CSV
-- Copier config atom sur GPU
 - Checker DB DD-Aciditeam
 
 ### Evaluation :
@@ -47,3 +46,6 @@ Live Orchestral Project
         - Coder
         - Tester
 - Word-embedding or skip-thought vectors
+
+### Training
+Hyper-parameter search : http://hyperopt.github.io/hyperopt/

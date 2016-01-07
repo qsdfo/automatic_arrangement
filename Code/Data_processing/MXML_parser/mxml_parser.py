@@ -97,17 +97,3 @@ def save_data_json(data, file_path):
 
 if __name__ == '__main__':
     build_db('../../../Database/LOP_db_small/', 4, '../../../Database/LOP_db_small/instrument_dico.json', '../../../Data/data.p')
-
-# data = Handler_score.pianoroll['Piano']
-# non_ze = np.nonzero(data)
-# te = np.concatenate((non_ze[0], non_ze[1])).reshape(2, non_ze[0].shape[0])
-# with open('nonzeros.csv', 'w') as f_handle:
-#     np.savetxt(f_handle, te, delimiter=";", fmt='%1i')
-
-# f, (ax1, ax2) = plt.subplots(2, sharex=True)
-# ax1.imshow(np.transpose(Handler_score.pianoroll['Piano']), cmap=plt.cm.gray, interpolation='nearest', vmin=0, vmax=1)
-# ax1.invert_yaxis()
-# ax2.imshow(np.transpose(Handler_score.articulation['Piano']), cmap=plt.cm.gray, interpolation='nearest', vmin=0, vmax=1)
-# plt.gca().invert_yaxis()
-# # mpldatacursor.datacursor(display='single')
-# plt.show()

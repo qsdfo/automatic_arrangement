@@ -2,7 +2,7 @@
 <meta charset="utf-8">
 <style>
     .pianoroll rect {
-        stroke-width: 3;
+        stroke-width: 1;
         pointer-events: all;
     }
 
@@ -26,7 +26,6 @@
         font-size: 15px;
         font-family: sans-serif;
     }
-
 </style>
 
 <body>
@@ -49,8 +48,8 @@
         ]
 
 
-        var width = window.innerWidth-20,
-            height = window.innerHeight-20;
+        var width = window.innerWidth - 20,
+            height = window.innerHeight - 20;
         margin = {
                 top: 30,
                 right: 30,
@@ -72,7 +71,8 @@
             .attr("width", width)
             .attr("height", height);
 
-        d3.csv("data.csv", type, function(data) {
+        // Load data
+        d3.csv('data.csv', type, function(data) {
             var filename = data[0]['filename'];
             var quantization = data[0]['quantization'];
 
@@ -174,7 +174,7 @@
                         "   pitch : " + (mapping_midi[pitch_class] + octave) +
                         "  dyn : " + (d.dyn); // Value of the text
                 })
-                .attr("class","note_label");
+                .attr("class", "note_label");
         }
 
         function handleMouseOut_rect(d, i) {
@@ -182,10 +182,10 @@
             d3.select(this)
                 .attr({
                     fill: "black",
-                    stroke: "black"
+                    stroke: "none"
                 });
             // Select text by id and then remove
-            d3.select("#text" + i).remove();// Remove text location
+            d3.select("#text" + i).remove(); // Remove text location
         }
         // mouseleave(d) {
         //     d3.select(this)

@@ -38,6 +38,8 @@ Live Orchestral Project
         - Créer des exemples bidons :
                 - Telle ligne mélodique simple = ??
                 - séquence de chords ??
+		- Visualiser les actiations pour une entrée donnée (récupérer  code Hinton)
+		- Stocker les perfs pour un modèle donné en fonction des hyper-paramètres, viisualisation en en sélectionnant 2 (d3.js)
 
 ### Pre-processing
 - braids en pre-pro

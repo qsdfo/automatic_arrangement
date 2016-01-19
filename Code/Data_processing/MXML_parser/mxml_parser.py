@@ -25,7 +25,7 @@ import cPickle
 # import mpldatacursor
 
 
-def build_db(database_path, quantization, instru_dict_path=None, output_path='data.p'):
+def build_db(database_path, quantization, instru_dict_path=None, output_path='../Data/'):
     # First load the instrument dictionnary
     if instru_dict_path is None:
         # Create a defaut empty file if not indicated
@@ -68,25 +68,23 @@ def build_db(database_path, quantization, instru_dict_path=None, output_path='da
             parser.setContentHandler(Handler_score)
             parser.parse(full_path_file)
 
-            data[counter] = {'pianoroll': Handler_score.pianoroll,
-                             'articulation': Handler_score.articulation,
-                             'filename': filename,
-                             'quantization': quantization}
+            dict_tmp = {'pianoroll': Handler_score.pianoroll,
+                        'articulation': Handler_score.articulation,
+                        'filename': filename
+                        }
+
+            data['scores'] = {counter: dict_tmp}
             counter += 1
 
     ################################################
     # Save the instrument dictionary with its,
     # potentially, new notations per instrument
     ################################################
+    data['quantization'] = quantization
     if instru_dict_path is None:
-        instru_dict_path = 'instrument_dico.json'
+        instru_dict_path = output_path + 'instrument_dico.json'
     save_data_json(instru_dict, instru_dict_path)
-    cPickle.dump(data, open(output_path, 'wb'))
-    # data = {}
-    # data['pianoroll'] = pianoroll
-    # data['articulation'] = articulation
-    # data['dynamics'] = dynamics
-    # (data, 'data.json')
+    cPickle.dump(data, open(output_path + 'data.p', 'wb'))
     return
 
 
@@ -96,4 +94,4 @@ def save_data_json(data, file_path):
 
 
 if __name__ == '__main__':
-    build_db('../../../Database/LOP_db_small/', 4, '../../../Database/LOP_db_small/instrument_dico.json', '../../../Data/data.p')
+    build_db('../../../Database/LOP_db_small/', 4, '../../../Database/LOP_db_small/instrument_dico.json', '../../../Data/')

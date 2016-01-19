@@ -73,8 +73,8 @@ def preprocess_data(Motion):
     # get sequence lengths
     seqlen = [s.shape[0] for s in Motion.flat]
 
-
     return batchdata, seqlen, data_mean, data_std
+
 
 def load_data(filename):
 

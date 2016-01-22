@@ -1,18 +1,19 @@
 """
-A temporal RBM with real value visible units.
-We use ReLU visible and hidden units
+A temporal RBM with binary visible units.
 """
 import numpy
 
 import theano
 import theano.tensor as T
 
+import Score_function
+
 from theano.tensor.shared_randomstreams import RandomStreams
 
 from Data_processing.load_data import load_data
 
 
-class RBM_temporal(object):
+class RBM_temporal_bin(object):
     """Restricted Boltzmann Machine (RBM)  """
     def __init__(
         self,
@@ -132,23 +133,25 @@ class RBM_temporal(object):
         return -hidden_term - vbias_term
 
     def gibbs_step(self, v, p):
-        h = T.nnet.relu(T.dot(v, self.W) + T.dot(p, self.P) + self.hbias)
-        # h = rng.binomial(size=mean_h.shape, n=1, p=mean_h,
-        #                  dtype=theano.config.floatX)
-        v = T.nnet.relu(T.dot(h, self.W.T) + self.vbias)
-        p = T.nnet.relu(T.dot(h, self.P.T) + self.pbias)
-        # v = rng.binomial(size=mean_v.shape, n=1, p=mean_v,
-        #                  dtype=theano.config.floatX)
-        # p = rng.binomial(size=mean_p.shape, n=1, p=mean_p,
-        #                  dtype=theano.config.floatX)
-        return v, p
+        mean_h = T.nnet.sigmoid(T.dot(v, self.W) + T.dot(p, self.P) + self.hbias)
+        h = self.theano_rng.binomial(size=mean_h.shape, n=1, p=mean_h,
+                                     dtype=theano.config.floatX)
+        mean_p = T.nnet.sigmoid(T.dot(h, self.P.T) + self.pbias)
+        mean_v = T.nnet.sigmoid(T.dot(h, self.W.T) + self.vbias)
+        v = self.theano_rng.binomial(size=mean_v.shape, n=1, p=mean_v,
+                                     dtype=theano.config.floatX)
+        p = self.theano_rng.binomial(size=mean_p.shape, n=1, p=mean_p,
+                                     dtype=theano.config.floatX)
+        return v, mean_v, p
 
+    # Get cost and updates for training
     def cost_updates(self, lr=0.1, k=1):
         # Negative phase
-        visible_chain, past_chain, updates = theano.scan(lambda v, p: self.gibbs_step(v, p),
-                                                         outputs_info=[self.input, self.past],
-                                                         n_steps=k)
+        visible_chain, mean_visible_chain, past_chain, updates = theano.scan(self.gibbs_step,
+                                                                             outputs_info=[self.input, None, self.past],
+                                                                             n_steps=k)
         neg_v = visible_chain[-1]
+        mean_neg_v = mean_visible_chain[-1]
         neg_p = past_chain[-1]
 
         # Cost
@@ -166,16 +169,51 @@ class RBM_temporal(object):
                 dtype=theano.config.floatX
             )
 
-        # Monitor reconstruction (mean L2 norm over the batch ?)
-        monitoring_cost = T.mean(T.norm(T.concatenate(self.input, self.past) - T.concatenate(neg_v, neg_p), axis=1))
+        # Monitor reconstruction (log-likelihood proxy)
+        monitoring_cost = self.get_reconstruction_cost(updates, mean_neg_v)
 
         return monitoring_cost, updates
 
-    def prediction_error(self, k=20):
+    def get_reconstruction_cost(self, nv):
+        """Approximation to the reconstruction error """
+        cross_entropy = T.mean(
+            T.sum(
+                self.input * T.log(nv) +
+                (1 - self.input) * T.log(1 - nv),
+                axis=1
+            )
+        )
+        return cross_entropy
+
+    #  Over-fitting monitoring
+    def overfit_measure(self, v_validate, p_validate):
+        free_en_diff = self.free_energy(v_validate, p_validate) - self.free_energy(self.input, self.past)
+        return free_en_diff / self.free_energy(v_validate, p_validate)
+
+    # Sampling with clamped past units
+    # Two methods :
+    #   - by alternate Gibbs sampling
+    def sampling_Gibbs(self, k=20):
+        # Negative phase with clamped past units
+        visible_chain, mean_visible_chain, past_chain, updates = theano.scan(self.gibbs_step,
+                                                                             outputs_info=[self.input],
+                                                                             non_sequences=[None, self.past],
+                                                                             n_steps=k)
+
+        pred_v = visible_chain[-1]
+        mean_pred_v = mean_visible_chain[-1]
+        return pred_v, mean_pred_v
+
+    def prediction_measure(self, k=20):
+        pred_v, mean_pred_v = self.sampling_Gibbs(k)
+        precision = Score_function.prediction_measure(self.input, mean_pred_v)
+        recall = Score_function.recall_measure(self.input, mean_pred_v)
+        accuracy = Score_function.accuracy_measure(self.input, mean_pred_v)
+
+        return precision, recall, accuracy
 
 
-
-def train_temporal_rbm(hyper_parameter, dataset, output_folder, output_file):
+def train(hyper_parameter, dataset, output_folder, output_file):
     """
     Demonstrate how to train and afterwards sample from it using Theano.
 
@@ -203,34 +241,28 @@ def train_temporal_rbm(hyper_parameter, dataset, output_folder, output_file):
 
     # First check if this configuration has not been tested before,
     # i.e. its parameter are written in the result.csv file
-    datasets = load_data(dataset, temporal_order, batch_size, False, (0.7, 0.1, 0.2))
-
-    train_set_x, train_set_y = datasets[0]
-    test_set_x, test_set_y = datasets[2]
+    dataset, train_index, validate_index, test_index = load_data(dataset, temporal_order, batch_size, False, (0.7, 0.1, 0.2))
 
     # compute number of minibatches for training, validation and testing
-    n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
+    n_train_batches = train_index.get_value(borrow=True).shape[0] / batch_size
 
     # allocate symbolic variables for the data
     index = T.lscalar()    # index to a [mini]batch
-    x = T.matrix('x')  # the data is presented as rasterized images
+    v = T.matrix('v')  # the data is presented as rasterized images
+    p = T.matrix('p')  # the data is presented as rasterized images
 
     rng = numpy.random.RandomState(123)
     theano_rng = RandomStreams(rng.randint(2 ** 30))
 
-    # initialize storage for the persistent chain (state = hidden
-    # layer of chain)
-    persistent_chain = theano.shared(numpy.zeros((batch_size, n_hidden),
-                                                 dtype=theano.config.floatX),
-                                     borrow=True)
-
     # construct the RBM class
-    rbm = RBM(input=x, n_visible=28 * 28,
-              n_hidden=n_hidden, numpy_rng=rng, theano_rng=theano_rng)
+    rbm = RBM_temporal_bin(input=v,
+                           past=p,
+                           n_hidden=n_hidden,
+                           numpy_rng=rng,
+                           theano_rng=theano_rng)
 
     # get the cost and the gradient corresponding to one step of CD-15
-    cost, updates = rbm.get_cost_updates(lr=learning_rate,
-                                         persistent=persistent_chain, k=15)
+    cost, updates = rbm.cost_updates(lr=learning_rate, k=1)
 
     #################################
     #     Training the RBM          #
@@ -242,12 +274,19 @@ def train_temporal_rbm(hyper_parameter, dataset, output_folder, output_file):
     # start-snippet-5
     # it is ok for a theano function to have no output
     # the purpose of train_rbm is solely to update the RBM parameters
+    train_rbm = theano.function([index, index_hist], cost,
+                                 updates=updates,
+                                 givens={x: batchdata[index],
+                                 x_history: batchdata[index_hist].reshape((
+                                         batch_size, delay * n_dim))},
+                                 name='train_crbm')
+
     train_rbm = theano.function(
         [index],
         cost,
         updates=updates,
         givens={
-            x: train_set_x[index * batch_size: (index + 1) * batch_size]
+            v: dataset[index * batch_size: (index + 1) * batch_size]
         },
         name='train_rbm'
     )

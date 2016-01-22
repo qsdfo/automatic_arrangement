@@ -147,27 +147,28 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
 
         ####################################################################
         # Dynamics
+        time_pianoroll = int(self.time * self.division_pianoroll / self.division_score)
         if tag in mapping_dyn_number:
-            self.dynamics[self.time:] = mapping_dyn_number[tag]
-            self.dyn_flag[self.time] = 'N'
+            self.dynamics[time_pianoroll:] = mapping_dyn_number[tag]
+            self.dyn_flag[time_pianoroll] = 'N'
         elif tag in (u"sf", u"sfz", u"sffz", u"fz"):
-            self.dynamics[self.time] = mapping_dyn_number[u'fff']
-            self.dyn_flag[self.time] = 'N'
+            self.dynamics[time_pianoroll] = mapping_dyn_number[u'fff']
+            self.dyn_flag[time_pianoroll] = 'N'
         elif tag == u'fp':
-            self.dynamics[self.time] = mapping_dyn_number[u'f']
-            self.dynamics[self.time + 1:] = mapping_dyn_number[u'p']
-            self.dyn_flag[self.time] = 'N'
-            self.dyn_flag[self.time + 1] = 'N'
+            self.dynamics[time_pianoroll] = mapping_dyn_number[u'f']
+            self.dynamics[time_pianoroll + 1:] = mapping_dyn_number[u'p']
+            self.dyn_flag[time_pianoroll] = 'N'
+            self.dyn_flag[time_pianoroll + 1] = 'N'
 
         # Directions
         # Cresc end dim are written with an arbitrary slope, then adjusted after the file
         # has been parsed by a smoothing function
         if tag == u'wedge':
             if attributes[u'type'] in (u'diminuendo', u'crescendo'):
-                self.direction_start = int(self.time * self.division_pianoroll / self.division_score)
+                self.direction_start = time_pianoroll
                 self.direction_type = attributes[u'type']
             elif attributes[u'type'] == u'stop':
-                self.direction_stop = int(self.time * self.division_pianoroll / self.division_score)
+                self.direction_stop = time_pianoroll
                 if self.direction_start is None:
                     raise NameError('Stop flag for a direction, but no direction has been started')
                 starting_dyn = self.dynamics[self.direction_start]

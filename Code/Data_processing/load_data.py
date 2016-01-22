@@ -1,6 +1,7 @@
 import numpy as np
 import cPickle
 import theano
+import theano.tensor as T
 
 
 def get_data(data_path, temporal_order):
@@ -112,8 +113,8 @@ def load_data(data_path, temporal_order, minibatch_size, shuffle=False, split=(0
 
 if __name__ == '__main__':
     train_batch_ind, validate_batch_ind, test_batch_ind = get_minibatches_idx(range(0, 20), 3, True)
-    print(train_batch_ind)
-    print(validate_batch_ind)
-    print(test_batch_ind)
+    print(train_batch_ind.get_value())
+    print(validate_batch_ind.get_value())
+    print(test_batch_ind.get_value())
     # load
     # minibatches, train_batch_ind, validate_batch_ind, test_batch_ind = get_minibatches_idx(range(0, 20), 3, True)

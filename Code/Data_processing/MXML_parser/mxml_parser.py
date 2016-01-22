@@ -60,6 +60,8 @@ def build_db(database_path, quantization, instru_dict_path=None, output_path='..
             pre_parser.setContentHandler(Handler_length)
             pre_parser.parse(full_path_file)
             total_length = Handler_length.total_length
+            # Float number
+            total_length = int(total_length)
 
             # Now parse the file and get the pianoroll, articulation and dynamics
             parser = xml.sax.make_parser()

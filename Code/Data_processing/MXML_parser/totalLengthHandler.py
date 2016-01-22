@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
+# Return a float which is the number of quarter notes in the score
 
 import os
 import xml.sax
@@ -24,7 +25,8 @@ class TotalLengthHandler(xml.sax.ContentHandler):
     def endElement(self, tag):
         if tag == 'measure':
             if self.beat_type_set and self.beats_set:
-                self.time += self.beats * 4 / self.beat_type
+                # Be careful, float must be used
+                self.time += float(self.beats * 4.0 / self.beat_type)
             else:
                 raise NameError('Beat-type or beats not set for the first measure of a part')
 

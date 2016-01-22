@@ -3,4 +3,5 @@ Results
 Data
 **/*.pdf
 **/*.csv
+**/*.txt
 **/*.pyc

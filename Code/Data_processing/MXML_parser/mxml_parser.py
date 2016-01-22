@@ -25,7 +25,7 @@ import cPickle
 # import mpldatacursor
 
 
-def build_db(database_path, quantization, instru_dict_path=None, output_path='../Data/'):
+def build_db(database_path, quantization, pitch_per_instrument, instru_dict_path=None, output_path='../Data/'):
     # First load the instrument dictionnary
     if instru_dict_path is None:
         # Create a defaut empty file if not indicated
@@ -39,6 +39,7 @@ def build_db(database_path, quantization, instru_dict_path=None, output_path='..
 
     # Data are stored in a dictionnary
     data = {}
+    data['scores'] = {}
     counter = 0
 
     # Browse database_path folder
@@ -66,7 +67,7 @@ def build_db(database_path, quantization, instru_dict_path=None, output_path='..
             # Now parse the file and get the pianoroll, articulation and dynamics
             parser = xml.sax.make_parser()
             parser.setFeature(xml.sax.handler.feature_namespaces, 0)
-            Handler_score = ScoreToPianorollHandler(quantization, instru_dict, total_length, False)
+            Handler_score = ScoreToPianorollHandler(quantization, instru_dict, total_length, pitch_per_instrument, False)
             parser.setContentHandler(Handler_score)
             parser.parse(full_path_file)
 
@@ -74,15 +75,25 @@ def build_db(database_path, quantization, instru_dict_path=None, output_path='..
                         'articulation': Handler_score.articulation,
                         'filename': filename
                         }
-
-            data['scores'] = {counter: dict_tmp}
+            data['scores'][counter] = dict_tmp
             counter += 1
 
     ################################################
     # Save the instrument dictionary with its,
     # potentially, new notations per instrument
     ################################################
+    # Quantization
     data['quantization'] = quantization
+    # Mapping instrument name -> indices in the complete pianoroll
+    instru_mapping = {}
+    first_ind = 0
+    for instru_name in instru_dict:
+        last_ind = first_ind + pitch_per_instrument
+        instru_mapping[instru_name] = first_ind, last_ind
+        first_ind = last_ind
+    data['instru_mapping'] = instru_mapping
+    data['orchestra_dimension'] = last_ind  # Used for matrix initialization in other functions
+    print(instru_mapping)
     if instru_dict_path is None:
         instru_dict_path = output_path + 'instrument_dico.json'
     save_data_json(instru_dict, instru_dict_path)
@@ -96,4 +107,8 @@ def save_data_json(data, file_path):
 
 
 if __name__ == '__main__':
-    build_db('../../../Database/LOP_db_small/', 4, '../../../Database/LOP_db_small/instrument_dico.json', '../../../Data/')
+    build_db(database_path='../../../Database/LOP_db_small/',
+             quantization=4,
+             pitch_per_instrument=128,
+             instru_dict_path='../../../Database/LOP_db_small/instrument_dico.json',
+             output_path='../../../Data/')

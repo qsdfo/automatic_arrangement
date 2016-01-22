@@ -42,9 +42,10 @@ mapping_dyn_number = {
 
 
 class ScoreToPianorollHandler(xml.sax.ContentHandler):
-    def __init__(self, division, instru_dict, total_length, discard_grace):
+    def __init__(self, division, instru_dict, total_length, number_pitches=128, discard_grace=False):
         self.CurrentElement = u""
         # Instrument
+        self.number_pitches = number_pitches
         self.instru_dict = instru_dict
         self.identifier = u""                # Current identifier
         self.part_instru_mapping = {}       # Mapping between parts in the parsed score,
@@ -81,11 +82,11 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
         # Pianoroll
         self.total_length = total_length
         self.pianoroll = {}
-        self.pianoroll_local = np.zeros([self.total_length * self.division_pianoroll, 128], dtype=np.int)
+        self.pianoroll_local = np.zeros([self.total_length * self.division_pianoroll, self.number_pitches], dtype=np.int)
 
         # Stop flags
         self.articulation = {}
-        self.articulation_local = np.zeros([self.total_length * self.division_pianoroll, 128], dtype=np.int)
+        self.articulation_local = np.zeros([self.total_length * self.division_pianoroll, self.number_pitches], dtype=np.int)
         # Tied notes (not phrasing)
         self.tie_type = None
         self.tying = {}  # Contains voice -> tie_on?
@@ -119,11 +120,11 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
             self.division_score = -1
             # Initialize the pianoroll
             # Check if this instrument has already been seen
-            self.pianoroll_local = np.zeros([self.total_length * self.division_pianoroll, 128], dtype=np.int)
+            self.pianoroll_local = np.zeros([self.total_length * self.division_pianoroll, self.number_pitches], dtype=np.int)
             # Initialize the articulations
             self.tie_type = None
             self.tying = {}  # Contains {voice -> tie_on} ?
-            self.articulation_local = np.zeros([self.total_length * self.division_pianoroll, 128], dtype=np.int)
+            self.articulation_local = np.zeros([self.total_length * self.division_pianoroll, self.number_pitches], dtype=np.int)
             # Initialize the dynamics
             self.dynamics = np.zeros([self.total_length * self.division_pianoroll], dtype=np.float)
             self.dyn_flag = {}
@@ -401,6 +402,6 @@ if __name__ == '__main__':
     # Now parse the file and get the pianoroll, articulation and dynamics
     parser = xml.sax.make_parser()
     parser.setFeature(xml.sax.handler.feature_namespaces, 0)
-    Handler_score = ScoreToPianorollHandler(4, instru_dict, total_length, False)
+    Handler_score = ScoreToPianorollHandler(4, instru_dict, total_length)
     parser.setContentHandler(Handler_score)
     parser.parse('test.xml')

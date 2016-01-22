@@ -1,10 +1,9 @@
 import numpy as np
 import cPickle
 import theano
-import theano.tensor as T
 
 
-def get_data(data_path, temporal_order):
+def get_data(data_path, log_file_path, temporal_order):
     """
     Load data from pickle (.p) file into a matrix. Return valid indexes for sequential learning
 
@@ -17,30 +16,62 @@ def get_data(data_path, temporal_order):
 
     """
 
-    data_all = cPickle.load(data_path)
+    # Open log file
+    log_file = open(log_file_path, "wb")
+    log_file.write("### LOADING DATA ###\n\n")
+    log_file.write("## Unpickle data... ")
+
+    data_all = cPickle.load(open(data_path, "rb"))
+    log_file.write("Done !\n\n")
 
     quantization = data_all['quantization']
+    log_file.write("## Quantization : %d\n\n" % quantization)
 
     # Build the pianoroll and valid indexes
+    log_file.write("## Reading scores :\n")
     scores = data_all['scores']
+    instru_mapping = data_all['instru_mapping']
+    orchestra_dimension = data_all['orchestra_dimension']
     last_stop = 0
+    first_writting = True
+    start_time = 0
+    end_time = 0
     valid_index = []
-    data = np.empty()
+    import pdb; pdb.set_trace()
     for info in scores.itervalues():
         # Concatenate pianoroll along time dimension
-        pianoroll = info['pianoroll']
-        data = np.concatenate(data, pianoroll, axis=0)
+        for instru, pianoroll_instru in info['pianoroll'].iteritems():
+            if 'data' in locals():
+                if first_writting:
+                    # set start and end time
+                    start_time += end_time
+                    end_time = start_time + np.shape(pianoroll_instru)[0]
+                    # concatenate empty pianoroll
+                    empty_data = np.empty([end_time - start_time, orchestra_dimension])
+                    data = np.concatenate(data, empty_data, axis=0)
+            else:
+                end_time = start_time + np.shape(pianoroll_instru)[0]
+                data = np.empty([end_time, orchestra_dimension])
+            instru_ind_start = instru_mapping[instru][0]
+            instru_ind_end = instru_mapping[instru][1]
+            data[start_time:end_time, instru_ind_start:instru_ind_end] = pianoroll_instru
+            first_writting = False
         # Valid indexes
-        N_pr = pianoroll.shape[0]
+        N_pr = data.shape[0]
         valid_index += range(last_stop + temporal_order, last_stop + N_pr)
         last_stop = last_stop + N_pr
 
+        first_writting = True
+
+        log_file.write("# Score %s : " % info['filename'])
+
     data_shared = theano.shared(np.asarray(data, dtype=theano.config.floatX))
 
+    log_file.close()
     return data_shared, valid_index, quantization
 
 
-def get_minibatches_idx(idx_list, minibatch_size, shuffle=False, split=(0.7, 0.1, 0.2)):
+def get_minibatches_idx(log_file_path, idx_list, minibatch_size, shuffle=False, split=(0.7, 0.1, 0.2)):
     """
     Used to shuffle the dataset at each iteration.
 
@@ -105,16 +136,16 @@ def get_minibatches_idx(idx_list, minibatch_size, shuffle=False, split=(0.7, 0.1
     return minibatches_train, minibatches_validate, minibatches_test
 
 
-def load_data(data_path, temporal_order, minibatch_size, shuffle=False, split=(0.7, 0.1, 0.2)):
-    data, valid_index, quantization = get_data(data_path, temporal_order)
-    train_index, validate_index, test_index = get_minibatches_idx(valid_index, minibatch_size, shuffle, split)
+def load_data(data_path, log_file_path, temporal_order, minibatch_size, shuffle=False, split=(0.7, 0.1, 0.2)):
+    data, valid_index, quantization = get_data(data_path, log_file_path, temporal_order)
+    train_index, validate_index, test_index = get_minibatches_idx(log_file_path, valid_index, minibatch_size, shuffle, split)
     return data, train_index, validate_index, test_index
 
 
 if __name__ == '__main__':
-    train_batch_ind, validate_batch_ind, test_batch_ind = get_minibatches_idx(range(0, 20), 3, True)
-    print(train_batch_ind.get_value())
-    print(validate_batch_ind.get_value())
-    print(test_batch_ind.get_value())
-    # load
-    # minibatches, train_batch_ind, validate_batch_ind, test_batch_ind = get_minibatches_idx(range(0, 20), 3, True)
+    # train_batch_ind, validate_batch_ind, test_batch_ind = get_minibatches_idx(range(0, 20), 3, True)
+    # print(train_batch_ind.get_value())
+    # print(validate_batch_ind.get_value())
+    # print(test_batch_ind.get_value())
+
+    minibatches, train_batch_ind, validate_batch_ind, test_batch_ind = load_data(data_path='../../Data/data.p', log_file_path='log_file.txt', temporal_order=4, minibatch_size=100, shuffle=True)

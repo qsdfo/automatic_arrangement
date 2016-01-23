@@ -11,8 +11,8 @@ from theano.tensor.shared_randomstreams import RandomStreams
 import time
 
 # Personnal files :
-import Score_function
-from Data_processing.load_data import load_data
+# from ...Score_function import accuracy_measure
+from ...Data_processing.load_data import load_data
 
 
 class RBM_temporal_bin(object):
@@ -210,7 +210,7 @@ class RBM_temporal_bin(object):
         return precision, recall, accuracy
 
 
-def train(hyper_parameter, dataset, output_folder, output_file):
+def train(hyper_parameter, dataset, output_folder):
     """
     Demonstrate how to train and afterwards sample from it using Theano.
 
@@ -242,6 +242,19 @@ def train(hyper_parameter, dataset, output_folder, output_file):
 
     # compute number of minibatches for training, validation and testing
     n_train_batches = train_index.get_value(borrow=True).shape[0] / batch_size
+    orch_dim = orch.get_value(borrow=True).shape[1]
+
+    #################################
+    #################################
+    #################################
+    #####   DEBUG
+    import pdb; pdb.set_trace()
+    batch_index = 0
+    hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
+    p_test = create_past_vector(piano[train_index[batch_index]], orch[hist_idx])
+    #################################
+    #################################
+    #################################
 
     # allocate symbolic variables for the data
     index = T.lscalar()             # index to a [mini]batch
@@ -273,13 +286,21 @@ def train(hyper_parameter, dataset, output_folder, output_file):
                                      cost,
                                      updates=updates,
                                      givens={v: orch[index],
-                                             p: create_past_vector(piano[index], orch[index_history])},
+                                             p: create_past_vector(piano[index],
+                                                                   orch[index_history],
+                                                                   batch_size,
+                                                                   temporal_order,
+                                                                   orch_dim)},
                                      name='train_temp_rbm')
 
     get_free_energy = theano.function([index, index_history],
                                       free_energy,
                                       givens={v: orch[index],
-                                              p: create_past_vector(piano[index], orch[index_history])},
+                                              p: create_past_vector(piano[index],
+                                                                    orch[index_history],
+                                                                    batch_size,
+                                                                    temporal_order,
+                                                                    orch_dim)},
                                       name='get_free_energy')
 
     start_time = time.clock()
@@ -295,7 +316,7 @@ def train(hyper_parameter, dataset, output_folder, output_file):
             hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
 
             this_cost = train_temp_rbm(train_index[batch_index], hist_idx.ravel())
-            #print batch_index, this_cost
+            # Print batch_index, this_cost
             mean_train_cost += [this_cost]
 
         # Validation
@@ -313,6 +334,8 @@ def train(hyper_parameter, dataset, output_folder, output_file):
         overfitting_measure = (free_energy_val - free_energy_train) / free_energy_val
         print 'Training epoch %d, cost is ' % epoch, np.mean(mean_train_cost)
 
+        epoch += 1
+
     end_time = time.clock()
 
     training_time = (end_time - start_time)
@@ -321,14 +344,23 @@ def train(hyper_parameter, dataset, output_folder, output_file):
 
     return rbm
 
+
+def create_past_vector(piano, orch, batch_size, delay, n_dim):
+    # Piano is a matrix : num_batch x piano_dim
+    # Orch a matrix : num_batch x ()
+    orch_reshape = orch.reshape((batch_size, delay * n_dim))
+    past = np.concatenate((piano, orch_reshape), axis=1)
+    return past
+
 if __name__ == '__main__':
+    # Main can't be used because of relative import
+    # Just here for an example of the hyperparameters structure
     # Hyper-parameter
     hyper_parameter = {}
     hyper_parameter['n_hidden'] = 500
     hyper_parameter['temporal_order'] = 10
     hyper_parameter['learning_rate'] = 0.1
     hyper_parameter['training_epochs'] = 1000
-    hyper_parameter['batch_size'] = 100,
+    hyper_parameter['batch_size'] = 100
     # File
-    dataset = '../../../Data/data.p',
-    output_folder = 'rbm_plots'
+    dataset = '../../../Data/data.p'

@@ -1,39 +1,22 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# Main script for LOP
 
-# Data import
-import cPickle
-# Numpy
-import numpy as np
-# Theano
-import theano.tensor as T
-from theano.tensor.shared_randomstreams import RandomStreams
-# Others
-import os
+# Select a model (path to the .py file)
+from Models.RBM.temporal_binary_rbm import train
+model_path = 'RBM'
 
+# Build the matrix database (stored in a data.p file in Data) from a music XML database
+database = '../Data/data.p'
 
-def train_model(model, data_path, batch_size):
-    # Load datasets
-    datasets = cPickle.load(data_path)
-    train_set = datasets[0]
-    validation_set = datasets[1]
-    test_set = datasets[2]
+# Output folder (where the results are saved)
+output_path =
 
-    # compute number of minibatches for training, validation and testing
-    n_train_batches = train_set.get_value(borrow=True).shape[0] / batch_size
-    n_visible = train_set.get_value(borrow=True).shape[1]
+# Set hyperparameters (can be a grid)
+config_file = 'config.csv'
+result_file = '../'
+# Import hyperparams from a csv file (config.csv) and run each row in this csv
+# Before training for an hyperparam point, check if it has already been tested.
+#               If it's the case, values would be stored in an other CSV files (result.csv), with its performance
+# Write the result in result.csv
 
-    # allocate symbolic variables for the data
-    index = T.lscalar()    # index to a [mini]batch
-    x = T.matrix('x')  # the data is presented as rasterized images
-
-    rng = np.random.RandomState(123)
-    theano_rng = RandomStreams(rng.randint(2 ** 30))
-
-    # construct the RBM class
-    rbm = RBM(input=x, n_visible=n_visible,
-              n_hidden=n_hidden, numpy_rng=rng, theano_rng=theano_rng)
-
-    # get the cost and the gradient corresponding to one step of CD-15
-    cost, updates = rbm.get_cost_updates(lr=learning_rate,
-                                         persistent=persistent_chain, k=15)
+# Train the model
+performance = train(hyper_parameters, database, output_folder)

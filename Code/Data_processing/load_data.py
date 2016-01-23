@@ -89,14 +89,16 @@ def get_data(data_path, log_file_path, temporal_order):
     log_file.write("\n\n# Remove unused pitches")
     orch_clean, orch_mapping = remove_unused_pitch(orch, instru_mapping)
     piano_clean, piano_mapping = remove_unused_pitch(piano, {'Piano': (0, 128)})
+    log_file.write("\nDimension of reduced orchestra : time = {} pitch = {}".format(np.shape(orch)[0], np.shape(orch)[1]))
+    log_file.write("\nDimension of reduced piano : time = {} pitch = {}".format(np.shape(piano)[0], np.shape(piano)[1]))
 
     ################################
     ################################
     ################################
     # DEBUG
-    np.savetxt("orch.csv", orch, delimiter=",")
-    np.savetxt("piano.csv", piano, delimiter=",")
-    np.savetxt("indices.csv", valid_index, delimiter=",")
+    # np.savetxt("orch.csv", orch, delimiter=",")
+    # np.savetxt("piano.csv", piano, delimiter=",")
+    # np.savetxt("indices.csv", valid_index, delimiter=",")
     ################################
     ################################
     ################################
@@ -196,7 +198,6 @@ def remove_unused_pitch(pr, mapping):
             else:
                 pr_reduced = pr_instru[:, start_pitch:end_pitch]
             start_index = end_index
-    import pdb; pdb.set_trace()
     return pr_reduced, mapping_reduced
 
 

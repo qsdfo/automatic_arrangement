@@ -13,9 +13,11 @@ def pianoroll_to_csv(path_to_data, save_path='CSV_pianoroll'):
     if not os.path.isdir(save_path):
         os.mkdir(save_path)
 
-    for score in data.itervalues():  # Or write the name of the file you want to see
+    # Quantization
+    quantization = data['quantization']
+
+    for score in data['scores'].itervalues():  # Or write the name of the file you want to see
         roll_all_instru = score['pianoroll']
-        quantization = score['quantization']
         filename = score['filename']
         for instrument, pianoroll in roll_all_instru.iteritems():
             # List of notes
@@ -51,7 +53,7 @@ def pianoroll_to_csv(path_to_data, save_path='CSV_pianoroll'):
             # Sort according to t0, for debug purposes
             notes = sorted(notes, key=lambda note: note[0])
             notes.insert(0, ['t0', 'dt', 'pitch', 'dyn', 'quantization', 'filename'])
-            save_dir = save_path + score['filename'] + '/'
+            save_dir = save_path + '/' + score['filename'] + '/'
             if not os.path.isdir(save_dir):
                 os.mkdir(save_dir)
             with open(save_dir + '/' + instrument + '.csv', 'wb') as f_handle:

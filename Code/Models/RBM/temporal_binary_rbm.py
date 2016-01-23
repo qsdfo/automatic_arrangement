@@ -1,15 +1,17 @@
 """
 A temporal RBM with binary visible units.
 """
-import numpy
-
+# Numpy
+import numpy as np
+# Theano
 import theano
 import theano.tensor as T
-
-import Score_function
-
 from theano.tensor.shared_randomstreams import RandomStreams
+# Code debug and speed
+import time
 
+# Personnal files :
+import Score_function
 from Data_processing.load_data import load_data
 
 
@@ -25,7 +27,7 @@ class RBM_temporal_bin(object):
         hbias=None,
         vbias=None,
         pbias=None,
-        numpy_rng=None,
+        np_rng=None,
         theano_rng=None
     ):
 
@@ -43,12 +45,12 @@ class RBM_temporal_bin(object):
         self.n_past = self.past.get_value(borrow=True).shape[0]
 
         # Initialize random generators
-        if numpy_rng is None:
+        if np_rng is None:
             # create a number generator
-            numpy_rng = numpy.random.RandomState(1234)
+            np_rng = np.random.RandomState(1234)
 
         if theano_rng is None:
-            theano_rng = RandomStreams(numpy_rng.randint(2 ** 30))
+            theano_rng = RandomStreams(np_rng.randint(2 ** 30))
 
         if W is None:
             # W is initialized with `initial_W` which is uniformely
@@ -56,10 +58,10 @@ class RBM_temporal_bin(object):
             # 4*sqrt(6./(n_hidden+n_visible)) the output of uniform if
             # converted using asarray to dtype theano.config.floatX so
             # that the code is runable on GPU
-            initial_W = numpy.asarray(
-                numpy_rng.uniform(
-                    low=-4 * numpy.sqrt(6. / (n_hidden + (self.n_visible + self.n_past))),
-                    high=4 * numpy.sqrt(6. / (n_hidden + (self.n_visible + self.n_past))),
+            initial_W = np.asarray(
+                np_rng.uniform(
+                    low=-4 * np.sqrt(6. / (n_hidden + (self.n_visible + self.n_past))),
+                    high=4 * np.sqrt(6. / (n_hidden + (self.n_visible + self.n_past))),
                     size=(self.n_visible, n_hidden)
                 ),
                 dtype=theano.config.floatX
@@ -73,10 +75,10 @@ class RBM_temporal_bin(object):
             # 4*sqrt(6./(n_hidden+n_visible)) the output of uniform if
             # converted using asarray to dtype theano.config.floatX so
             # that the code is runable on GPU
-            initial_P = numpy.asarray(
-                numpy_rng.uniform(
-                    low=-4 * numpy.sqrt(6. / (n_hidden + (self.n_visible + self.n_past))),
-                    high=4 * numpy.sqrt(6. / (n_hidden + (self.n_visible + self.n_past))),
+            initial_P = np.asarray(
+                np_rng.uniform(
+                    low=-4 * np.sqrt(6. / (n_hidden + (self.n_visible + self.n_past))),
+                    high=4 * np.sqrt(6. / (n_hidden + (self.n_visible + self.n_past))),
                     size=(self.n_past, n_hidden)
                 ),
                 dtype=theano.config.floatX
@@ -87,7 +89,7 @@ class RBM_temporal_bin(object):
         if hbias is None:
             # create shared variable for hidden units bias
             hbias = theano.shared(
-                value=numpy.zeros(
+                value=np.zeros(
                     n_hidden,
                     dtype=theano.config.floatX
                 ),
@@ -98,7 +100,7 @@ class RBM_temporal_bin(object):
         if vbias is None:
             # create shared variable for visible units bias
             vbias = theano.shared(
-                value=numpy.zeros(
+                value=np.zeros(
                     self.n_visible,
                     dtype=theano.config.floatX
                 ),
@@ -109,7 +111,7 @@ class RBM_temporal_bin(object):
         if pbias is None:
             # create shared variable for visible units bias
             pbias = theano.shared(
-                value=numpy.zeros(
+                value=np.zeros(
                     self.n_past,
                     dtype=theano.config.floatX
                 ),
@@ -185,11 +187,6 @@ class RBM_temporal_bin(object):
         )
         return cross_entropy
 
-    #  Over-fitting monitoring
-    def overfit_measure(self, v_validate, p_validate):
-        free_en_diff = self.free_energy(v_validate, p_validate) - self.free_energy(self.input, self.past)
-        return free_en_diff / self.free_energy(v_validate, p_validate)
-
     # Sampling with clamped past units
     # Two methods :
     #   - by alternate Gibbs sampling
@@ -241,164 +238,88 @@ def train(hyper_parameter, dataset, output_folder, output_file):
 
     # First check if this configuration has not been tested before,
     # i.e. its parameter are written in the result.csv file
-    dataset, train_index, validate_index, test_index = load_data(dataset, temporal_order, batch_size, False, (0.7, 0.1, 0.2))
+    orch, piano, train_index, validate_index, test_index = load_data(data_path=dataset, log_file_path='load_log', temporal_order=temporal_order, minibatch_size=batch_size, shuffle=False, split=(0.7, 0.1, 0.2))
 
     # compute number of minibatches for training, validation and testing
     n_train_batches = train_index.get_value(borrow=True).shape[0] / batch_size
 
     # allocate symbolic variables for the data
-    index = T.lscalar()    # index to a [mini]batch
+    index = T.lscalar()             # index to a [mini]batch
+    index_history = T.lscalar()     # index for history
     v = T.matrix('v')  # the data is presented as rasterized images
     p = T.matrix('p')  # the data is presented as rasterized images
 
-    rng = numpy.random.RandomState(123)
+    rng = np.random.RandomState(123)
     theano_rng = RandomStreams(rng.randint(2 ** 30))
 
     # construct the RBM class
     rbm = RBM_temporal_bin(input=v,
                            past=p,
                            n_hidden=n_hidden,
-                           numpy_rng=rng,
+                           np_rng=rng,
                            theano_rng=theano_rng)
 
     # get the cost and the gradient corresponding to one step of CD-15
     cost, updates = rbm.cost_updates(lr=learning_rate, k=1)
 
+    free_energy = rbm.free_energy(rbm.input, rbm.past)
+
     #################################
-    #     Training the RBM          #
+    #     Training the CRBM         #
     #################################
-    if not os.path.isdir(output_folder):
-        os.makedirs(output_folder)
-    os.chdir(output_folder)
 
-    # start-snippet-5
-    # it is ok for a theano function to have no output
-    # the purpose of train_rbm is solely to update the RBM parameters
-    train_rbm = theano.function([index, index_hist], cost,
-                                 updates=updates,
-                                 givens={x: batchdata[index],
-                                 x_history: batchdata[index_hist].reshape((
-                                         batch_size, delay * n_dim))},
-                                 name='train_crbm')
+    # the purpose of train_crbm is solely to update the CRBM parameters
+    train_temp_rbm = theano.function([index, index_history],
+                                     cost,
+                                     updates=updates,
+                                     givens={v: orch[index],
+                                             p: create_past_vector(piano[index], orch[index_history])},
+                                     name='train_temp_rbm')
 
-    train_rbm = theano.function(
-        [index],
-        cost,
-        updates=updates,
-        givens={
-            v: dataset[index * batch_size: (index + 1) * batch_size]
-        },
-        name='train_rbm'
-    )
+    get_free_energy = theano.function([index, index_history],
+                                      free_energy,
+                                      givens={v: orch[index],
+                                              p: create_past_vector(piano[index], orch[index_history])},
+                                      name='get_free_energy')
 
-    plotting_time = 0.
-    start_time = timeit.default_timer()
+    start_time = time.clock()
 
     # go through training epochs
-    for epoch in xrange(training_epochs):
-
+    epoch = 0
+    overfitting_measure = 0
+    while((epoch < training_epochs) and (overfitting_measure < 0.2)):
         # go through the training set
-        mean_cost = []
+        mean_train_cost = []
         for batch_index in xrange(n_train_batches):
-            mean_cost += [train_rbm(batch_index)]
 
-        print 'Training epoch %d, cost is ' % epoch, numpy.mean(mean_cost)
+            hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
 
-        # Plot filters after each training epoch
-        plotting_start = timeit.default_timer()
-        # Construct image from the weight matrix
-        image = Image.fromarray(
-            tile_raster_images(
-                X=rbm.W.get_value(borrow=True).T,
-                img_shape=(28, 28),
-                tile_shape=(10, 10),
-                tile_spacing=(1, 1)
-            )
-        )
-        image.save('filters_at_epoch_%i.png' % epoch)
-        plotting_stop = timeit.default_timer()
-        plotting_time += (plotting_stop - plotting_start)
+            this_cost = train_temp_rbm(train_index[batch_index], hist_idx.ravel())
+            #print batch_index, this_cost
+            mean_train_cost += [this_cost]
 
-    end_time = timeit.default_timer()
+        # Validation
+        all_train_idx = []
+        all_val_idx = []
+        for i in xrange(0, len(train_index)):
+            all_train_idx.extend(train_index[i])
+        all_train_hist_idx = np.array([all_train_idx - n for n in xrange(1, temporal_order + 1)]).T
+        for i in xrange(0, len(validate_index)):
+            all_val_idx.extend(validate_index[i])
+        all_val_hist_idx = np.array([all_val_idx - n for n in xrange(1, temporal_order + 1)]).T
 
-    pretraining_time = (end_time - start_time) - plotting_time
+        free_energy_train = np.mean(get_free_energy(all_train_idx, all_train_hist_idx))
+        free_energy_val = np.mean(get_free_energy(all_val_idx, all_val_hist_idx))
+        overfitting_measure = (free_energy_val - free_energy_train) / free_energy_val
+        print 'Training epoch %d, cost is ' % epoch, np.mean(mean_train_cost)
 
-    print ('Training took %f minutes' % (pretraining_time / 60.))
-    # end-snippet-5 start-snippet-6
-    #################################
-    #     Sampling from the RBM     #
-    #################################
-    # find out the number of test samples
-    number_of_test_samples = test_set_x.get_value(borrow=True).shape[0]
+    end_time = time.clock()
 
-    # pick random test examples, with which to initialize the persistent chain
-    test_idx = rng.randint(number_of_test_samples - n_chains)
-    persistent_vis_chain = theano.shared(
-        numpy.asarray(
-            test_set_x.get_value(borrow=True)[test_idx:test_idx + n_chains],
-            dtype=theano.config.floatX
-        )
-    )
-    # end-snippet-6 start-snippet-7
-    plot_every = 1000
-    # define one step of Gibbs sampling (mf = mean-field) define a
-    # function that does `plot_every` steps before returning the
-    # sample for plotting
-    (
-        [
-            presig_hids,
-            hid_mfs,
-            hid_samples,
-            presig_vis,
-            vis_mfs,
-            vis_samples
-        ],
-        updates
-    ) = theano.scan(
-        rbm.gibbs_vhv,
-        outputs_info=[None, None, None, None, None, persistent_vis_chain],
-        n_steps=plot_every
-    )
+    training_time = (end_time - start_time)
 
-    # add to updates the shared variable that takes care of our persistent
-    # chain :.
-    updates.update({persistent_vis_chain: vis_samples[-1]})
-    # construct the function that implements our persistent chain.
-    # we generate the "mean field" activations for plotting and the actual
-    # samples for reinitializing the state of our persistent chain
-    sample_fn = theano.function(
-        [],
-        [
-            vis_mfs[-1],
-            vis_samples[-1]
-        ],
-        updates=updates,
-        name='sample_fn'
+    print ('Training took %f minutes' % (training_time / 60.))
 
-    )
-    # create a space to store the image for plotting ( we need to leave
-    # room for the tile_spacing as well)
-    image_data = numpy.zeros(
-        (29 * n_samples + 1, 29 * n_chains - 1),
-        dtype='uint8'
-    )
-    for idx in xrange(n_samples):
-        # generate `plot_every` intermediate samples that we discard,
-        # because successive samples in the chain are too correlated
-        vis_mf, vis_sample = sample_fn()
-        print ' ... plotting sample ', idx
-        image_data[29 * idx:29 * idx + 28, :] = tile_raster_images(
-            X=vis_mf,
-            img_shape=(28, 28),
-            tile_shape=(1, n_chains),
-            tile_spacing=(1, 1)
-        )
-
-    # construct image
-    image = Image.fromarray(image_data)
-    image.save('samples.png')
-    # end-snippet-7
-    os.chdir('../')
+    return rbm
 
 if __name__ == '__main__':
     # Hyper-parameter

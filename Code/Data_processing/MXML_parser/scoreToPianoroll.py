@@ -126,7 +126,7 @@ class ScoreToPianorollHandler(xml.sax.ContentHandler):
             self.tying = {}  # Contains {voice -> tie_on} ?
             self.articulation_local = np.zeros([self.total_length * self.division_pianoroll, self.number_pitches], dtype=np.int)
             # Initialize the dynamics
-            self.dynamics = np.zeros([self.total_length * self.division_pianoroll], dtype=np.float)
+            self.dynamics = np.zeros([self.total_length * self.division_pianoroll], dtype=np.float) + 0.5  # Don't initialize to zero knowing if no dynamic is given
             self.dyn_flag = {}
 
         if tag == u'rest':

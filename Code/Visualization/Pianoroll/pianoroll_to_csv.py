@@ -57,7 +57,7 @@ def pianoroll_to_csv(path_to_data, save_path='CSV_pianoroll'):
             if not os.path.isdir(save_dir):
                 os.mkdir(save_dir)
             with open(save_dir + '/' + instrument + '.csv', 'wb') as f_handle:
-                writer = csv.writer(f_handle)
+                writer = csv.writer(f_handle, delimiter=';')
                 writer.writerows(notes)
 
 

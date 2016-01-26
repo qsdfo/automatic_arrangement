@@ -76,7 +76,7 @@ def get_data(data_path, log_file_path, temporal_order):
                 orch[start_time:end_time, instru_ind_start:instru_ind_end] = pianoroll_instru
         # Valid indexes
         N_pr = orch.shape[0]
-        valid_index += range(last_stop + temporal_order, N_pr)
+        valid_index.extend(range(last_stop + temporal_order, N_pr))
         last_stop = N_pr
         # Set flag
         orch_concatenated = False
@@ -109,7 +109,7 @@ def get_data(data_path, log_file_path, temporal_order):
     piano_shared = theano.shared(np.asarray(piano, dtype=theano.config.floatX))
 
     log_file.close()
-    return orch_shared, piano_shared, valid_index, quantization
+    return orch_shared, orch_mapping, piano_shared, piano_mapping, np.array(valid_index), quantization
 
 
 def get_minibatches_idx(log_file_path, idx_list, minibatch_size, shuffle=False, split=(0.7, 0.1, 0.2)):
@@ -126,7 +126,7 @@ def get_minibatches_idx(log_file_path, idx_list, minibatch_size, shuffle=False, 
     if shuffle:
         np.random.shuffle(idx_list)
 
-    n = len(idx_list)
+    n = idx_list.shape[0]
 
     minibatch_start = 0
 
@@ -174,7 +174,7 @@ def get_minibatches_idx(log_file_path, idx_list, minibatch_size, shuffle=False, 
         minibatches_test.append(idx_list[minibatch_start:last_test])
         n_batch_test = n_batch_test + 1
 
-    return minibatches_train, minibatches_validate, minibatches_test
+    return np.array(minibatches_train), np.array(minibatches_validate), np.array(minibatches_test)
 
 
 def remove_unused_pitch(pr, mapping):
@@ -205,15 +205,15 @@ def remove_unused_pitch(pr, mapping):
 
 
 def load_data(data_path, log_file_path, temporal_order, minibatch_size, shuffle=False, split=(0.7, 0.1, 0.2)):
-    orch, piano, valid_index, quantization = get_data(data_path, log_file_path, temporal_order)
+    orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_order)
     train_index, validate_index, test_index = get_minibatches_idx(log_file_path, valid_index, minibatch_size, shuffle, split)
-    return orch, piano, train_index, validate_index, test_index
+    return orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index
 
 
 if __name__ == '__main__':
-    # train_batch_ind, validate_batch_ind, test_batch_ind = get_minibatches_idx(range(0, 20), 3, True)
-    # print(train_batch_ind.get_value())
-    # print(validate_batch_ind.get_value())
-    # print(test_batch_ind.get_value())
+    # train_batch_ind, validate_batch_ind, test_batch_ind = get_minibatches_idx('test', range(0, 20), 3, True)
+    # print(train_batch_ind)
+    # print(validate_batch_ind)
+    # print(test_batch_ind)
 
     orch, piano, train_batch_ind, validate_batch_ind, test_batch_ind = load_data(data_path='../../Data/data.p', log_file_path='', temporal_order=4, minibatch_size=100, shuffle=True)

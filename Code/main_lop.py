@@ -5,8 +5,6 @@
 import csv
 import os
 
-from Data_processing import load_data
-
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
 from Models.Temporal_RBM.temporal_binary_rbm import train
@@ -14,7 +12,7 @@ model_path = u'Temporal_RBM'
 temporal_granularity = u'frame_level'
 
 # Log file
-log_file_path = u'log.txt'
+log_file_path = u'log'
 
 # Build the matrix database (stored in a data.p file in Data) from a music XML database
 database = '../Data/data.p'
@@ -40,9 +38,9 @@ if not os.path.exists(result_folder):
 
 # Import hyperparams from a csv file (config.csv) and run each row in this csv
 hyper_parameters = {}
-config_file_path = u'/config.csv'
+config_file_path = u'config.csv'
 with open(config_file_path, 'rb') as csvfile:
-    config_csv = csv.reader(csvfile, delimiter=';')
+    config_csv = csv.reader(csvfile, delimiter=',')
     headers_config = config_csv.next()
     config_number = 0
     for row in config_csv:
@@ -56,33 +54,36 @@ with open(config_file_path, 'rb') as csvfile:
 config_number_to_train = config_number
 # Import from result.csv the alreday tested configurations in a dictionnary
 checked_config = {}
-with open(result_file, 'rb') as csvfile:
-    result_csv = csv.reader(csvfile, delimiter=';')
-    headers_result = result_csv.next()
-    result_number = 0
-    for row in result_csv:
-        column = 0
-        this_hyperparam = {}
-        for hyperparam in headers_config:  # /!\ Note that we use the header of the config file
-            this_hyperparam[hyperparam] = row[column]
-            column += 1
-        checked_config[result_number] = this_hyperparam
-        config_number += 1
-config_number_trained = config_number
-log_file.write((u'## Number of congif to train : ' + config_number_to_train + '\n').encode('utf8'))
-log_file.write((u'## Number of congif already trained : ' + config_number_trained + '\n').encode('utf8'))
+if os.stat(result_file).st_size == 0:
+    # Empty file
+    config_number_trained = 0
+else:
+    with open(result_file, 'rb') as csvfile:
+        result_csv = csv.reader(csvfile, delimiter=',')
+        headers_result = result_csv.next()
+        result_number = 0
+        for row in result_csv:
+            column = 0
+            this_hyperparam = {}
+            for hyperparam in headers_config:  # /!\ Note that we use the header of the config file
+                this_hyperparam[hyperparam] = row[column]
+                column += 1
+            checked_config[result_number] = this_hyperparam
+            config_number += 1
+    config_number_trained = config_number
+log_file.write((u'## Number of config to train : %d \n' % config_number_to_train).encode('utf8'))
+log_file.write((u'## Number of config already trained : %d \n' % config_number_trained).encode('utf8'))
 log_file.write((u'###############################################\n\n').encode('utf8'))
 
 # Compare granularity with granularity in the config_file
 
 # Train the model, looping over the hyperparameters configurations
-config_trained = 0
+config_train = 0
 for config_hp in hyper_parameters.itervalues():
-    log_file.write((u'## Config ' + config_trained + '\n').encode('utf8'))
+    log_file.write((u'## Config ' + str(config_train) + '\n').encode('utf8'))
     # Before training for an hyperparam point, check if it has already been tested.
     #   If it's the case, values would be stored in an other CSV files (result.csv), with its performance
     NO_RUN = False
-    config_number = 0   # Counter on the number of config
     for result_hp in checked_config.itervalues():
         if result_hp == config_hp:
             NO_RUN = True
@@ -96,5 +97,9 @@ for config_hp in hyper_parameters.itervalues():
     trained_model, performance = train(config_hp, database, log_file_path)
     log_file = open(log_file_path, 'ab')
     log_file.write(('Performance : ').encode('utf8'))
+
+    # Write the results in the csv file
+    config_index = config_number_trained + config_train  # Index of the config
+    config_train += 1
 
     # Write the result in result.csv

@@ -13,6 +13,8 @@ from theano.tensor.shared_randomstreams import RandomStreams
 # Code debug and speed
 import time
 
+from Data_processing.load_data import load_data
+
 
 class RBM_temporal_bin(object):
     """Restricted Boltzmann Machine (RBM)  """
@@ -229,28 +231,28 @@ def train(hyper_parameter, dataset, log_file_path):
 
     """
     # Load parameters
-    n_hidden = hyper_parameter['n_hidden']
-    temporal_order = hyper_parameter['temporal_order']
-    learning_rate = hyper_parameter['learning_rate']
-    training_epochs = hyper_parameter['training_epochs']
-    batch_size = hyper_parameter['batch_size']
+    n_hidden = int(hyper_parameter['n_hidden'])
+    temporal_order = int(hyper_parameter['temporal_order'])
+    learning_rate = float(hyper_parameter['learning_rate'])
+    training_epochs = int(hyper_parameter['training_epochs'])
+    batch_size = int(hyper_parameter['batch_size'])
 
     # First check if this configuration has not been tested before,
     # i.e. its parameter are written in the result.csv file
-    orch, piano, train_index, validate_index, test_index = load_data(data_path=dataset, log_file_path='load_log', temporal_order=temporal_order, minibatch_size=batch_size, shuffle=False, split=(0.7, 0.1, 0.2))
+    orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index = load_data(data_path=dataset, log_file_path='load_log', temporal_order=temporal_order, minibatch_size=batch_size, shuffle=True, split=(0.7, 0.1, 0.2))
 
     # compute number of minibatches for training, validation and testing
-    n_train_batches = train_index.get_value(borrow=True).shape[0] / batch_size
+    n_train_batches = len(train_index)
     orch_dim = orch.get_value(borrow=True).shape[1]
 
     #################################
     #################################
     #################################
     #####   DEBUG
-    import pdb; pdb.set_trace()
     batch_index = 0
     hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
-    p_test = create_past_vector(piano[train_index[batch_index]], orch[hist_idx])
+    import pdb; pdb.set_trace()
+    p_test = create_past_vector(piano[train_index[batch_index]], orch[hist_idx], batch_size, temporal_order, orch_dim)
     #################################
     #################################
     #################################

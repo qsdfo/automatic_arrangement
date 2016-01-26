@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
 # Class to parse a MusicXML score into a pianoroll
 # Input :
 #       - division : the desired quantization in the pianoroll

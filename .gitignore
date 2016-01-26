@@ -1,7 +1,12 @@
 Database
-Results
 Data
+
 **/*.pdf
-**/Visualization/**/*.csv
+
+**/*.csv
+!Code/config.csv
+!Results/**/*.csv
+
+**/log
 **/*.txt
 **/*.pyc

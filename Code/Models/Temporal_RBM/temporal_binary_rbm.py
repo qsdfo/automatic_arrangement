@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
 """
 A temporal RBM with binary visible units.
 """
@@ -9,10 +12,6 @@ import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
 # Code debug and speed
 import time
-
-# Personnal files :
-# from ...Score_function import accuracy_measure
-from ...Data_processing.load_data import load_data
 
 
 class RBM_temporal_bin(object):
@@ -210,7 +209,7 @@ class RBM_temporal_bin(object):
         return precision, recall, accuracy
 
 
-def train(hyper_parameter, dataset, output_folder):
+def train(hyper_parameter, dataset, log_file_path):
     """
     Demonstrate how to train and afterwards sample from it using Theano.
 

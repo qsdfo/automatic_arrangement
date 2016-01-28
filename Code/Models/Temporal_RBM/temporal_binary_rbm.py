@@ -251,8 +251,7 @@ def train(hyper_parameter, dataset, log_file_path):
     #####   DEBUG
     batch_index = 0
     hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
-    import pdb; pdb.set_trace()
-    p_test = create_past_vector(piano[train_index[batch_index]], orch[hist_idx], batch_size, temporal_order, orch_dim)
+    p_test = create_past_vector(piano[train_index[batch_index]], orch[hist_idx.ravel()], batch_size, temporal_order, orch_dim)
     #################################
     #################################
     #################################
@@ -288,7 +287,7 @@ def train(hyper_parameter, dataset, log_file_path):
                                      updates=updates,
                                      givens={v: orch[index],
                                              p: create_past_vector(piano[index],
-                                                                   orch[index_history],
+                                                                   orch[index_history.ravel()],
                                                                    batch_size,
                                                                    temporal_order,
                                                                    orch_dim)},
@@ -298,7 +297,7 @@ def train(hyper_parameter, dataset, log_file_path):
                                       free_energy,
                                       givens={v: orch[index],
                                               p: create_past_vector(piano[index],
-                                                                    orch[index_history],
+                                                                    orch[index_history.ravel()],
                                                                     batch_size,
                                                                     temporal_order,
                                                                     orch_dim)},
@@ -349,6 +348,7 @@ def train(hyper_parameter, dataset, log_file_path):
 def create_past_vector(piano, orch, batch_size, delay, n_dim):
     # Piano is a matrix : num_batch x piano_dim
     # Orch a matrix : num_batch x ()
+    import pdb; pdb.set_trace()
     orch_reshape = orch.reshape((batch_size, delay * n_dim))
     past = np.concatenate((piano, orch_reshape), axis=1)
     return past

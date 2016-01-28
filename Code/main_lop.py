@@ -94,6 +94,16 @@ for config_hp in hyper_parameters.itervalues():
 
     log_file.close()
     # Train the model
+    ########################
+    ########################
+    ########################
+    ##### D E B U G
+    t = np.array([[1, 2, 3],[4, 5, 6],[7, 8, 9],[10, 11, 12],[13, 14, 15]])
+
+    ########################
+    ########################
+    ########################
+
     trained_model, performance = train(config_hp, database, log_file_path)
     log_file = open(log_file_path, 'ab')
     log_file.write(('Performance : ').encode('utf8'))

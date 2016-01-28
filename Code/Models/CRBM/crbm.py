@@ -63,7 +63,7 @@ class CRBM(object):
 
         if numpy_rng is None:
             # create a number generator
-            numpy_rng = numpy.random.RandomState(1234)
+            numpy_rng = np.random.RandomState(1234)
 
         if theano_rng is None:
             theano_rng = RandomStreams(numpy_rng.randint(2 ** 30))
@@ -93,12 +93,12 @@ class CRBM(object):
 
         if hbias is None:
             # create shared variable for hidden units bias
-            hbias = theano.shared(value=numpy.zeros(n_hidden,
+            hbias = theano.shared(value=np.zeros(n_hidden,
                                 dtype=theano.config.floatX), name='hbias')
 
         if vbias is None:
             # create shared variable for visible units bias
-            vbias = theano.shared(value=numpy.zeros(n_visible,
+            vbias = theano.shared(value=np.zeros(n_visible,
                                 dtype=theano.config.floatX), name='vbias')
 
         # initialize input layer for standalone CRBM or layer0 of CDBN
@@ -351,7 +351,7 @@ def train_crbm(learning_rate=1e-3, training_epochs=300,
 
     """
 
-    rng = numpy.random.RandomState(123)
+    rng = np.random.RandomState(123)
     theano_rng = RandomStreams(rng.randint(2 ** 30))
 
     # batchdata is returned as theano shared variable floatX
@@ -417,6 +417,7 @@ def train_crbm(learning_rate=1e-3, training_epochs=300,
             # indexing is slightly complicated
             # build a linear index to the starting frames for this batch
             # (i.e. time t) gives a batch_size length array for data
+            import pdb; pdb.set_trace()
             data_idx = permindex[batch_index * batch_size:(batch_index + 1) \
                                  * batch_size]
 
@@ -426,10 +427,10 @@ def train_crbm(learning_rate=1e-3, training_epochs=300,
             hist_idx = np.array([data_idx - n for n in xrange(1, delay + 1)]).T
 
             this_cost = train_crbm(data_idx, hist_idx.ravel())
-            #print batch_index, this_cost
+            # print batch_index, this_cost
             mean_cost += [this_cost]
 
-        print 'Training epoch %d, cost is ' % epoch, numpy.mean(mean_cost)
+        print 'Training epoch %d, cost is ' % epoch, np.mean(mean_cost)
 
     end_time = time.clock()
 
@@ -448,13 +449,13 @@ if __name__ == '__main__':
 
     # pick some starting points for each sequence
     data_idx = np.array([100, 200, 400, 600])
-    orig_data = numpy.asarray(batchdata.get_value(borrow=True)[data_idx],
+    orig_data = np.asarray(batchdata.get_value(borrow=True)[data_idx],
                               dtype=theano.config.floatX)
 
     hist_idx = np.array([data_idx - n for n in xrange(1, crbm.delay + 1)]).T
     hist_idx = hist_idx.ravel()
 
-    orig_history = numpy.asarray(
+    orig_history = np.asarray(
         batchdata.get_value(borrow=True)[hist_idx].reshape(
         (len(data_idx), crbm.delay * crbm.n_visible)),
         dtype=theano.config.floatX)

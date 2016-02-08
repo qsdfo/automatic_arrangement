@@ -22,7 +22,9 @@ class RBM_temporal_bin(object):
         self,
         input=None,
         past=None,
+        n_visible=0,
         n_hidden=500,
+        n_past=0,
         W=None,
         P=None,
         hbias=None,
@@ -42,8 +44,8 @@ class RBM_temporal_bin(object):
 
         # Architecture
         self.n_hidden = n_hidden
-        self.n_visible = self.input.get_value(borrow=True).shape[0]
-        self.n_past = self.past.get_value(borrow=True).shape[0]
+        self.n_visible = n_visible
+        self.n_past = n_past
 
         # Initialize random generators
         if np_rng is None:
@@ -150,9 +152,10 @@ class RBM_temporal_bin(object):
     # Get cost and updates for training
     def cost_updates(self, lr=0.1, k=1):
         # Negative phase
-        visible_chain, mean_visible_chain, past_chain, updates = theano.scan(self.gibbs_step,
-                                                                             outputs_info=[self.input, None, self.past],
-                                                                             n_steps=k)
+        ([visible_chain, mean_visible_chain, past_chain], updates) = theano.scan(self.gibbs_step,
+                                                                                 outputs_info=[self.input, None, self.past],
+                                                                                 n_steps=k)
+
         neg_v = visible_chain[-1]
         mean_neg_v = mean_visible_chain[-1]
         neg_p = past_chain[-1]
@@ -173,7 +176,7 @@ class RBM_temporal_bin(object):
             )
 
         # Monitor reconstruction (log-likelihood proxy)
-        monitoring_cost = self.get_reconstruction_cost(updates, mean_neg_v)
+        monitoring_cost = self.get_reconstruction_cost(mean_neg_v)
 
         return monitoring_cost, updates
 
@@ -239,22 +242,15 @@ def train(hyper_parameter, dataset, log_file_path):
 
     # First check if this configuration has not been tested before,
     # i.e. its parameter are written in the result.csv file
-    orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index = load_data(data_path=dataset, log_file_path='load_log', temporal_order=temporal_order, minibatch_size=batch_size, shuffle=True, split=(0.7, 0.1, 0.2))
+    orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index = load_data(data_path=dataset, log_file_path=log_file_path, temporal_order=temporal_order, minibatch_size=batch_size, shuffle=True, split=(0.7, 0.1, 0.2))
+
+    # Get dimensions
+    n_visible = orch.get_value(borrow=True).shape[1]
+    n_past = (piano.get_value(borrow=True).shape[1]) + (orch.get_value(borrow=True).shape[1]) * temporal_order
 
     # compute number of minibatches for training, validation and testing
     n_train_batches = len(train_index)
     orch_dim = orch.get_value(borrow=True).shape[1]
-
-    #################################
-    #################################
-    #################################
-    #####   DEBUG
-    batch_index = 0
-    hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
-    p_test = create_past_vector(piano[train_index[batch_index]], orch[hist_idx.ravel()], batch_size, temporal_order, orch_dim)
-    #################################
-    #################################
-    #################################
 
     # allocate symbolic variables for the data
     index = T.lscalar()             # index to a [mini]batch
@@ -268,14 +264,15 @@ def train(hyper_parameter, dataset, log_file_path):
     # construct the RBM class
     rbm = RBM_temporal_bin(input=v,
                            past=p,
+                           n_visible=n_visible,
                            n_hidden=n_hidden,
+                           n_past=n_past,
                            np_rng=rng,
                            theano_rng=theano_rng)
 
     # get the cost and the gradient corresponding to one step of CD-15
-    cost, updates = rbm.cost_updates(lr=learning_rate, k=1)
-
     free_energy = rbm.free_energy(rbm.input, rbm.past)
+    cost, updates = rbm.cost_updates(lr=learning_rate, k=1)
 
     #################################
     #     Training the CRBM         #
@@ -345,12 +342,20 @@ def train(hyper_parameter, dataset, log_file_path):
     return rbm
 
 
-def create_past_vector(piano, orch, batch_size, delay, n_dim):
+def create_past_vector(piano, orch, batch_size, delay, orch_dim):
     # Piano is a matrix : num_batch x piano_dim
     # Orch a matrix : num_batch x ()
-    import pdb; pdb.set_trace()
-    orch_reshape = orch.reshape((batch_size, delay * n_dim))
-    past = np.concatenate((piano, orch_reshape), axis=1)
+    # debug = sys.gettrace() is not None
+    # if debug:
+    #     # Reshape checked, and has the expected behavior
+    #     piano_dim = 5
+    #     orch_dim = 10
+    #     delay = 2
+    #     batch_size = 3
+    #     piano.tag.test_value = np.random.rand(batch_size, piano_dim)
+    #     orch.tag.test_value = np.random.rand(batch_size * delay, orch_dim)
+    orch_reshape = orch.reshape((batch_size, delay * orch_dim))
+    past = T.concatenate((piano, orch_reshape), axis=1)
     return past
 
 if __name__ == '__main__':

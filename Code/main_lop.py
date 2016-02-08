@@ -8,17 +8,18 @@ import os
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
 from Models.Temporal_RBM.temporal_binary_rbm import train
-model_path = u'Temporal_RBM'
+model_name = u'Temporal_RBM'
 temporal_granularity = u'frame_level'
 
 # Log file
-log_file_path = u'log'
+MAIN_DIR = os.getcwd().decode('utf8') + u'/'
+log_file_path = MAIN_DIR + u'log'
 
 # Build the matrix database (stored in a data.p file in Data) from a music XML database
-database = '../Data/data.p'
+database = MAIN_DIR + u'../Data/data.p'
 
 # Set hyperparameters (can be a grid)
-result_folder = u'../Results/' + temporal_granularity + u'/' + model_path + u'/'
+result_folder = MAIN_DIR + u'../Results/' + temporal_granularity + u'/' + model_name + u'/'
 result_file = result_folder + u'results.csv'
 
 # Config is set now, no need to modify source below for standard use
@@ -27,9 +28,9 @@ result_file = result_folder + u'results.csv'
 ############################################################################
 
 # Init log_file
-log_file = open(log_file_path, 'w')
+log_file = open(log_file_path, 'wb')
 log_file.write((u'## LOG FILE : \n').encode('utf8'))
-log_file.write((u'## Model : ' + model_path + '\n').encode('utf8'))
+log_file.write((u'## Model : ' + model_name + '\n').encode('utf8'))
 log_file.write((u'## Temporal granularity : ' + temporal_granularity + '\n').encode('utf8'))
 
 # Check if the result folder exists
@@ -80,6 +81,7 @@ log_file.write((u'###############################################\n\n').encode('
 # Train the model, looping over the hyperparameters configurations
 config_train = 0
 for config_hp in hyper_parameters.itervalues():
+    log_file.write((u'###############################################\n\n').encode('utf8'))
     log_file.write((u'## Config ' + str(config_train) + '\n').encode('utf8'))
     # Before training for an hyperparam point, check if it has already been tested.
     #   If it's the case, values would be stored in an other CSV files (result.csv), with its performance
@@ -94,16 +96,6 @@ for config_hp in hyper_parameters.itervalues():
 
     log_file.close()
     # Train the model
-    ########################
-    ########################
-    ########################
-    ##### D E B U G
-    t = np.array([[1, 2, 3],[4, 5, 6],[7, 8, 9],[10, 11, 12],[13, 14, 15]])
-
-    ########################
-    ########################
-    ########################
-
     trained_model, performance = train(config_hp, database, log_file_path)
     log_file = open(log_file_path, 'ab')
     log_file.write(('Performance : ').encode('utf8'))

@@ -20,39 +20,7 @@ def pianoroll_to_csv(path_to_data, save_path='CSV_pianoroll'):
         roll_all_instru = score['pianoroll']
         filename = score['filename']
         for instrument, pianoroll in roll_all_instru.iteritems():
-            # List of notes
-            notes = []
-            # pianoroll is a numpy array
-            note_on = False
-            dyn = 0
-            for pitch in range(0, pianoroll.shape[1]):
-                for time in range(0, pianoroll.shape[0]):
-                    dyn = pianoroll[time, pitch]
-                    if(dyn > 0):
-                        if not note_on:
-                            # Beginning of the note
-                            t0 = time
-                            p = pitch
-                            dyn_note = dyn
-                            note_on = True
-                        elif(dyn != dyn_note):
-                            # Change in dynamic
-                            dt = time - t0
-                            notes.append([t0, dt, p, dyn_note, quantization, filename])
-                            t0 = time
-                            p = pitch
-                            dyn_note = dyn
-                            note_on = True  # Not necessary...
-                    else:
-                        if note_on:
-                            # End of a note
-                            dt = time - t0
-                            notes.append([t0, dt, p, dyn_note, quantization, filename])
-                            note_on = False
-
-            # Sort according to t0, for debug purposes
-            notes = sorted(notes, key=lambda note: note[0])
-            notes.insert(0, ['t0', 'dt', 'pitch', 'dyn', 'quantization', 'filename'])
+            notes = pr_to_csv_aux(pianoroll, quantization, filename)
             save_dir = save_path + '/' + score['filename'] + '/'
             if not os.path.isdir(save_dir):
                 os.mkdir(save_dir)
@@ -60,6 +28,42 @@ def pianoroll_to_csv(path_to_data, save_path='CSV_pianoroll'):
                 writer = csv.writer(f_handle, delimiter=',')
                 writer.writerows(notes)
 
+
+def pr_to_csv_aux(pianoroll, quantization=4, filename='unnamed'):
+    # List of notes
+    notes = []
+    # pianoroll is a numpy array
+    note_on = False
+    dyn = 0
+    for pitch in range(0, pianoroll.shape[1]):
+        for time in range(0, pianoroll.shape[0]):
+            dyn = pianoroll[time, pitch]
+            if(dyn > 0):
+                if not note_on:
+                    # Beginning of the note
+                    t0 = time
+                    p = pitch
+                    dyn_note = dyn
+                    note_on = True
+                elif(dyn != dyn_note):
+                    # Change in dynamic
+                    dt = time - t0
+                    notes.append([t0, dt, p, dyn_note, quantization, filename])
+                    t0 = time
+                    p = pitch
+                    dyn_note = dyn
+                    note_on = True  # Not necessary...
+            else:
+                if note_on:
+                    # End of a note
+                    dt = time - t0
+                    notes.append([t0, dt, p, dyn_note, quantization, filename])
+                    note_on = False
+
+    # Sort according to t0, for debug purposes
+    notes = sorted(notes, key=lambda note: note[0])
+    notes.insert(0, ['t0', 'dt', 'pitch', 'dyn', 'quantization', 'filename'])
+    return notes
 
 # def write_note(pianoroll_svg, x, dx, y, note_height, h_note):
 #     g = pianoroll_svg << g(

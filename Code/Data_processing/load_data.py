@@ -20,7 +20,7 @@ def get_data(data_path, log_file_path, temporal_order):
     """
 
     # Open log file
-    log_file = open(log_file_path + 'log', "wb")
+    log_file = open(log_file_path, "ab")
     log_file.write("### LOADING DATA ###\n\n")
     log_file.write("## Unpickle data... ")
 
@@ -54,7 +54,7 @@ def get_data(data_path, log_file_path, temporal_order):
                 end_time = start_time + np.shape(pianoroll_instru)[0]
                 time_updated = True
             if instru == 'Piano':
-                if not 'piano' in locals():
+                if 'piano' not in locals():
                     # Initialize piano pr
                     piano = np.zeros([end_time, piano_dimension])
                 else:
@@ -63,7 +63,7 @@ def get_data(data_path, log_file_path, temporal_order):
                     piano = np.concatenate((piano, empty_piano), axis=0)
                 piano[start_time:end_time, 0:piano_dimension] = pianoroll_instru
             else:
-                if not 'orch' in locals():
+                if 'orch' not in locals():
                     orch = np.zeros([end_time, orchestra_dimension])
                     orch_concatenated = True
                 if not orch_concatenated:
@@ -99,9 +99,18 @@ def get_data(data_path, log_file_path, temporal_order):
     ################################
     ################################
     # DEBUG
-    # np.savetxt("orch.csv", orch, delimiter=",")
-    # np.savetxt("piano.csv", piano, delimiter=",")
-    # np.savetxt("indices.csv", valid_index, delimiter=",")
+    # notes = mat_to_csv(piano, quantization)
+    # with open('piano.csv', 'wb') as f_handle:
+    #     writer = csv.writer(f_handle, delimiter=',')
+    #     writer.writerows(notes)
+    # notes = mat_to_csv(piano, quantization)
+    # with open('piano.csv', 'wb') as f_handle:
+    #     writer = csv.writer(f_handle, delimiter=',')
+    #     writer.writerows(notes)
+    # np.savetxt("DEBUG/orch.csv", orch, delimiter=",", fmt='%1.4f')
+    # np.savetxt("DEBUG/piano.csv", piano, delimiter=",", fmt='%1.4f')
+    # np.savetxt("DEBUG/indices.csv", valid_index, delimiter=",", fmt='%1.4f')
+    # import pdb; pdb.set_trace()
     ################################
     ################################
     ################################
@@ -109,7 +118,7 @@ def get_data(data_path, log_file_path, temporal_order):
     piano_shared = theano.shared(np.asarray(piano, dtype=theano.config.floatX))
 
     log_file.close()
-    return orch_shared, orch_mapping, piano_shared, piano_mapping, np.array(valid_index), quantization
+    return orch_shared, orch_mapping, piano_shared, piano_mapping, np.array(valid_index), quantization, orch, piano
 
 
 def get_minibatches_idx(log_file_path, idx_list, minibatch_size, shuffle=False, split=(0.7, 0.1, 0.2)):
@@ -205,8 +214,18 @@ def remove_unused_pitch(pr, mapping):
 
 
 def load_data(data_path, log_file_path, temporal_order, minibatch_size, shuffle=False, split=(0.7, 0.1, 0.2)):
-    orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_order)
+    orch, orch_mapping, piano, piano_mapping, valid_index, quantization, orch_2, piano_2 = get_data(data_path, log_file_path, temporal_order)
     train_index, validate_index, test_index = get_minibatches_idx(log_file_path, valid_index, minibatch_size, shuffle, split)
+    # #########################
+    #  DEBUG
+    # batch_index = 0
+    # n_dim = orch_2.shape[1]
+    # hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
+    # A = piano_2[train_index[batch_index]]
+    # B = orch_2[hist_idx.ravel()]
+    # orch_reshape = B.reshape((minibatch_size, temporal_order * n_dim))
+    # past = np.concatenate((A, orch_reshape), axis=1)
+    # #########################
     return orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index
 
 

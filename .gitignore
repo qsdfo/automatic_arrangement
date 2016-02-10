@@ -1,14 +1,19 @@
+# Folders
 Database
 Data
 
+# Image files
 **/*.pdf
+**/*.png
 
+# CSV, but not the config file and results files
 **/*.csv
 !Code/config.csv
 !Results/**/*.csv
 
+# Text and log files
 **/log
 **/*.txt
-**/*.pyc
 
-Code/.~lock.config.csv#
+# Compiled code
+**/*.pyc

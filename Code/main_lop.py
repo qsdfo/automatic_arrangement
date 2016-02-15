@@ -96,7 +96,7 @@ for config_hp in hyper_parameters.itervalues():
 
     log_file.close()
     # Train the model
-    trained_model, performance = train(config_hp, database, log_file_path)
+    trained_model, result_test = train_and_test(config_hp, database, log_file_path)
     log_file = open(log_file_path, 'ab')
     log_file.write(('Performance : ').encode('utf8'))
 

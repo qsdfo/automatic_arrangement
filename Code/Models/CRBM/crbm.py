@@ -417,7 +417,6 @@ def train_crbm(learning_rate=1e-3, training_epochs=300,
             # indexing is slightly complicated
             # build a linear index to the starting frames for this batch
             # (i.e. time t) gives a batch_size length array for data
-            import pdb; pdb.set_trace()
             data_idx = permindex[batch_index * batch_size:(batch_index + 1) \
                                  * batch_size]
 

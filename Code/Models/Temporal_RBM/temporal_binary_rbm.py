@@ -210,11 +210,10 @@ class RBM_temporal_bin(object):
         precision = Score_function.prediction_measure(self.input, mean_pred_v)
         recall = Score_function.recall_measure(self.input, mean_pred_v)
         accuracy = Score_function.accuracy_measure(self.input, mean_pred_v)
-
         return precision, recall, accuracy
 
 
-def train(hyper_parameter, dataset, log_file_path):
+def train_and_test(hyper_parameter, dataset, log_file_path):
     """
     Demonstrate how to train and afterwards sample from it using Theano.
 
@@ -233,12 +232,14 @@ def train(hyper_parameter, dataset, log_file_path):
     :param n_samples: number of samples to plot for each chain
 
     """
+
     # Load parameters
     n_hidden = int(hyper_parameter['n_hidden'])
     temporal_order = int(hyper_parameter['temporal_order'])
     learning_rate = float(hyper_parameter['learning_rate'])
     training_epochs = int(hyper_parameter['training_epochs'])
     batch_size = int(hyper_parameter['batch_size'])
+    gibbs_sampling_step_test = int(hyper_parameter['gibbs_sampling_step_test'])
 
     # First check if this configuration has not been tested before,
     # i.e. its parameter are written in the result.csv file
@@ -246,15 +247,38 @@ def train(hyper_parameter, dataset, log_file_path):
 
     # Get dimensions
     n_visible = orch.get_value(borrow=True).shape[1]
-    n_past = (piano.get_value(borrow=True).shape[1]) + (orch.get_value(borrow=True).shape[1]) * temporal_order
-
-    # compute number of minibatches for training, validation and testing
-    n_train_batches = len(train_index)
+    # piano_dim = piano.get_value(borrow=True).shape[1]
     orch_dim = orch.get_value(borrow=True).shape[1]
+    n_past = (piano.get_value(borrow=True).shape[1]) + (orch.get_value(borrow=True).shape[1]) * temporal_order
+    # total_time = orch.get_value(borrow=True).shape[0]
+
+    # Compute number of minibatches for training, validation and testing
+    n_train_batches = len(train_index)
+    train_size = 0
+    for i in xrange(n_train_batches - 1):
+        train_size += train_index[i].size
+    last_batch_size = train_index[n_train_batches - 1].size
+    train_size += last_batch_size
+
+    n_validate_batches = len(validate_index)
+    validate_size = 0
+    for i in xrange(n_validate_batches):
+        validate_size += validate_index[i].size
+
+    # # D E B U G G
+    # # Set test values
+    # import sys
+    # debug = sys.gettrace() is not None
+    # if debug:
+    #
+    #     if total_time != piano.get_value(borrow=True).shape[0]:
+    #         "qsidhfoswmdufhsoiudfhOIUHEOISUDHFIOUSDYHF P UTI AIN"
+    #     piano.tag.test_value = np.random.rand(batch_size, piano_dim)
+    #     orch.tag.test_value = np.random.rand(batch_size, piano_dim)
 
     # allocate symbolic variables for the data
-    index = T.lscalar()             # index to a [mini]batch
-    index_history = T.lscalar()     # index for history
+    index = T.lvector()             # index to a [mini]batch
+    index_history = T.lvector()     # index for history
     v = T.matrix('v')  # the data is presented as rasterized images
     p = T.matrix('p')  # the data is presented as rasterized images
 
@@ -271,8 +295,9 @@ def train(hyper_parameter, dataset, log_file_path):
                            theano_rng=theano_rng)
 
     # get the cost and the gradient corresponding to one step of CD-15
-    free_energy = rbm.free_energy(rbm.input, rbm.past)
     cost, updates = rbm.cost_updates(lr=learning_rate, k=1)
+    free_energy = rbm.free_energy(rbm.input, rbm.past)
+    result_test = rbm.prediction_measure(gibbs_sampling_step_test)
 
     #################################
     #     Training the CRBM         #
@@ -284,21 +309,52 @@ def train(hyper_parameter, dataset, log_file_path):
                                      updates=updates,
                                      givens={v: orch[index],
                                              p: create_past_vector(piano[index],
-                                                                   orch[index_history.ravel()],
+                                                                   orch[index_history],
                                                                    batch_size,
                                                                    temporal_order,
                                                                    orch_dim)},
                                      name='train_temp_rbm')
 
-    get_free_energy = theano.function([index, index_history],
-                                      free_energy,
-                                      givens={v: orch[index],
-                                              p: create_past_vector(piano[index],
-                                                                    orch[index_history.ravel()],
-                                                                    batch_size,
-                                                                    temporal_order,
-                                                                    orch_dim)},
-                                      name='get_free_energy')
+    train_temp_rbm_last_batch = theano.function([index, index_history],
+                                                cost,
+                                                updates=updates,
+                                                givens={v: orch[index],
+                                                        p: create_past_vector(piano[index],
+                                                                              orch[index_history],
+                                                                              last_batch_size,
+                                                                              temporal_order,
+                                                                              orch_dim)},
+                                                name='train_temp_rbm_last_batch')
+
+    get_free_energy_validation = theano.function([index, index_history],
+                                                 free_energy,
+                                                 givens={v: orch[index],
+                                                         p: create_past_vector(piano[index],
+                                                                               orch[index_history],
+                                                                               validate_size,
+                                                                               temporal_order,
+                                                                               orch_dim)},
+                                                 name='get_free_energy_validation')
+
+    get_free_energy_train = theano.function([index, index_history],
+                                            free_energy,
+                                            givens={v: orch[index],
+                                                    p: create_past_vector(piano[index],
+                                                    orch[index_history],
+                                                    train_size,
+                                                    temporal_order,
+                                                    orch_dim)},
+                                            name='get_free_energy_train')
+
+    test_model = theano.function(input=[],
+                                 output=result_test,
+                                 givens={v: orch[index],
+                                         p: create_past_vector(piano[index],
+                                                               orch[index_history],
+                                                               train_size,
+                                                               temporal_order,
+                                                               orch_dim)},
+                                 name='test_model')
 
     start_time = time.clock()
 
@@ -308,28 +364,37 @@ def train(hyper_parameter, dataset, log_file_path):
     while((epoch < training_epochs) and (overfitting_measure < 0.2)):
         # go through the training set
         mean_train_cost = []
-        for batch_index in xrange(n_train_batches):
-
+        for batch_index in xrange(n_train_batches - 1):
+            # History indices
             hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
-
+            # Train
             this_cost = train_temp_rbm(train_index[batch_index], hist_idx.ravel())
-            # Print batch_index, this_cost
+            # Keep track of cost
             mean_train_cost += [this_cost]
+
+        # Train last batch
+        batch_index = n_train_batches - 1
+        hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
+        this_cost = train_temp_rbm_last_batch(train_index[batch_index], hist_idx.ravel())
+        mean_train_cost += [this_cost]
 
         # Validation
         all_train_idx = []
         all_val_idx = []
         for i in xrange(0, len(train_index)):
             all_train_idx.extend(train_index[i])
+        all_train_idx = np.array(all_train_idx)     # Oui, c'est dégueulasse, mais vraiment
         all_train_hist_idx = np.array([all_train_idx - n for n in xrange(1, temporal_order + 1)]).T
         for i in xrange(0, len(validate_index)):
             all_val_idx.extend(validate_index[i])
+        all_val_idx = np.array(all_val_idx)     # C'est toujours aussi dégueu
         all_val_hist_idx = np.array([all_val_idx - n for n in xrange(1, temporal_order + 1)]).T
 
-        free_energy_train = np.mean(get_free_energy(all_train_idx, all_train_hist_idx))
-        free_energy_val = np.mean(get_free_energy(all_val_idx, all_val_hist_idx))
+        free_energy_train = np.mean(get_free_energy_train(all_train_idx, all_train_hist_idx.ravel()))
+        free_energy_val = np.mean(get_free_energy_validation(all_val_idx, all_val_hist_idx.ravel()))
         overfitting_measure = (free_energy_val - free_energy_train) / free_energy_val
-        print 'Training epoch %d, cost is ' % epoch, np.mean(mean_train_cost)
+        print 'Training epoch {}, cost is {}     &     '.format(epoch, np.mean(mean_train_cost))
+        print 'Overfitting measure {}\n'.format(overfitting_measure)
 
         epoch += 1
 
@@ -339,13 +404,17 @@ def train(hyper_parameter, dataset, log_file_path):
 
     print ('Training took %f minutes' % (training_time / 60.))
 
-    return rbm
+
+
+    return rbm, result_test
 
 
 def create_past_vector(piano, orch, batch_size, delay, orch_dim):
     # Piano is a matrix : num_batch x piano_dim
     # Orch a matrix : num_batch x ()
+    # import sys
     # debug = sys.gettrace() is not None
+    # import pdb; pdb.set_trace()
     # if debug:
     #     # Reshape checked, and has the expected behavior
     #     piano_dim = 5
@@ -354,7 +423,7 @@ def create_past_vector(piano, orch, batch_size, delay, orch_dim):
     #     batch_size = 3
     #     piano.tag.test_value = np.random.rand(batch_size, piano_dim)
     #     orch.tag.test_value = np.random.rand(batch_size * delay, orch_dim)
-    orch_reshape = orch.reshape((batch_size, delay * orch_dim))
+    orch_reshape = T.reshape(orch, (batch_size, delay * orch_dim))
     past = T.concatenate((piano, orch_reshape), axis=1)
     return past
 

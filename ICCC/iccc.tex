@@ -1,171 +1,94 @@
-% v2-acmsmall-sample.tex, dated March 6 2012
-% This is a sample file for ACM small trim journals
-%
-% Compilation using 'acmsmall.cls' - version 1.3 (March 2012), Aptara Inc.
-% (c) 2010 Association for Computing Machinery (ACM)
-%
-% Questions/Suggestions/Feedback should be addressed to => "acmtexsupport@aptaracorp.com".
-% Users can also go through the FAQs available on the journal's submission webpage.
-%
-% Steps to compile: latex, bibtex, latex latex
-%
-% For tracking purposes => this is v1.3 - March 2012
+% This file is iccc.tex.  It contains the formatting instructions for and acts as a template for submissions to ICCC.  It borrows liberally from the AAAI and IJCAI formats and instructions.  It uses the files iccc.sty, iccc.bst and iccc.bib, the first two of which also borrow liberally from the same sources.
 
-\documentclass[prodmode,acmtecs]{acmsmall} % Aptara syntax
 
-% Package to generate and customize Algorithm as per ACM style
-\usepackage[ruled]{algorithm2e}
-\renewcommand{\algorithmcfname}{ALGORITHM}
-\SetAlFnt{\small}
-\SetAlCapFnt{\small}
-\SetAlCapNameFnt{\small}
-\SetAlCapHSkip{0pt}
-\IncMargin{-\parindent}
+\documentclass[letterpaper]{article}
+\usepackage{iccc}
 
-\usepackage[nonumberlist]{glossaries}
-\setacronymstyle{long-short}
-\makenoidxglossaries
-% Load acronyms list
-\loadglsentries{acronyms}
+
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+
+% Packages maison
+\usepackage{amsmath,amssymb} % For including math equations, theorems, symbols, etc
 \usepackage{bm}
-\usepackage{prettyref}
-\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
-\usepackage[utf8]{inputenc} % Required for including letters with accent
 \usepackage{graphicx} % Required for including images
 \graphicspath{{Figures/}} % Set the default folder for images
-\usepackage{enumitem} % Required for manipulating the whitespace between and within lists
-\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
-\usepackage{amsmath,amssymb} % For including math equations, theorems, symbols, etc
-\usepackage{varioref} % More descriptive referencing
-\usepackage{array,multirow}
-\allowdisplaybreaks
+\usepackage{prettyref}
 
-% Copyright
-%\setcopyright{acmcopyright}
-%\setcopyright{acmlicensed}
-%\setcopyright{rightsretained}
-%\setcopyright{usgov}
-%\setcopyright{usgovmixed}
-%\setcopyright{cagov}
-%\setcopyright{cagovmixed}
-
-% Document starts
-\begin{document}
-
-% Page heads
-\markboth{L. Crestel et P.Esling}{A Conditional model for orchestral Inference}
-
-% Title portion
+\pdfinfo{
+/Title (Formatting Instructions for Authors)
+/Subject (Proceedings of ICCC)
+/Author (ICCC)}
+% The file iccc.sty is the style file for ICCC proceedings.
+%
 \title{The Live Orchestral Piano : a conditional model for musical orchestration}
-\author{LEOPOLD CRESTEL
-\affil{Institut de Recherche et Coordination Acoustique/Musique}
-PHILIPPE ESLING
-\affil{Institut de Recherche et Coordination Acoustique/Musique}
+\author{Léopold Crestel, Philippe Esling\\
+Equipe Représentation Musicales\\
+Institut de Recherche et Coordination Acoustique/Musique\\
+1 Place Igor-Stravinsky, 75004 Paris\\
+leopold.crestel@ircam.fr, philippe.esling@ircam.fr\\
 }
-% NOTE! Affiliations placed here should be for the institution where the
-%       BULK of the research was done. If the author has gone to a new
-%       institution, before publication, the (above) affiliation should NOT be changed.
-%       The authors 'current' address may be given in the "Author's addresses:" block (below).
-%       So for example, Mr. Abdelzaher, the bulk of the research was done at UIUC, and he is
-%       currently affiliated with NASA.
+\setcounter{secnumdepth}{0}
 
-\begin{abstract}
-This paper introduces several statistical models for the automatic projective orchestration of a piano score. We evaluate the RBM, CRBM and FGCRBM models on a short-term frame-level predictive task well-known in time-series modelling. We show the limits of this evaluation for musical sequences, propose an alternative event-level based task, and evaluate the same models in this new framework. We eventually introduce a \textit{Max/MSP} based system that perform in real-time the orchestration of notes played on a midi keyboard.
-\end{abstract}
-
-% We no longer use \terms command
-%\terms{Design, Algorithms, Performance}
-
-\keywords{Automatic orchestration, Conditional Restricted Boltzmann Machine, deep learning}
-
-\acmformat{Léopold Crestel, Philippe Esling, 2010. The Live Orchestral Piano : a conditional model for musical orchestration}
-% At a minimum you need to supply the author names, year and a title.
-% IMPORTANT:
-% Full first names whenever they are known, surname last, followed by a period.
-% In the case of two authors, 'and' is placed between them.
-% In the case of three or more authors, the serial comma is used, that is, all author names
-% except the last one but including the penultimate author's name are followed by a comma,
-% and then 'and' is placed before the final author's name.
-% If only first and middle initials are known, then each initial
-% is followed by a period and they are separated by a space.
-% The remaining information (journal title, volume, article number, date, etc.) is 'auto-generated'.
-
-\begin{bottomstuff}
-Author's addresses: L. Crestel and P.Esling, Représentation Musicales,
-Institut de Recherche et Coordination Acoustique/Musique; 
-\end{bottomstuff}
-
+\begin{document} 
 \maketitle
+\begin{abstract}
+\begin{quote}
+This paper introduces several statistical models for the automatic projective orchestration of a piano score. We evaluate the RBM, CRBM and FGCRBM models on a short-term frame-level predictive task well-known in time-series modelling. We show the limits of this evaluation for musical sequences, propose an alternative event-level based task, and evaluate the same models in this new framework. We eventually introduce a \textit{Max/MSP} based system that perform in real-time the orchestration of notes played on a midi keyboard.
+\end{quote}
+\end{abstract}
 
 \section{Introduction}
 % Orchestration classique
+%% Musical orchestration : why is it so hard ?
+\textit{Musical orchestration} is the subtle art of writing musical pieces for the orchestra, by combining the different instruments in order to create a particular sound. A classic exercise, which has actually been used by many famous composer as writing method, consists in two steps. An harmonic, melodic, and rhythmic structure is first written in the form of a piano score (or equivalently any polyphonic instrument). This structure is then projected on an orchestra, by spreading the harmonic, melodic and rhythmic structure over the different instruments. This second step, the mapping from a piano score to an orchestral score, is often referred to as \textit{projective orchestration}. Given the number of different instruments in a symphonic orchestra and their respective range of notes, one can foresee the large number of possible combination implied.
+
+Beside this combinatorial problem, the resulting sound of an even simple instrumental mixture is particularly difficult to predict, especially its emerging timbre. Several attempts to mathematically characterize the timbre as a set of spectro-temporal descriptors have outputted the complex non linear behaviours involved. Furthermore, an interesting orchestration will generally not simply be the allocation of the notes written on the piano score over the different instrument but will imply extension of the harmony and doubling some note with the octave. Eventually, orchestration is often referred to as the art of manipulating instrumental timbres, which lacks of both proper musical notation and a precise mathematical definition.
+Those difficulties have probably been a major obstacle toward the construction of a theory of orchestration. Then it remains a mainly empirical discipline, taught through the observation of already existing orchestrations (\cite{piston-orch}).
+
+Our objective is to build a system able to automatically perform projective orchestration. Its input is then a piano score and its output an orchestra score. To our best knowledge, this problem has never been tackled before.
+
+% Inference stat for orchestration
+If our inability to define precise rules discard the construction of a \textit{handmade} rule based system, it does not mean that underlying regularities could not be extracted. The classic and romantic repertoires contain a large number of examples of projective orchestration (e.g. the piano reduction by Liszt of the symphonies of Beethoven, \textit{les tableaux d'une exposition}, a piano piece from Modest Moussorgsky orchestrated by Ravel). Using statistical inference on a corpus constituted by piano scores and their projective orchestration by famous composers seems to be a promising lead. We believe that an appropriate statistical model would be able to extract the complex correlations that that occur along both time pitch and instrument dimensions and that human are unable to fully understand.
+
+% Only symbolic justification (ici ou dans le texte ???)
+%It has been pointed out that orchestration is art timbre blablablabl Besides, we hypothesize that in the purely symbolic information contained in the score written by composer lie knowledge about acoustic properties. Considering that all the information about instrumental mixtures is contained at a symbolic level is a strong assumption, but not a non-sense since those examples have been composed based on a certain knowledge.
+
 \begin{figure}
 \centering
-\includegraphics[scale=0.2]{orch}
-\label{fig:orch}
+\includegraphics[scale=0.16]{orch}
 \caption{\textit{Projective orchestration}. A piano score is extended (projected) on an orchestra. For one piano score, many acceptable orchestration exist. Our hypothesis is that a piano score is strongly correlated to any of the orchestration that could be produced from this piece.}
+\label{fig:orch}
 \end{figure}
-%% Musical orchestration : why is it so hard ?
-\textit{Musical orchestration} is the subtle art of writing musical pieces for the orchestra, by combining the different instruments in order to create a particular sound. Given the number of different instruments in a symphonic orchestra and their respective range of notes, one can foresee the huge number of combination to consider in an orchestration problem.
-Beside this combinatorial problem, the resulting sound of an even simple instrumental mixture is particularly difficult to predict, especially its emerging timbre. 
-Several attempts to mathematically characterize the timbre as a set of spectro-temporal descriptors have outputted the complex non linear behaviours involved.
-Those difficulties have probably been an obstacle to the construction of a theory of orchestration and it remains a mainly empirical discipline, taught through the observation of already existing orchestrations (\cite{piston-orch}).
-A classic exercise, which is actually a way to produce orchestral music, consists in two steps.
-An harmonic, melodic, and rhythmic structure is first written in the form of a piano score (or any polyphonic instrument) the timbre dimension being at this point discarded. This structure is then projected on an orchestra, by spreading the harmonic, melodic and rhythmic structure over the different instruments. This second step, the mapping from a piano score to an orchestral score, is often referred to as \textit{projective orchestration}.
-
-We believe that embodied in the many projective orchestrations already performed by famous composers lie rules and  regularities that human being are unable to extract due to the dimensionality of the space considered. 
-Considering that all the information about instrumental mixtures is contained at a symbolic level is a strong assumption, but reasonable since those examples have been composed based on a certain knowledge.
-
-Our objective is to build a system able to automatically perform projective orchestration. 
-In a first step, it tries to model the probabilistic distribution of the orchestral score conditionally on the piano score through statistical inference methods. This
-
-Lie at symbolic level
-By using automatic inference, we 
-
-%% Projective and injective. SOA automatic injective orchestration
-The wide definition we gave of orchestration actually covers many different sub-problems from which arise two different paradigms for writing orchestral music. Among those, we can distinguish \textit{injective} and \textit{projective} orchestration \cite{eslingthesis}. In the \textit{injective} paradigm, the fundamental problem is to find a mixture of instrument which sounds as close as possible, in term of timbre, of a particular target sound (for instance a crying baby). A formal definition can be given through the definition of a timbral target instead of the vague concept of target sound, which is the evolution in time of a set of spectral descriptors. In this framework, rhythmic, harmonic and melodic structures emerge as the background of the timbral landscape depicted.
-
-\textit{Projective} orchestration can be seen as the projection of a piano score on an orchestra (see figure \ref{fig:orch}).
-In this paradigm, the composition process rely on an already existing harmonic, rhythmic and melodic structure and propose a timbral evolution over it. A limited yet helpful analogy would be consider it as colouring a black and white picture.
-The classic and romantic repertoires contain a huge amount of example (e.g. the piano reduction by Liszt of the symphonies of Beethoven, \textit{les tableaux d'une exposition}, a piano piece from Modest Moussorgsky orchestrated by Ravel).
-
-% Injective : Orchids
-A computer-assisted tool for orchestration have already been developed in the injective framework. Orchids \cite{esling2010dynamic} is a system based on a genetic algorithm which try to find a mixture of instrument as close as possible of a given timbre target. Several measures based on spectro-temporal descriptors of the instruments are used to build a multi-objective criterion.
-
-% Our objective
-The objective of our work is to produce a system able to automatically perform the projective orchestration of a piano score. Its input is then a piano score and its output an orchestra score. To our best knowledge, this problem has never been tackled before. 
-% How = Deep learning
-Our system will rely on statistical inference in order to extract the correlations between an original piano scores and its existing orchestrations by famous composers.
-More precisely, we will use the most recent advent in machine learning and a set of model called conditional Restricted Boltzmann Machine (\textit{cRBM}).
 
 %Stat inf ?
 Statistical inference refers to methods which suppose that a set of data has been drawn from a probability distribution. The objective is to deduce properties of this underlying distribution, by observing a subset of those data. In our case, the objective is to infer rules of orchestration by observing pieces written by famous composers (experts). Inferring properties about this underlying probability distribution is called the \textit{learning} phase.
-In our context, it can be seen as trying to find the correlations between a piano score and an orchestral score observed in the training set. Note that for one original piano score, many different orchestrations are acceptable with no objective criterion to rank them. The probabilistic framework perfectly express this diversity of solution.
-
-% Only symbolic ?
-In the light of the discussion about the multi-modal aspect of orchestration, it can seems absurd to 
-try to build a system based on the mere symbolic information. Indeed, acoustic properties are not described by the limited musical notation used in scores. However, if the acoustic properties are not explicitly described in the score, the composer wrote it being aware of their effects. Hence, their knowledge of acoustic and spectral properties of instrument mixtures is embodied in the purely symbolic transformation between the piano and orchestra score. By learning on such a set of orchestration, we believe that a purely symbolic system will be able to infer this embodied knowledge.
+In our context, it can be seen as trying to find the correlations between a piano score and an orchestral score observed in the training set. Note that for one original piano score, many different orchestrations are acceptable with no objective criterion to rank them. The probabilistic framework perfectly fits this diversity of solution.
 
 % Deep learning :
 % Puissant = modèle distrbutions complexes
 % (Fast) generation
 % Knowledge extraction
-Statistical inference actually covers a wide range of domains. Among them, deep learning recently appeared as a most promising field in intelligence artificial and representation learning. Its impressive results when dealing with huge amount of data, and high dimensional problems let us think that it might be a particularly fitted method for projective orchestration of symbolic sequences. In particular, promising results in text modelling (ref text modeling sutskever...) and symbolic music generation (ref boulanger) are encouraging, since 
-those work rely on data representations very close to the one we used. Indeed, we worked with a \textit{pianoroll} representation which leads to sequences of sparse high-dimensional binaries vectors.
+Statistical inference covers a wide range of domains. Among them, deep learning recently appeared as a most promising field in intelligence artificial and representation learning. 
+%Its impressive results when dealing with huge amount of data, and high dimensional problems let us think that it might be a particularly fitted method for projective orchestration of symbolic sequences. In particular, promising results in text modelling (ref text modeling sutskever...) and symbolic music generation (ref boulanger) are encouraging, since those work rely on data representations very close to the one we used. Indeed, we worked with a \textit{pianoroll} representation which leads to sequences of sparse high-dimensional binaries vectors.
 
 % Which model and why ?
-The \textit{pianoroll} representation of the scores are then feed to a specifically tailored model based on the Restricted Boltzmann Machine (\textit{RBM}). More precisely, we investigated two models called conditional RBM (\textit{cRBM}) and Factored Gated \textit{cRBM} (\textit{FGcRBM}) \cite{taylor2009composable}.
-While being able to model complex distributions through latent units, those models implement a notion of context which allow us to model both the influence of the past over the present (temporal dimension) and of the piano over the orchestra.
+We propose three models specified by a data representation and a probabilistic model. Scores are represented by a piano-roll \prettyref{fig:pianoroll}. For orchestra scores, the piano-rolls of each instruments are concatenated along the pitch dimension in order to form a single piano-roll. We To model the multi-dimensional time series obtained from that representation we experimented a \textit{RBM}, a conditional RBM (\textit{cRBM}) and Factored Gated \textit{cRBM} (\textit{FGcRBM}) \cite{taylor2009composable}.
+Those models implement a notion of context, which is useful for representing both time dependencies and influence of the piano score over the orchestra score, and are generative, which means that a model directly represents the distribution of the data (by opposition to discriminative, used sometimes in classification or prediction tasks). In practice, it means that once trained, samples can be drawn from the model and then generate data similar to the one contained in the training database.
+
+% DANS LE TEXTE :
+%While being able to model complex distributions through latent units, those models implement a notion of context which allow us to model both the influence of the past over the present (temporal dimension) and of the piano over the orchestra.
 % Generatif
-Those model also meet our expectation by being able to generate automatically orchestration after the learning phase. Mathematically, it means that we are able to sample from the distribution learned by the model. If correctly trained, the sampled data will boast structuring elements present in the training set of data. Those models are then called \textit{generatives}. Evaluate generatives models is complicated because of the lack of objective criterion. As pointed out before, for a given piano score, many different orchestration can be proposed and none of them are better than the other. 
+%Those model also meet our expectation by being able to generate automatically orchestration after the learning phase. Mathematically, it means that we are able to sample from the distribution learned by the model. If correctly trained, the sampled data will boast structuring elements present in the training set of data. Those models are then called \textit{generatives}. Evaluate generatives models is complicated because of the lack of objective criterion. As pointed out before, for a given piano score, many different orchestration can be proposed and none of them are better than the other. 
 
 %% Datasets, how to deal with them
-The test dataset must present the same characteristics of the training dataset while being different. Usually, the set of data we want to model is partitioned into three subsets called training, validating and testing datasets. The validating set is used to define a stopping criterion during the training phase, while the test dataset is used for evaluation purposes. The likelihood of a training  test under the modelled distribution is probably the best evaluation measure for generative models. It is the probability that those "ideal" set of data have been generated by the trained system. Unfortunately, the likelihood cannot be easily computed for the proposed models.
-% Evaluation framework
-To evaluate their performance, we define for the first time a quantitative evaluation framework for projective orchestration systems. We took inspiration from the many previous works in automatic music composition (REFS BOULanger ET BAHCLSTM). Most of them rely on a frame-level predictive task based on an accuracy measure.
-This evaluation framework originally defined for music prediction is then extended to the projective orchestration task.
-We highlighted a major flaw in this evaluation framework and proposed a modified version based on an event-level instead of a frame-level measurement.
-Thanks to this objective criterion, we could explore (through a grid-search, this is the ugly truth...) the hyper-parameter space, select a configuration and compare the different models between them : \textit{cRBM}, \textit{FGcRBM}, and baseline models (random generation and repeat of the previous frame).
+%The test dataset must present the same characteristics of the training dataset while being different. Usually, the set of data we want to model is partitioned into three subsets called training, validating and testing datasets. The validating set is used to define a stopping criterion during the training phase, while the test dataset is used for evaluation purposes. The likelihood of a training  test under the modelled distribution is probably the best evaluation measure for generative models. It is the probability that those "ideal" set of data have been generated by the trained system. Unfortunately, the likelihood cannot be easily computed for the proposed models.
+%% Evaluation framework
+%To evaluate their performance, we define for the first time a quantitative evaluation framework for projective orchestration systems. We took inspiration from the many previous works in automatic music composition (REFS BOULanger ET BAHCLSTM). Most of them rely on a frame-level predictive task based on an accuracy measure.
+%This evaluation framework originally defined for music prediction is then extended to the projective orchestration task.
+%We highlighted a major flaw in this evaluation framework and proposed a modified version based on an event-level instead of a frame-level measurement.
+%Thanks to this objective criterion, we could explore (through a grid-search, this is the ugly truth...) the hyper-parameter space, select a configuration and compare the different models between them : \textit{cRBM}, \textit{FGcRBM}, and baseline models (random generation and repeat of the previous frame).
 
 % LOP
 An interesting property of the \textit{cRBM} and \textit{FGcRBM} models is that their generative step is sufficiently fast for real-time application. Hence, we propose a system which orchestrate in real-time the performance of a pianist. Our implementation consists in a \textit{Max-MSP} patch that get the midi information from the piano, send it to the trained network which generates the orchestration through a Matlab script and send it back to the Max patch. The communication between the server (Matlab) and client (MAX) is done through the \textit{OSC} protocol. We called this system the Live Orchestral Piano (\textit{LOP}).
@@ -178,7 +101,7 @@ This paper is organized as follows. In sections 2 we introduce the state of the 
 
 \section{State of the art}
 \label{sec:state_of_the_art}
-We used three models in our work : the \textit{RBM}, the \textit{cRBM} and the \textit{FGcRBM}. They are presented in the following section by increasing level of complexity, each model adding a new \textit{degree of freedom} to the previous one.
+In this section, the three models evaluated in this contribution are detailed. The \textit{RBM}, the \textit{cRBM} and the \textit{FGcRBM} are presented by increasing level of complexity, each model adding a new \textit{degree of freedom} to the previous one.
 
 \subsection{Restricted-Boltzmann Machine}
 \begin{figure}
@@ -187,32 +110,35 @@ We used three models in our work : the \textit{RBM}, the \textit{cRBM} and the \
 \caption{The \textit{Restricted Boltzmann Machine} (RBM) is defined by its units ($i$ or $j$) and weights ($W_{ij}$). Units are divided between visible units (4 units at the bottom) and hidden units (3 top-most). Weights and units define an energy function. Training an RBM consists in lowering the energy function around the example from a training set. Inference in this model is easy to perform since the hidden (resp. visible) units are independent from each others.}
 \label{fig:RBM}
 \end{figure}
-An \textit{RBM} \cite{Hinton:2006:FLA:1161603.1161605} models the probability distribution of a set of random variables graphically represented as \textit{units}. Those units are divided between visible units, denoted by the vector $\bm{v} = (v_{1},...,v_{m})$, and hidden units, $\bm{h} = (h_{1},...,h_{n})$. In the simple model we present here, the visible units models the observed data and hence have the same dimensions, and hidden units some explanatory unobserved factors. The visible and hidden units are connected by weights $W_{ij}$. The joint probability of the visible and hidden units is given by $p_{model}(\bm{v},\bm{h}) = \frac{\exp^{-E(\bm{v},\bm{h})}}{Z}$ where
+\textit{RBM} \cite{Hinton:2006:FLA:1161603.1161605} is a graphical probabilistic model \prettyref{fig:RBM}. It is composed by a set of units, each representing a random variable. Links between those units represents conditional dependencies between those variables and are named \textit{weights}. The units are divided between visible, denoted by the vector $\bm{v} = (v_{1},...,v_{m})$, and hidden units, $\bm{h} = (h_{1},...,h_{n})$. Visible nits generally represent the observed data, and then have the same dimension as the vectors in the training set. Hidden units model explanatory unobserved factors.
+Weights between units are denoted $W_{ij}$. The joint probability of the visible and hidden units is given by $p_{model}(\bm{v},\bm{h}) = \frac{\exp^{-E(\bm{v},\bm{h})}}{Z}$ where
 \begin{equation}
 E(\bm{v},\bm{h}) = - \sum_{i=1}^{m} a_{i} v_{i}  - \sum_{i=1}^{m} \sum_{j=1}^{n} v_{i} W_{ij} h_{j} - \sum_{j = 1}^{n} b_{j} h_{j}
 \end{equation}
-is the energy function associated to the model and $Z = \sum_{v,h}\exp^{-E(v,h)}$ is the (usually intractable) partition function. $\bm{\theta} = \left\lbrace \bm{W} , \bm{a} , \bm{b} \right\rbrace$ is the set of parameters of the network.
+is the energy function associated to the model. $Z = \sum_{v,h}\exp^{-E(v,h)}$ is a normalizing factor to probability and is called the partition function. $\bm{\theta} = \left\lbrace \bm{W} , \bm{a} , \bm{b} \right\rbrace$ is the set of parameters of the network.
 
-In this context, training a model on a set of observed data means that we want the distribution of the model ($p_{model}$) to be as close as possible to the hypothetical real distribution of those data ($p_{data}$). A commonly used criterion is to maximize the likelihood of the training set, which can be defined as the probability those data have been sampled from the distribution of the model. The vector from the training set $\mathcal{D}$ are designated by $\bm{v^{(l)}}$.
-Minimizing the negative log-likelihood is often preferred
+In this context, training a model on a set of data means that we want the distribution of the model ($p_{model}$) to be as close as possible to the hypothetical real distribution of those data ($p_{data}$). A commonly used criterion for training this model is to maximize the likelihood of the training set. The vectors from the training set $\mathcal{D}$ are designated by $\bm{v^{(l)}}$.
+Instead of maximiazing the likelihood, minimizing the negative log-likelihood is often preferred as it simplify expressions :
 \begin{equation}
-\mathcal{L(\bm{\theta}|\mathcal{D})}  = \frac{1}{N_{\mathcal{D}}} \sum_{\bm{v^{(l)}} \in \mathcal{D}} - \ln \left[ p(\bm{v^{(l)}}|\bm{\theta})\right]
+\mathcal{L(\bm{\theta}|\mathcal{D})}  = \frac{1}{N_{\mathcal{D}}} \sum_{\bm{v^{(l)}} \in \mathcal{D}} - \ln \left( p(\bm{v^{(l)}}|\bm{\theta})\right)
 \end{equation}
 where $N_{\mathcal{D}}$ is the size of the dataset. 
 
 The search for the minimum of a non-linear function can be tackled by using gradient descent (REFERENCE). The gradient of the negative log-likelihood of a vector from the training database $\bm{v}^{(l)}$ is given by
 \begin{equation}
+\begin{split}
 - \frac{\partial \ln \left[ p(\bm{v^{(l)}}|\bm{\theta})\right]}{\partial \bm{\theta}} 
-\approx 
+= 
 \mathbb{E}_{p(\bm{h}|\bm{v^{(l)}})} \left[ \frac{\partial E(\bm{v^{(l)}},\bm{h})}{\partial \bm{\theta}} \right] 
-- 
+- \\
 \mathbb{E}_{p(\bm{v} , \bm{h})} \left[ \frac{\partial E(\bm{v},\bm{h})}{\partial \bm{\theta}} \right]
+\end{split}
 \end{equation}
 It is noteworthy to mention that it is formed by the difference between two expectation of the same quantity. The expectation on the left is often referred to as the \textit{data driven} term since it is an expectation over the distribution of the hidden units conditionally on a visible sample from the data distribution. 
 The expectation on the right (minus sign) is referred to as the \textit{model driven} term since it is an expectation over the joint distribution of the model.
 Unfortunately this quantity intractable because of the model driven term which involves a sum over all the possible configurations of the hidden (alternatively visible) units in order to compute the partition function (REF).
 
-A training algorithm called \gls{CD} \cite{hinton2002training} rely on an approximation of the model driven term by running a k-step Gibbs chain to obtain a sample $\bm{v}^{(l,k)}$
+A training algorithm called \textit{CD} \cite{hinton2002training} rely on an approximation of the model driven term by running a k-step Gibbs chain to obtain a sample $\bm{v}^{(l,k)}$
 \begin{equation}
 \label{eq:grad_log_like}
 - \frac{\partial \ln \left[ p(\bm{v^{(l)}}|\bm{\theta})\right]}{\partial \bm{\theta}}
@@ -242,7 +168,7 @@ It has been proved \cite{bengio2009learning} that the samples we obtain after an
 \includegraphics[scale=0.3]{CRBM_orchestration}
 \caption{\textit{Conditional RBM} adds a layer of context units to the standard RBM architectures. Those context units linearly modify the bias of both visible and hidden units.}
 \end{figure}
-The Conditional \textit{RBM} model \cite{taylor2009composable} is an extension of the \gls{RBM} in which dynamic biases are added to the static biases of the visible and hidden units (respectively $\bm{a}$ and $\bm{b}$). This dynamic bias linearly depends on a set of units called context units $(\bm{x})$. Those context units can be used to represent the influence on the visible units of any other factor. Typically, when trying to model time series, those context units can be used to model the influence of the recent past frames over the current frame. Hence, if we now consider that the visible units are given for a certain time frame $\bm{v}(t)$, context units can be defined as the concatenation of the N last time frames $\bm{x}(t) = \left( v_{1}^{(t)} , ... , v_{m}^{(t)}, ... , v_{1}^{(t-N)} ... , v_{m}^{(t-N)} \right)$, where N denotes the temporal order of the model.
+The Conditional \textit{RBM} model \cite{taylor2009composable} is an extension of the \textit{RBM} in which dynamic biases are added to the static biases of the visible and hidden units (respectively $\bm{a}$ and $\bm{b}$). This dynamic bias linearly depends on a set of units called context units $(\bm{x})$. Those context units can be used to represent the influence on the visible units of any other factor. Typically, when trying to model time series, those context units can be used to model the influence of the recent past frames over the current frame. Hence, if we now consider that the visible units are given for a certain time frame $\bm{v}(t)$, context units can be defined as the concatenation of the N last time frames $\bm{x}(t) = \left( v_{1}^{(t)} , ... , v_{m}^{(t)}, ... , v_{1}^{(t-N)} ... , v_{m}^{(t-N)} \right)$, where N denotes the temporal order of the model.
 The energy function of the Conditional RBM is given by
 \begin{equation}
 \label{eq:energy_CRBM}
@@ -425,39 +351,49 @@ We evaluated the \textit{CRBM} and \textit{FGCRBM} previously presented \prettyr
 % Precision et accuracy
 %
 % Séparer repeat et change true/false positive
-
-\begin{figure}
-\centering
-\begin{tabular}{c c}
-\hline
-\multirow{2}{*}{Model} & Orchestral Frame-level (\%)\\
-\hline
-Random & 0.51\\ 
-Repeat & 93.25\\ 
-\hline \hline
-CRBM & 45.07\\ 
-FGCRBM & 2.05\\ 
-\end{tabular}
-\caption{Frame-level accuracy}
-\label{fig:result_frame}
-\end{figure}
-
-\begin{figure}
-\centering
-\begin{tabular}{c c}
-\hline
-\multirow{2}{*}{Model} & Orchestral Event-level (\%)\\
-\hline
-Random & 0.50\\ 
-Repeat & 93.25\\ 
-\hline \hline
-CRBM & 27.78\\ 
-FGCRBM & \\ 
-\end{tabular}
-\caption{Event-level accuracy}
-\label{fig:result_frame}
-\end{figure}
+%%%%%%%%%%%%%%%%%%\\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%\\
+%%%%%%%%%\\
+%%%%%%%%%%%%%%%%%%\\
+% Coller une image
+%\begin{figure}
+%\centering
+%\begin{tabular}{c c}
+%\hline
+%\multirow{2}{*}{Model} & Orchestral Frame-level (\%)\\
+%\hline
+%Random & 0.51\\ 
+%Repeat & 93.25\\ 
+%\hline \hline
+%CRBM & 45.07\\ 
+%FGCRBM & 2.05\\ 
+%\end{tabular}
+%\caption{Frame-level accuracy}
+%\label{fig:result_frame}
+%\end{figure}
+%
+%\begin{figure}
+%\centering
+%\begin{tabular}{c c}
+%\hline
+%\multirow{2}{*}{Model} & Orchestral Event-level (\%)\\
+%\hline
+%Random & 0.50\\ 
+%Repeat & 93.25\\ 
+%\hline \hline
+%CRBM & 27.78\\ 
+%FGCRBM & \\ 
+%\end{tabular}
+%\caption{Event-level accuracy}
+%\label{fig:result_frame}
+%\end{figure}
 %% C'est de la merde, même le edvent-level ça règle pas du tout le problème : soit on prédit l'event mais avec un context basé sur les frames, et dans ce cas là le modèle repeat est bon, soit on prends que les event mais ça n'a aucun sens (pas de rythme...)
+%%%%%%%%%
+%%%%%%%%%
+%%%%%%%%%\\
+%%%%%%%%%
+%%%%%%%%%\\
+
 
 \section{Live Orchestral Piano}
 
@@ -466,20 +402,10 @@ FGCRBM & \\
 % Better DB
 % Change the data representation
 
-% Acknowledgments
-\begin{acks}
-The authors would like to thank
-\end{acks}
+% Acknowledgmentsinclude
 
 % Bibliography
-\bibliographystyle{ACM-Reference-Format-Journals}
+\bibliographystyle{iccc}
 \bibliography{biblio}
-                             % Sample .bib file with references that match those in
-                             % the 'Specifications Document (V1.5)' as well containing
-                             % 'legacy' bibs and bibs with 'alternate codings'.
-                             % Gerry Murray - March 2012
-
-\medskip
 
 \end{document}
-% End of v2-acmsmall-sample.tex (March 2012) - Gerry Murray, ACM

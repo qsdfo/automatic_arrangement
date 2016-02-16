@@ -5,6 +5,7 @@ Data
 # Image files
 **/*.pdf
 **/*.png
+**/*.plist
 
 # CSV, but not the config file and results files
 **/*.csv
@@ -17,3 +18,8 @@ Data
 
 # Compiled code
 **/*.pyc
+
+# LaTex compilation files
+**/*.aux
+**/*.bst
+**/*.doc

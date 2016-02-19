@@ -1,3 +1,4 @@
-n_hidden,temporal_order,learning_rate,training_epochs,batch_size
-500,10,0.1,1000,100
-600,10,0.1,1000,100
+temporal_granularity,n_hidden,temporal_order,learning_rate,training_epochs,batch_size,gibbs_sampling_step_test
+frame_level,500,10,0.1,10,100,40
+frame_level,600,10,0.1,10,100,40
+frame_level,800,10,0.1,10,100,40

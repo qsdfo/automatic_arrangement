@@ -59,8 +59,8 @@ if os.stat(result_file).st_size == 0:
     # Empty file
     config_number_trained = 0
 else:
-    with open(result_file, 'rb') as csvfile:
-        result_csv = csv.reader(csvfile, delimiter=',')
+    with open(result_file, 'rb') as csvfile2:
+        result_csv = csv.reader(csvfile2, delimiter=',')
         headers_result = result_csv.next()
         result_number = 0
         for row in result_csv:
@@ -70,19 +70,22 @@ else:
                 this_hyperparam[hyperparam] = row[column]
                 column += 1
             checked_config[result_number] = this_hyperparam
-            config_number += 1
-    config_number_trained = config_number
+            result_number += 1
+    config_number_trained = result_number
 log_file.write((u'## Number of config to train : %d \n' % config_number_to_train).encode('utf8'))
 log_file.write((u'## Number of config already trained : %d \n' % config_number_trained).encode('utf8'))
-log_file.write((u'###############################################\n\n').encode('utf8'))
-
-# Compare granularity with granularity in the config_file
+log_file.write((u'\n###############################################\n\n').encode('utf8'))
 
 # Train the model, looping over the hyperparameters configurations
 config_train = 0
 for config_hp in hyper_parameters.itervalues():
-    log_file.write((u'###############################################\n\n').encode('utf8'))
+    log_file.write((u'\n###############################################\n').encode('utf8'))
     log_file.write((u'## Config ' + str(config_train) + '\n').encode('utf8'))
+    # Check the temporal granularity
+    if not temporal_granularity == config_hp['temporal_granularity']:
+        log_file.write("The temporal granularity in the folder name is not the same as the one announced in the config file\n").encode('utf8')
+        config_train += 1
+        continue
     # Before training for an hyperparam point, check if it has already been tested.
     #   If it's the case, values would be stored in an other CSV files (result.csv), with its performance
     NO_RUN = False
@@ -91,17 +94,32 @@ for config_hp in hyper_parameters.itervalues():
             NO_RUN = True
             break
     if NO_RUN:
-        log_file.write(("This config has already been tested\n\n").encode('utf8'))
-        break
+        log_file.write(("This config has already been tested\n").encode('utf8'))
+        config_train += 1
+        continue
 
     log_file.close()
     # Train the model
-    trained_model, result_test = train_and_test(config_hp, database, log_file_path)
+    trained_model, precision, recall, accuracy = train(config_hp, database, log_file_path)
     log_file = open(log_file_path, 'ab')
-    log_file.write(('Performance : ').encode('utf8'))
+    log_file.write(('## Performance : \n').encode('utf8'))
+    log_file.write(('    Precision = {}'.format(precision)).encode('utf8'))
+    log_file.write(('    Recall = {}'.format(recall)).encode('utf8'))
+    log_file.write(('    Accuracy = {}'.format(accuracy)).encode('utf8'))
 
-    # Write the results in the csv file
+    # Store results in the configuration dictionary
+    config_hp['precision'] = 100 * precision
+    config_hp['recall'] = 100 * recall
+    config_hp['accuracy'] = 100 * accuracy
+
+    # Keep count of the number of config trained
     config_index = config_number_trained + config_train  # Index of the config
     config_train += 1
 
     # Write the result in result.csv
+    with open(result_file, 'ab') as csvfile:
+        writer = csv.DictWriter(csvfile, delimiter=',', fieldnames=headers_result)
+        count = 0
+        writer.writerow(config_hp)
+
+log_file.close()

@@ -14,6 +14,9 @@ from theano.tensor.shared_randomstreams import RandomStreams
 import time
 
 from Data_processing.load_data import load_data
+from Measure.accuracy_measure import accuracy_measure
+from Measure.precision_measure import precision_measure
+from Measure.recall_measure import recall_measure
 
 
 class RBM_temporal_bin(object):
@@ -196,24 +199,23 @@ class RBM_temporal_bin(object):
     #   - by alternate Gibbs sampling
     def sampling_Gibbs(self, k=20):
         # Negative phase with clamped past units
-        visible_chain, mean_visible_chain, past_chain, updates = theano.scan(self.gibbs_step,
-                                                                             outputs_info=[self.input],
-                                                                             non_sequences=[None, self.past],
-                                                                             n_steps=k)
-
+        ([visible_chain, mean_visible_chain, past], updates) = theano.scan(self.gibbs_step,
+                                                                           outputs_info=[self.input, None, None],
+                                                                           non_sequences=[self.past],
+                                                                           n_steps=k)
         pred_v = visible_chain[-1]
         mean_pred_v = mean_visible_chain[-1]
-        return pred_v, mean_pred_v
+        return pred_v, mean_pred_v, updates
 
     def prediction_measure(self, k=20):
-        pred_v, mean_pred_v = self.sampling_Gibbs(k)
-        precision = Score_function.prediction_measure(self.input, mean_pred_v)
-        recall = Score_function.recall_measure(self.input, mean_pred_v)
-        accuracy = Score_function.accuracy_measure(self.input, mean_pred_v)
-        return precision, recall, accuracy
+        pred_v, mean_pred_v, updates = self.sampling_Gibbs(k)
+        precision = precision_measure(self.input, mean_pred_v)
+        recall = recall_measure(self.input, mean_pred_v)
+        accuracy = accuracy_measure(self.input, mean_pred_v)
+        return precision, recall, accuracy, updates
 
 
-def train_and_test(hyper_parameter, dataset, log_file_path):
+def train(hyper_parameter, dataset, log_file_path):
     """
     Demonstrate how to train and afterwards sample from it using Theano.
 
@@ -232,6 +234,8 @@ def train_and_test(hyper_parameter, dataset, log_file_path):
     :param n_samples: number of samples to plot for each chain
 
     """
+    # Open log file
+    log_file = open(log_file_path, 'ab')
 
     # Load parameters
     n_hidden = int(hyper_parameter['n_hidden'])
@@ -241,12 +245,13 @@ def train_and_test(hyper_parameter, dataset, log_file_path):
     batch_size = int(hyper_parameter['batch_size'])
     gibbs_sampling_step_test = int(hyper_parameter['gibbs_sampling_step_test'])
 
+    log_file.write((u'# Training...\n').encode('utf8'))
+
     # First check if this configuration has not been tested before,
     # i.e. its parameter are written in the result.csv file
     orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index = load_data(data_path=dataset, log_file_path=log_file_path, temporal_order=temporal_order, minibatch_size=batch_size, shuffle=True, split=(0.7, 0.1, 0.2))
 
     # Get dimensions
-    n_visible = orch.get_value(borrow=True).shape[1]
     # piano_dim = piano.get_value(borrow=True).shape[1]
     orch_dim = orch.get_value(borrow=True).shape[1]
     n_past = (piano.get_value(borrow=True).shape[1]) + (orch.get_value(borrow=True).shape[1]) * temporal_order
@@ -264,6 +269,11 @@ def train_and_test(hyper_parameter, dataset, log_file_path):
     validate_size = 0
     for i in xrange(n_validate_batches):
         validate_size += validate_index[i].size
+
+    n_test_batches = len(test_index)
+    test_size = 0
+    for i in xrange(n_test_batches):
+        test_size += test_index[i].size
 
     # # D E B U G G
     # # Set test values
@@ -288,24 +298,24 @@ def train_and_test(hyper_parameter, dataset, log_file_path):
     # construct the RBM class
     rbm = RBM_temporal_bin(input=v,
                            past=p,
-                           n_visible=n_visible,
+                           n_visible=orch_dim,
                            n_hidden=n_hidden,
                            n_past=n_past,
                            np_rng=rng,
                            theano_rng=theano_rng)
 
     # get the cost and the gradient corresponding to one step of CD-15
-    cost, updates = rbm.cost_updates(lr=learning_rate, k=1)
+    cost, updates = rbm.cost_updates(lr=learning_rate, k=10)
     free_energy = rbm.free_energy(rbm.input, rbm.past)
-    result_test = rbm.prediction_measure(gibbs_sampling_step_test)
+    precision, recall, accuracy, updates_test = rbm.prediction_measure(gibbs_sampling_step_test)
 
     #################################
     #     Training the CRBM         #
     #################################
 
     # the purpose of train_crbm is solely to update the CRBM parameters
-    train_temp_rbm = theano.function([index, index_history],
-                                     cost,
+    train_temp_rbm = theano.function(inputs=[index, index_history],
+                                     outputs=cost,
                                      updates=updates,
                                      givens={v: orch[index],
                                              p: create_past_vector(piano[index],
@@ -315,8 +325,8 @@ def train_and_test(hyper_parameter, dataset, log_file_path):
                                                                    orch_dim)},
                                      name='train_temp_rbm')
 
-    train_temp_rbm_last_batch = theano.function([index, index_history],
-                                                cost,
+    train_temp_rbm_last_batch = theano.function(inputs=[index, index_history],
+                                                outputs=cost,
                                                 updates=updates,
                                                 givens={v: orch[index],
                                                         p: create_past_vector(piano[index],
@@ -326,8 +336,8 @@ def train_and_test(hyper_parameter, dataset, log_file_path):
                                                                               orch_dim)},
                                                 name='train_temp_rbm_last_batch')
 
-    get_free_energy_validation = theano.function([index, index_history],
-                                                 free_energy,
+    get_free_energy_validation = theano.function(inputs=[index, index_history],
+                                                 outputs=free_energy,
                                                  givens={v: orch[index],
                                                          p: create_past_vector(piano[index],
                                                                                orch[index_history],
@@ -336,22 +346,23 @@ def train_and_test(hyper_parameter, dataset, log_file_path):
                                                                                orch_dim)},
                                                  name='get_free_energy_validation')
 
-    get_free_energy_train = theano.function([index, index_history],
-                                            free_energy,
+    get_free_energy_train = theano.function(inputs=[index, index_history],
+                                            outputs=free_energy,
                                             givens={v: orch[index],
                                                     p: create_past_vector(piano[index],
-                                                    orch[index_history],
-                                                    train_size,
-                                                    temporal_order,
-                                                    orch_dim)},
+                                                                          orch[index_history],
+                                                                          train_size,
+                                                                          temporal_order,
+                                                                          orch_dim)},
                                             name='get_free_energy_train')
 
-    test_model = theano.function(input=[],
-                                 output=result_test,
+    test_model = theano.function(inputs=[index, index_history],
+                                 outputs=[precision, recall, accuracy],
+                                 updates=updates_test,
                                  givens={v: orch[index],
                                          p: create_past_vector(piano[index],
                                                                orch[index_history],
-                                                               train_size,
+                                                               test_size,
                                                                temporal_order,
                                                                orch_dim)},
                                  name='test_model')
@@ -393,8 +404,11 @@ def train_and_test(hyper_parameter, dataset, log_file_path):
         free_energy_train = np.mean(get_free_energy_train(all_train_idx, all_train_hist_idx.ravel()))
         free_energy_val = np.mean(get_free_energy_validation(all_val_idx, all_val_hist_idx.ravel()))
         overfitting_measure = (free_energy_val - free_energy_train) / free_energy_val
-        print 'Training epoch {}, cost is {}     &     '.format(epoch, np.mean(mean_train_cost))
-        print 'Overfitting measure {}\n'.format(overfitting_measure)
+        if (epoch % 10) == 0:
+            log_file.write('Training epoch {}, cost is {}     &     '.format(epoch, np.mean(mean_train_cost)))
+            print ('Training epoch {}, cost is {}     &     '.format(epoch, np.mean(mean_train_cost)))
+            log_file.write('Overfitting measure {}\n'.format(overfitting_measure))
+            print ('Overfitting measure {}\n'.format(overfitting_measure))
 
         epoch += 1
 
@@ -402,11 +416,20 @@ def train_and_test(hyper_parameter, dataset, log_file_path):
 
     training_time = (end_time - start_time)
 
-    print ('Training took %f minutes' % (training_time / 60.))
+    log_file.write(('Training took %f minutes' % (training_time / 60.)))
 
+    # TEST
+    all_test_idx = []
+    for i in xrange(0, len(test_index)):
+        all_test_idx.extend(test_index[i])
+    all_test_idx = np.array(all_test_idx)     # Oui, c'est dégueulasse, mais vraiment
+    all_test_hist_idx = np.array([all_test_idx - n for n in xrange(1, temporal_order + 1)]).T
+    precision, recall, accuracy = test_model(all_test_idx, all_test_hist_idx.ravel())
 
+    # Close log file
+    log_file.close()
 
-    return rbm, result_test
+    return rbm, np.mean(precision), np.mean(recall), np.mean(accuracy)
 
 
 def create_past_vector(piano, orch, batch_size, delay, orch_dim):

@@ -21,14 +21,14 @@ def get_data(data_path, log_file_path, temporal_order):
 
     # Open log file
     log_file = open(log_file_path, "ab")
-    log_file.write("### LOADING DATA ###\n\n")
+    log_file.write("### LOADING DATA ###\n")
     log_file.write("## Unpickle data... ")
 
     data_all = cPickle.load(open(data_path, "rb"))
-    log_file.write("Done !\n\n")
+    log_file.write("Done !\n")
 
     quantization = data_all['quantization']
-    log_file.write("## Quantization : %d\n\n" % quantization)
+    log_file.write("## Quantization : %d\n" % quantization)
 
     # Build the pianoroll and valid indexes
     log_file.write("## Reading scores :\n")
@@ -82,18 +82,19 @@ def get_data(data_path, log_file_path, temporal_order):
         orch_concatenated = False
         time_updated = False
 
-        log_file.write("    # Score %s : " % info['filename'])
-        log_file.write("# written. Time indices : {} -> {}\n".format(start_time, end_time))
+        log_file.write("    # Score '%s' : " % info['filename'])
+        log_file.write(" written.\n     Time indices : {} -> {}\n".format(start_time, end_time))
 
     log_file.write("\nDimension of the orchestra : time = {} pitch = {}".format(np.shape(orch)[0], np.shape(orch)[1]))
     log_file.write("\nDimension of the piano : time = {} pitch = {}".format(np.shape(piano)[0], np.shape(piano)[1]))
 
     # Remove unused pitches
-    log_file.write("\n\n# Remove unused pitches")
+    log_file.write("\n## Remove unused pitches")
     orch_clean, orch_mapping = remove_unused_pitch(orch, instru_mapping)
     piano_clean, piano_mapping = remove_unused_pitch(piano, {'Piano': (0, 128)})
-    log_file.write("\nDimension of reduced orchestra : time = {} pitch = {}".format(np.shape(orch)[0], np.shape(orch)[1]))
-    log_file.write("\nDimension of reduced piano : time = {} pitch = {}".format(np.shape(piano)[0], np.shape(piano)[1]))
+    log_file.write("\nDimension of reduced orchestra : time = {} pitch = {}".format(np.shape(orch_clean)[0], np.shape(orch_clean)[1]))
+    log_file.write("\nDimension of reduced piano : time = {} pitch = {}".format(np.shape(piano_clean)[0], np.shape(piano_clean)[1]))
+    log_file.write("\n")
 
     ################################
     ################################
@@ -114,8 +115,8 @@ def get_data(data_path, log_file_path, temporal_order):
     ################################
     ################################
     ################################
-    orch_shared = theano.shared(np.asarray(orch, dtype=theano.config.floatX))
-    piano_shared = theano.shared(np.asarray(piano, dtype=theano.config.floatX))
+    orch_shared = theano.shared(np.asarray(orch_clean, dtype=theano.config.floatX))
+    piano_shared = theano.shared(np.asarray(piano_clean, dtype=theano.config.floatX))
 
     log_file.close()
     return orch_shared, orch_mapping, piano_shared, piano_mapping, np.array(valid_index), quantization, orch, piano

@@ -4,6 +4,8 @@
 """
 A temporal RBM with binary visible units.
 """
+# os
+import os
 # Numpy
 import numpy as np
 # Theano
@@ -247,8 +249,6 @@ def train(hyper_parameter, dataset, log_file_path):
 
     log_file.write((u'# Training...\n').encode('utf8'))
 
-    # First check if this configuration has not been tested before,
-    # i.e. its parameter are written in the result.csv file
     orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index = load_data(data_path=dataset, log_file_path=log_file_path, temporal_order=temporal_order, minibatch_size=batch_size, shuffle=True, split=(0.7, 0.1, 0.2))
 
     # Get dimensions
@@ -430,6 +430,16 @@ def train(hyper_parameter, dataset, log_file_path):
     log_file.close()
 
     return rbm, np.mean(precision), np.mean(recall), np.mean(accuracy)
+
+
+def save(rbm, save_path):
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    np.savetxt(save_path + '/W.csv', rbm.W.get_value(borrow=True), delimiter=",")
+    np.savetxt(save_path + '/P.csv', rbm.P.get_value(borrow=True), delimiter=",")
+    np.savetxt(save_path + '/vbias.csv', rbm.vbias.get_value(borrow=True), delimiter=",")
+    np.savetxt(save_path + '/pbias.csv', rbm.pbias.get_value(borrow=True), delimiter=",")
+    np.savetxt(save_path + '/hbias.csv', rbm.hbias.get_value(borrow=True), delimiter=",")
 
 
 def create_past_vector(piano, orch, batch_size, delay, orch_dim):

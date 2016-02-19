@@ -7,7 +7,7 @@ import os
 
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
-from Models.Temporal_RBM.temporal_binary_rbm import train
+from Models.Temporal_RBM.temporal_binary_rbm import train, save
 model_name = u'Temporal_RBM'
 temporal_granularity = u'frame_level'
 
@@ -101,6 +101,8 @@ for config_hp in hyper_parameters.itervalues():
     log_file.close()
     # Train the model
     trained_model, precision, recall, accuracy = train(config_hp, database, log_file_path)
+
+    # Write logs
     log_file = open(log_file_path, 'ab')
     log_file.write(('## Performance : \n').encode('utf8'))
     log_file.write(('    Precision = {}'.format(precision)).encode('utf8'))
@@ -115,6 +117,13 @@ for config_hp in hyper_parameters.itervalues():
     # Keep count of the number of config trained
     config_index = config_number_trained + config_train  # Index of the config
     config_train += 1
+
+    # Index config
+    config_hp['index'] = config_index
+    # Store the net in a csv file
+    save_net_path = result_folder + str(config_index)
+    # Save the structure in a folder (csv files)
+    save(trained_model, save_net_path)
 
     # Write the result in result.csv
     with open(result_file, 'ab') as csvfile:

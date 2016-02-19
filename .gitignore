@@ -10,7 +10,7 @@ Data
 # CSV, but not the config file and results files
 **/*.csv
 !Code/config.csv
-!Results/**/*.csv
+!Results/**/result.csv
 
 # Text and log files
 **/log

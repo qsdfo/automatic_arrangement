@@ -41,16 +41,11 @@ if not os.path.exists(result_folder):
 hyper_parameters = {}
 config_file_path = u'config.csv'
 with open(config_file_path, 'rb') as csvfile:
-    config_csv = csv.reader(csvfile, delimiter=',')
-    headers_config = config_csv.next()
+    config_csv = csv.DictReader(csvfile, delimiter=',')
+    headers_config = config_csv.fieldnames
     config_number = 0
     for row in config_csv:
-        column = 0
-        this_hyperparam = {}
-        for hyperparam in headers_config:
-            this_hyperparam[hyperparam] = row[column]
-            column += 1
-        hyper_parameters[config_number] = this_hyperparam
+        hyper_parameters[config_number] = row
         config_number += 1
 config_number_to_train = config_number
 # Import from result.csv the alreday tested configurations in a dictionnary
@@ -60,16 +55,12 @@ if os.stat(result_file).st_size == 0:
     config_number_trained = 0
 else:
     with open(result_file, 'rb') as csvfile2:
-        result_csv = csv.reader(csvfile2, delimiter=',')
-        headers_result = result_csv.next()
+        result_csv = csv.DictReader(csvfile2, delimiter=',')
+        headers_result = result_csv.fieldnames
         result_number = 0
         for row in result_csv:
-            column = 0
-            this_hyperparam = {}
-            for hyperparam in headers_config:  # /!\ Note that we use the header of the config file
-                this_hyperparam[hyperparam] = row[column]
-                column += 1
-            checked_config[result_number] = this_hyperparam
+            # Extract sub-dictionary from the result_dictionary
+            checked_config[result_number] = dict([(i, row[i]) for i in headers_config if i in row])
             result_number += 1
     config_number_trained = result_number
 log_file.write((u'## Number of config to train : %d \n' % config_number_to_train).encode('utf8'))

@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-
+import sys
 """
 A temporal RBM with binary visible units.
 """
 # os
 import os
+# CSV
+import csv
 # Numpy
 import numpy as np
 # Theano
@@ -27,6 +29,8 @@ class RBM_temporal_bin(object):
         self,
         input=None,
         past=None,
+        piano_mapping=None,
+        orch_mapping=None,
         n_visible=0,
         n_hidden=500,
         n_past=0,
@@ -46,6 +50,10 @@ class RBM_temporal_bin(object):
         self.past = past
         if not past:
             self.past = T.matrix('past')
+
+        # Stored so that we can save them after training
+        self.piano_mapping = piano_mapping
+        self.orch_mapping = orch_mapping
 
         # Architecture
         self.n_hidden = n_hidden
@@ -298,6 +306,8 @@ def train(hyper_parameter, dataset, log_file_path):
     # construct the RBM class
     rbm = RBM_temporal_bin(input=v,
                            past=p,
+                           piano_mapping=piano_mapping,
+                           orch_mapping=orch_mapping,
                            n_visible=orch_dim,
                            n_hidden=n_hidden,
                            n_past=n_past,
@@ -440,6 +450,29 @@ def save(rbm, save_path):
     np.savetxt(save_path + '/vbias.csv', rbm.vbias.get_value(borrow=True), delimiter=",")
     np.savetxt(save_path + '/pbias.csv', rbm.pbias.get_value(borrow=True), delimiter=",")
     np.savetxt(save_path + '/hbias.csv', rbm.hbias.get_value(borrow=True), delimiter=",")
+
+    fields = ['instrument', 'start_pitch', 'end_pitch', 'start_index', 'end_index']
+    with open(save_path + '/piano_mapping.csv', "wb") as f:
+        w = csv.DictWriter(f, fields)
+        w.writeheader()
+        for key, val in sorted(rbm.piano_mapping.items()):
+            row = {'instrument': key}
+            row.update(val)
+            w.writerow(row)
+    with open(save_path + '/orch_mapping.csv', "wb") as f:
+        w = csv.DictWriter(f, fields)
+        w.writeheader()
+        for key, val in sorted(rbm.orch_mapping.items()):
+            row = {'instrument': key}
+            row.update(val)
+            w.writerow(row)
+
+    # piano_map_file = csv.writer(open(save_path + '/piano_mapping.csv', 'wb'))
+    # for key, value in rbm.piano_mapping.items():
+    #     piano_map_file.writerow([key, value])
+    # orch_map_file = csv.writer(open(save_path + '/orch_mapping.csv', 'wb'))
+    # for key, value in rbm.orch_mapping.items():
+    #     orch_map_file.writerow([key, value])
 
 
 def create_past_vector(piano, orch, batch_size, delay, orch_dim):

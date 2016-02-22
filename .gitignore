@@ -24,3 +24,5 @@ Data
 **/*.bst
 **/*.doc
 **/*.log
+**/*.synctex.gz
+ICCC/ICCC-author-kit/

@@ -4,11 +4,6 @@
 \usepackage{iccc}
 
 
-\usepackage{array,multirow}
-%\newcommand{\bigcell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}
-\usepackage{hhline}% http://ctan.org/pkg/hhline
-\usepackage{xcolor}
-
 \usepackage{times}
 \usepackage{helvet}
 \usepackage{courier}
@@ -39,21 +34,25 @@ leopold.crestel@ircam.fr, philippe.esling@ircam.fr\\
 \maketitle
 \begin{abstract}
 \begin{quote}
-This paper summarized our first attempt to build an automatic system for musical projective orchestration of a piano score. We investigated a class of model called \textit{conditional Restricted Boltzmann Machine} (\textit{cRBM}) which rely on statistical inference. We then introduce an evaluation framework based on a predictive task and evaluate the different models. Despite predicting and  creating are too really different things, we believe that this criterion is decent for selecting a model. Finally, we introduce a \textit{Max/MSP} implementation of the optimal model according to this evaluation framework. This system allows to perform real-time projective orchestration of notes played on a midi keyboard.
+This paper introduces several statistical models for the automatic projective orchestration of a piano score. We evaluate the RBM, CRBM and FGCRBM models on a short-term frame-level predictive task well-known in time-series modelling. We show the limits of this evaluation for musical sequences, propose an alternative event-level based task, and evaluate the same models in this new framework. We eventually introduce a \textit{Max/MSP} based system that perform in real-time the orchestration of notes played on a midi keyboard.
 \end{quote}
 \end{abstract}
 
 \section{Introduction}
 % Orchestration classique
 %% Musical orchestration : why is it so hard ?
-\textit{Musical orchestration} is the subtle art of writing musical pieces for the orchestra, by combining the different instruments in order to create a particular sound. 
-A compositional technique widespread among $\text{XIX}^{th}$ century composers consists in first writing an harmonic, melodic, and rhythmic structure in the form of a piano score (or equivalently any polyphonic instrument) and then project it on an orchestra, by spreading the harmonic, melodic and rhythmic structure over the different instruments. This second step, the mapping from a piano score  to an orchestral score, is often referred to as \textit{projective orchestration}. Our objective is to build a system able to automatically perform projective orchestration. Its input is then a piano score and its output a proposition of orchestration. To our best knowledge, this problem has never been tackled before.
+\textit{Musical orchestration} is the subtle art of writing musical pieces for the orchestra, by combining the different instruments in order to create a particular sound. A classic exercise, which has actually been used by many famous composer as writing method, consists in two steps. An harmonic, melodic, and rhythmic structure is first written in the form of a piano score (or equivalently any polyphonic instrument). This structure is then projected on an orchestra, by spreading the harmonic, melodic and rhythmic structure over the different instruments. This second step, the mapping from a piano score to an orchestral score, is often referred to as \textit{projective orchestration}. Given the number of different instruments in a symphonic orchestra and their respective range of notes, one can foresee the large number of possible combination implied.
 
-Given the number of different instruments in a symphonic orchestra and their respective range of notes, one can foresee the huge combinatorial implied by this problem. Moreover, an interesting orchestration will generally not simply be the allocation of the notes written on the piano score over the different instrument but will imply extension of the harmony and doubling some note with the octave This still increases the number of possible combination.
-Eventually, orchestration is often referred to as the art of manipulating instrumental timbres. However, the resulting sound of an even simple instrumental mixture is particularly difficult to predict, especially its emerging timbre. Then, we observe a lack of both proper musical notation and a precise mathematical definition. Those difficulties have probably been a major obstacle toward the construction of a theory of orchestration. Then it remains a mainly empirical discipline, taught through the observation of already existing orchestrations (\cite{piston-orch}).
+Beside this combinatorial problem, the resulting sound of an even simple instrumental mixture is particularly difficult to predict, especially its emerging timbre. Several attempts to mathematically characterize the timbre as a set of spectro-temporal descriptors have outputted the complex non linear behaviours involved. Furthermore, an interesting orchestration will generally not simply be the allocation of the notes written on the piano score over the different instrument but will imply extension of the harmony and doubling some note with the octave. Eventually, orchestration is often referred to as the art of manipulating instrumental timbres, which lacks of both proper musical notation and a precise mathematical definition.
+Those difficulties have probably been a major obstacle toward the construction of a theory of orchestration. Then it remains a mainly empirical discipline, taught through the observation of already existing orchestrations (\cite{piston-orch}).
+
+Our objective is to build a system able to automatically perform projective orchestration. Its input is then a piano score and its output an orchestra score. To our best knowledge, this problem has never been tackled before.
 
 % Inference stat for orchestration
-If our inability to define precise rules discard the construction of a \textit{handmade} rule based system, it does not mean that underlying regularities could not be extracted. We believe tha using statistical inference on a corpus constituted by piano scores and their projective orchestration by famous composers seems to be a promising lead. Luckily, the classic and romantic repertoires contain a large number of examples of projective orchestration (e.g. the piano reduction by Liszt of the symphonies of Beethoven, \textit{les tableaux d'une exposition}, a piano piece from Modest Moussorgsky orchestrated by Ravel). We believe that an appropriate statistical model would be able to extract the complex correlations that undoubtedly exist between a piano score and its possible orchestrations but that human are unable to fully grasp. Note that for one original piano score, many different orchestrations are acceptable with no objective criterion to rank them. The probabilistic framework perfectly fits this requirement of diversity of solution. An other important remark is that by deciding to work only with symbolic information (musical scores). We pointed out the fact that timbre is complex to define mathematically, and this assumption considerably simplify the task. It is also reasonable, since famous composers definitely have written their piece with a knowledge, and we make the strong assumption that it is embodied in the score.
+If our inability to define precise rules discard the construction of a \textit{handmade} rule based system, it does not mean that underlying regularities could not be extracted. The classic and romantic repertoires contain a large number of examples of projective orchestration (e.g. the piano reduction by Liszt of the symphonies of Beethoven, \textit{les tableaux d'une exposition}, a piano piece from Modest Moussorgsky orchestrated by Ravel). Using statistical inference on a corpus constituted by piano scores and their projective orchestration by famous composers seems to be a promising lead. We believe that an appropriate statistical model would be able to extract the complex correlations that  occur along both time pitch and instrument dimensions and that human are unable to fully understand.
+
+% Only symbolic justification (ici ou dans le texte ???)
+%It has been pointed out that orchestration is art timbre blablablabl Besides, we hypothesize that in the purely symbolic information contained in the score written by composer lie knowledge about acoustic properties. Considering that all the information about instrumental mixtures is contained at a symbolic level is a strong assumption, but not a non-sense since those examples have been composed based on a certain knowledge.
 
 \begin{figure}
 \centering
@@ -63,21 +62,21 @@ If our inability to define precise rules discard the construction of a \textit{h
 \end{figure}
 
 %Stat inf ?
-Statistical inference refers to methods which suppose that a set of data is structured by a probability distribution. The objective is to deduce properties of this underlying distribution, by observing a subset of those data. In our case, the objective is to infer rules of orchestration by observing pieces written by famous composers (experts). Inferring properties about this underlying probability distribution is called the \textit{learning} phase.
-Statistical inference is involved in a wide range of models. Among them, deep learning recently appeared as a most promising field in intelligence artificial and representation learning.
+Statistical inference refers to methods which suppose that a set of data has been drawn from a probability distribution. The objective is to deduce properties of this underlying distribution, by observing a subset of those data. In our case, the objective is to infer rules of orchestration by observing pieces written by famous composers (experts). Inferring properties about this underlying probability distribution is called the \textit{learning} phase.
+In our context, it can be seen as trying to find the correlations between a piano score and an orchestral score observed in the training set. Note that for one original piano score, many different orchestrations are acceptable with no objective criterion to rank them. The probabilistic framework perfectly fits this diversity of solution.
+Statistical inference covers a wide range of domains. Among them, deep learning recently appeared as a most promising field in intelligence artificial and representation learning.
 
 % Which model and why ?
 To fully specify a statistical inference model, we need to specify a data representation, a probabilistic model and a training algorithm.
-To represent the scores we used the common \textit{piano-roll} representation (see \prettyref{fig:pianoroll}). This is often referred to as symbolic information by contrast with signal information (recording of a performance). We evaluated two different probabilistic models : a conditional Restricted Boltzmann Machine (\textit{cRBM}) and a Factored Gated \textit{cRBM} (\textit{FGcRBM}) \cite{taylor2009factored}. Those two models are based on the well-known Restricted Boltzmann Machine \textit{RBM} model, and can be trained by Contrastive Divergence (\textit{CD}) algorithm \cite{carreira2005contrastive}.
-
+To represent the scores we used a piano-roll representation which is standard in computer music (see \prettyref{fig:pianoroll}). This is often referred to as symbolic information by contrast with signal information (recording of a performance). We evaluated two different probabilistic models : a conditional Restrictesd Boltzmann Machine (\textit{cRBM}) and a Factored Gated \textit{cRBM} (\textit{FGcRBM}) \cite{taylor2009factored}. Those two models can be trained by an algorithm called Contrastive Divergence (\textit{CD}) \cite{carreira2005contrastive}.
 % Evaluation
-Deriving a quantitative evaluation is a requirement in order to select the optimal set of hyper-parameter for a given model and to compare models amongst themselves. A common criterion in statistical inference is the likelihood function of a dataset. However, this function is intractable for those models (see \prettyref{sec:state_of_the_art}). Hence, we propose an orchestral inference task which is inspired by the short-term frame-level predictive evaluation framework used in automatic composition.
+Deriving an evaluation criterion for those three models is a requirement in order to select the optimal set of hyper-parameter for a given model and as a comparison between the models. A common criterion in statistical inference is the likelihood function of a dataset. However, this function is intractable for those models (see \prettyref{sec:state_of_the_art}). Hence, we propose an orchestral inference task which is inspired by the short-term frame-level predictive evaluation framework used in time series prediction. 
 % Flaw 
-In this framework, we evaluate the two previously introduced model along with baseline models (random generation, repeat of the previous frame and standard Restricted Boltzmann Machine (\textit{RBM})). We then discuss the limit of this evaluation framework, especially the fact that predicting and generating are two rather different task. However, we believe that the proposed criterion is reasonable for model selection purposes.
+In this framework, we evaluate the two previously introduced model along with baseline models (random generation, repeat of the previous frame and standard Restricted Boltzmann Machine (\textit{RBM})).
+We show that this framework is heavily dependent on the quantization frame chosen to build the pianoroll and then propose an alternative framework in which the same models are re-evaluated.
 
 % LOP
-An interesting property of the \textit{cRBM} and \textit{FGcRBM} models is that their generative step is sufficiently fast for real-time application. 
-Using the defined criterion we selected the optimal model and implemented it in \textit{LOP} (for \textit{Live Orchestral Piano}), a real-time orchestration system of a piano input.
+An interesting property of the \textit{cRBM} and \textit{FGcRBM} models is that their generative step is sufficiently fast for real-time application. We introduce \textit{LOP} (for \textit{Live Orchestral Piano}), the first system of real-time orchestration of a piano input.
 
 This paper is organized as follows. Section 2 introduces the state of the art in conditional models : RBM, CRBM and \textit{FGCRBM} models are detailed. The orchestration projection task is presented in the section 3 along with an evaluation framework based on a frame-level accuracy measure. The introduced models are evaluated in this framework and compared with existing models. Section 4 introduces \textit{LOP}, the real-time \textit{projective} orchestration system. Finaly, Section 5 provides our conclusions and future works.
 
@@ -205,7 +204,7 @@ where the dynamic biases of the visible and hidden units are defined by
 %\Delta W_{if}^{v} &= <v_{i}\sum_{j} W_{jf} h_{j} \sum_{l} W_{lf} z_{l}>_{data} - <v_{i}W_{jf} h_{j} \sum_{l} W_{lf} z_{l} >_{model}\\
 %\Delta W_{jf}^{h} &= <h_{j}\sum_{i}W_{if}v_{i} \sum_{l} W_{lf} z_{l}>_{data} - <h_{j}\sum_{i}W_{if}v_{i} \sum_{l} W_{lf} z_{l}>_{model}\\
 %\Delta W_{lf}^{z} &= <z_{l}\sum_{i}W_{if}v_{i} \sum_{j} W_{jf}h_{j}>_{data} - <z_{l}\sum_{i}W_{if}v_{i} \sum_{j} W_{jf}h_{j}>_{model}\\\Delta A_{im}^{v} &= <v_{i}\sum_{k}A_{km}x_{k} \sum_{l}A_{lm}z_{l}>_{data} - <v_{i}\sum_{k}A_{km}x_{k} \sum_{l}A_{lm}z_{l}>_{model}\\
-%\Delta A_{km}^{x} &= <x_{k}\sum_{i}A_{im}v_{i} \sum_{l}A_{lm}z_{l}>_{data} - <x_{k} \sum_{i}A_{im}v_{i} \sum_{l}A_{lm}z_{l}>_{model}\\
+%\Delta A_{km}^{x} &= <x_{k}\sum_{i}A_{im}v_{i} \sum_{l}A_{lm}z_{l}>_{data} - <x_{k}\sum_{i}A_{im}v_{i} \sum_{l}A_{lm}z_{l}>_{model}\\
 %\Delta A_{lm}^{z} &= <z_{l} \sum_{i}A_{im}v_{i} \sum_{k}A_{km}x_{k}>_{data} - <z_{l} \sum_{i}A_{im}v_{i} \sum_{k}A_{km}x_{k}>_{model}\\
 %\Delta B_{jn}^{z} &=  <h_{j} \sum_{k}B_{kn}x_{k} \sum_{l}B_{ln}z_{l}>_{data} - <h_{j} \sum_{k}B_{kn}x_{k} \sum_{l}B_{ln}z_{l}>_{model}\\
 %\Delta B_{kn}^{z} &= <x_{k} \sum_{j}B_{jn}h_{j} \sum_{l}B_{ln}z_{l}>_{data} - <x_{k} \sum_{j}B_{jn}h_{j} \sum_{l}B_{ln}z_{l}>_{model}\\
@@ -221,8 +220,7 @@ where the dynamic biases of the visible and hidden units are defined by
 \end{figure}
 % Role des unités conditionelles et tout le tralala dans les modèles
 If correctly trained, the distribution of the model is supposed to be close (in the sense of the Kullback-Leibler divergence \cite{hinton2002training}) to the underlying probability distribution of the data. Therefore, by sampling from it, we are able to generate data \textit{similar} to the one observed in the training dataset yet unseen.
-Sampling from a trained model means being able to draw samples from the model distribution marginalized over the visible units $p(v) = \sum_{h} p(v,h)$. This is computationally intractable in the introduced model because of the partition function, but an approximate can be reached through alternate Gibbs sampling. After randomly setting the visible units (for each index $i$, $\bm{v}_{i} \sim \mathcal{U}(0,1)$), K Gibbs sampling steps are performed to obtain a visible sample. The objective of these K steps is to reach the equilibrium distribution of the model. Even though an theoretically  infinite number of steps is necessary, 20 to 100 steps are typically sufficient.
-Note that in practice, we applied a threshold on the activation of the visible units before the last sampling step of visible units in the \textit{Gibbs chain} so that very unlikely activations are just set to zero.
+Sampling from a trained model means being able to draw samples from the marginal distribution of the visible units. This is impossible when the partition function is intractable, but alternate Gibbs sampling can be used. This sampling process is called the generative step and can be described as follows. After randomly setting the visible units (for each index $i$, $\bm{v}_{i} \sim \mathcal{U}(0,1)$), K Gibbs sampling steps are performed to obtain a visible sample. The objective of these K steps is to reach the equilibrium distribution of the model. Even though an theoretically  infinite number of steps is necessary, 20 to 100 steps are typically sufficient.
 
 \section{Projective orchestration}
 In this section, we introduce and formalize the automatic projective orchestration of a piano score as presented in \prettyref{fig:orch}. In particular, we detail our data representation, the evaluation framework, introduce the database used, and the results of different models in this framework.
@@ -235,14 +233,11 @@ In this section, we introduce and formalize the automatic projective orchestrati
 \caption{The successive visible units of a neural network could be the successive temporal frames of a \textit{pianoroll}. A \textit{pianoroll} is a representation of musical events, discrete on both the frequency (pitch) and the time (frames) scales. For a single instrument, a pitch $p$ at time $t$ can be either played or not, which is represented by a one or zero in the \textit{pianoroll}. This definition is extended to an orchestra by simply concatenating the \textit{pianorolls} of each instruments along the pitch dimension. One can see on the figure that the same instruments are grouped together event if they don't play the same thing. For instance, trumpets 1, 2, 3 and 4 are grouped under one trumpet part, which then contains 4 voices chords.}
 \label{fig:pianoroll}
 \end{figure}
-We used a data representation inspired by the \textit{piano-roll} representation traditionally used to model polyphonic music of a single instrument (see detailed on \prettyref{fig:pianoroll}). Piano and Orchestra scores are represented in two different \textit{piano-roll}. The orchestra \textit{piano-roll} is the concatenation of the \textit{piano-roll} of each instrument along the pitch dimension. Note that the dynamic information is lost since we use binaries units which solely indicates if a note is on or off. In order to keep a reduced number of unit we systematically remove, for each instrument, any pitch for which is never played in the training database. By doing this on our database, we reduced the dimension of the orchestral vector from 2432 to 191 and the piano size went from 128 to 43.
+We used a data representation inspired by the \textit{piano-roll} representation traditionally used to model polyphonic music of a single instrument (see detailed on \prettyref{fig:pianoroll}). Piano and Orchestra data are represented in two different \textit{piano-roll}, then for the piano part a standard pianor-roll is used. The orchestra simply consists in the concatenation of the \textit{piano-roll} of each instrument along the pitch dimension. Note that the dynamic 	information is lost since we use binaries units which solely indicates if a note is on or off. In order to keep a reduced number of unit we systematically remove, for each instrument, any pitch for which is never played in the training database. By doing this on our database, we reduced the dimension of the orchestral vector from 2432 to 191 and the piano size went from 128 to 43.
+
 Also, we follow the usual orchestral simplifications used when writing orchestral scores by grouping together all the instruments of a same section. For instance, the section \textit{violin 1}, composed by many instrumentalists (10 or more), is written as a single part.
 
-Conditional models allow to generate sequences of data under a certain context. Projective orchestration can be seen as producing an orchestral score, conditionally on a piano score. In order to guarantee a form of temporal continuity in the orchestration, the recent past of the orchestral sequence is also added in the contextual information (see \prettyref{fig:pianoroll}). 
-
-\subsection{Database}
-We used a parallel database of piano scores and their orchestration by famous composers. The database consists of 76 \textit{XML} files. Fourteen instruments were present in the database (see \prettyref{fig:orch_mapping}) and we used a rhythmic quantization of 8 frames per beat to build the \textit{piano-roll}. Given the complexity of the distribution we wanted to model and the reduced size of the database we have accessed to, we decided to keep as a test dataset only the last half of one track from our database. Hence 75 and a half files were used to train our model. This choice is motivated by the will to have the best generation model possible.
-The contrastive-divergence algorithm has been applied on $89$ mini-batches of size $100$ during the training phase (\prettyref{sec:data_representation}).
+Conditional models allow to generate sequences of data under a certain context. Projective orchestration can be seen as producing an orchestral score, conditionally on a piano score. In order to guarantee a form of temporal continuity in the orchestration, the recent past of the orchestral sequence is also added in the contextual information (see \prettyref{fig:pianoroll}). We kept 14 instruments among the one present in the database and discarded some very sparsely represented ones (\textit{e.g.} english horn, clarinet bass... by associating them to a close instrument. An exhaustive list of these approximations is given in annex (OAZDJOAZIDJOAZIDJ).
 
 \begin{figure}
 \centering
@@ -266,40 +261,22 @@ $\text{Context}(t) = \left[ \text{Orch}(t-1)^{T} , ... , \text{Orch}(t-N)^{T} \r
 
 (\prettyref{fig:FGCRBM}).
 
+Note that we do not restrain the possible pitches of each instrument to the pitches seen in the piano score at each specific time frame. Indeed, orchestrating a piano score cannot be reduced to the simple repartition between the different instruments of the same notes already written in the piano score. Instead, the harmonic structure is often enriched by extra notes, ranging from simple octaviations to harmonic expansions (more complex chords with a specific colour). The melody might be doubled by several instruments at the unison, octave or even double octave.
+
+\subsection{Database}
+We used a parallel database of piano scores and their orchestration by famous composers. The database consists of 76 \textit{XML} files. Given the complexity of the distribution we wanted to model and the reduced size of the database we have accessed to, we decided to keep as a test dataset only the last half of one track from our database. Hence 75 and a half files were used to train our model. We chose to do so in order to have the best generation ability.
+The contrastive-divergence algorithm has been applied on mini-batches of size $100$ during the training phase. Thus we obtained $335$ mini-batches for the frame-level measure, and $89$ for the event-level measure.
+For each instrument, the pitch range is reduced to the \textit{tessitura} observed in the training dataset (\prettyref{sec:data_representation}). We used a rhythmic quantization of 8 frames per beat.
+
 \subsection{Evaluation}
 A objective criterion of the performances of a model is necessary. Not only to compare the different systems, but also to find the best set of hyper-parameter for a given model. To our best knowledge, there is no quantitative evaluation framework for automatic projective orchestration. We propose here a first attempt in order to fill this gap by defining a projective orchestration inference task. Given a test database composed by piano scores and orchestrations proposed by experts (famous composer), it consists at each time frame $t$ to generate an orchestral vector $\hat{Orch}(t)$ knowing the piano frame $Piano(t)$ and the recent past of sequence of orchestral vectors $Orch(t-1),... Orch(t-N)$. The predicted vector $\hat{Orch}(t)$ is then compared to the ground-truth $Orch(t)$ via an accuracy measure.
 
 The best way for evaluating generative models is to compute the likelihood of a set of existing vector which are referred to as the test set. In the case of latent units based models, this likelihood has to be marginalized over the visible units. However we have seen that this quantity is intractable in a \textit{RBM}, \textit{cRBM} or \textit{FGcRBM} (\prettyref{eq:likelihood}).
 
-A solution is to define an evaluation task. A task commonly used in the closely related field of automatic music generation is a short-term predictive task based on a frame-level accuracy measure \cite{DBLP:journals/corr/YaoCVDD15,boulanger2012modeling,lavrenko2003polyphonic} (see \prettyref{fig:result_frame_level} for a comparison of the different models in this framework). Based on this framework, we introduce an \textit{event-level orchestral inference} task to evaluate our models.
+A solution is to define an evaluation task. A task commonly used in the closely related field of automatic music generation is a short-term predictive task based on a frame-level accuracy measure \cite{DBLP:journals/corr/YaoCVDD15,boulanger2012modeling,lavrenko2003polyphonic}.
 
-Musical events are time indices $t$ for which $\text{orch}(t-1) \neq \text{orch(t)}$ where $\text{orch}$ refer to the orchestra \textit{piano-roll}. Independently of the quantization chosen for the \textit{piano-roll}, \textit{event-level} refer to the fact that we kept as training and testing points musical events indices. The reason why we don't train and evaluate on each frame is that in a \textit{frame-level} framework a model which simply repeats the previous frame gradually becomes the best model as the quantization increases (see \prettyref{fig:result_frame_level}).
-Note that by using an \textit{event-level} quantization, a rhythmic structure can't be learned, since the model only learn transitions between two states and not sustain. However, in a projective orchestral context the rhythmic pattern is already established by the piano score. 
-
-\begin{figure}
-\centering
-\begin{tabular}{c c}
-\hline
-\multirow{2}{*}{Model} & \multicolumn{1}{c}{Frame Acc \%} \\
-\hhline{~-}
-& JSB Chorales\\
-\hline
-Random & 4.22\\ 
-Repeat & 39.60\\
-Random fields & \textcolor{green}{\textbf{22.93}}\\ 
-LSTM with Rprop & \textcolor{orange}{\textbf{31.91}}\\ 
-RNN-RBM & \textcolor{orange}{\textbf{33.12}}\\ 
-\hline \hline
-Temporal RBM & \textbf{30.52}\\ 
-CRBM &  \textbf{31.18}\\
-HCRBM & - \\ 
-\end{tabular}
-\caption{Frame level accuracy for polyphonic music. Evaluated on JSB chorales database. Results of other models are from \cite{boulanger2012modeling}}
-\label{fig:result_frame_level}
-\end{figure}
-
-For each musical event $t$, we try to predict the orchestral frame $\hat{\text{Orch}}(t)$ knowing the recent past $\text{Orch}(t-1),...,\text{Orch}(t-N)$ and the piano frame $\text{Piano}(t)$.
-The predicted frame is compared to the original frame $\text{Orch}(t)$ through the accuracy measure \cite{boulanger2012modeling,DBLP:journals/corr/YaoCVDD15} defined by :
+The frame-level accuracy of a model is defined as the mean value of the accuracies measured for each time frame of a testing set.
+For each time frame, we try to predict the orchestral frame $\hat{\text{Orch}}(t)$ knowing the recent past $\text{Orch}(t-1),...,\text{Orch}(t-N)$ and the piano frame $\text{Piano}(t)$. The predicted frame is compared to the original frame $\text{Orch}(t)$ through an accuracy measure \cite{boulanger2012modeling,DBLP:journals/corr/YaoCVDD15} defined by :
 \begin{equation}
 \text{Accuracy}  = \frac{TP(t)}{TP(t) + FP(t) + FN(t)}
 \label{eq:accuracy}
@@ -307,27 +284,24 @@ The predicted frame is compared to the original frame $\text{Orch}(t)$ through t
 where $TP(t)$ (true positives) is the number of notes correctly predicted (note on in the prediction and ground-truth). $FP(t)$ (false positive) is the number of notes predicted which are not in the original sequence (note on in the prediction, off in ground-truth). $FN(t)$ (false negative) is the number on unreported notes (note off in prediction, on in ground-truth). 
 Note that instead of binary values, activation probabilities are used for the predicted samples in order to reduce the sampling noise. In the case this probability is intractable, one should sample many predicted frames for each time frame and compute the mean value of those samples.
 
-The results are given in \prettyref{fig:result_event_level}.
+\begin{figure}
+\centering
+\includegraphics[scale=1]{result_frame_level}
+\caption{Result of different model for the frame-level}
+\label{fig:result_frame_level}
+\end{figure}
+
+However we observed an important flaw in the measure: the performance of a model heavily rely on the time quantization chosen in the \textit{piano-roll} representation (see \prettyref{fig:result_frame_level}). This phenomenon doesn't occur for continuous data (\textit{e.g.} audio signal) where a higher frequency sampling rate is positively received as an increased amount of information. In our case, a very short time quantization would lead to learn a model which simply repeats the previous frames, since this is actually what is observed most of the time.
+
+Hence, we propose a new evaluation framework based on the previous work in automatic composition and called \textit{event-level orchestral inference}. The same accuracy measure is used (\prettyref{eq:accuracy}), but evaluations occur at en event-level. Musical events occur when two successive vectors are different in the time series defined by the orchestral \textit{piano-roll}. Since the task is slightly different, the training phase has been consequently changed so that a model is trained only on new event frames.
+In a projective orchestral context, this modification makes sense since the model does not have to learn a rhythmic structure which is already established by the piano score. The results are given in \prettyref{fig:result_event_level}
 
 \begin{figure}
 \centering
-\begin{tabular}{c c}
-\hline
-Model & Orchestral Event-level (\%)\\
-\hline
-Random & 0.50\\ 
-\hline \hline
-CRBM & 1.5\\ 
-FGCRBM & 2.2\\ 
-\end{tabular}
-\caption{Event-level accuracy for the orchestral inference task.}
+\includegraphics[scale=1]{result_event_level}
+\caption{Result of the \textit{cRBM} and \textit{FGcRBM} models on an event-level orchestral inference task.}
 \label{fig:result_event_level}
 \end{figure}
-
-\subsection{Discussion : evaluating a generative model ?}
-It is important to state that we don't consider this predictive measure as as reliable measure of the creative performance of a model. Indeed, predicting and creating are two fairly different things. However, we believe that for basic generative models, the \textit{best} one would be the one which managed to grasp most of the structure in the training database. From this point of view, apredictive measure can be acceptable for model selection purposes.
-
-This measure then allow us to select the best model (a \textit{FGcRBM}) and its optimal set of hyper-parameter. We then implemented the trained network in a generative real-time framework introduced in the next section.
 
 \section{Live Orchestral Piano (LOP)}
 
@@ -340,6 +314,7 @@ in order to perform the projection from a piano melody to the orchestra.
 
 
 \subsection{Workflow}
+
 The software is implemented on a client/server paradigm. This choice
 allows to separate the orchestral computation part from the interface
 and sound rendering engine. That way, multiple interfaces can easily
@@ -416,17 +391,92 @@ new threshold and unit-variance transform)
 + Try on Moussorgski and Beethoven
 
 
+
+
+
+
+
+% We introduce an extension of this evaluation framework to an orchestral context through a task called \textit{frame-level orchestral inference}. This framework heavily relies on the previous works in automatic music generation and we discovered a bias in the measurement (dependency over the time quantization). Hence, we propose a new evaluation framework through a task called \textit{event-level orchestral inference} and present the results of the different models in it.
+%
+%
+%
+%\subsubsection{Frame-level accuracy}
+%The frame-level accuracy of a model is defined as the mean value of the accuracies measured for each time frame of a testing set.
+%For each time frame, we try to predict the orchestral frame $\hat{\text{Orch}}(t)$ knowing the recent past $\text{Orch}(t-1),...,\text{Orch}(t-N)$ and the piano frame $\text{Piano}(t)$. The predicted frame is compared to the original frame $\text{Orch}(t)$ through an accuracy measure \cite{boulanger2012modeling,DBLP:journals/corr/YaoCVDD15} defined by :
+%\begin{equation}
+%\text{Accuracy}  = \frac{TP(t)}{TP(t) + FP(t) + FN(t)}
+%\label{eq:accuracy}
+%\end{equation}
+%where $TP(t)$ (true positives) is the number of notes correctly predicted (note on in the prediction and ground-truth). $FP(t)$ (false positive) is the number of notes predicted which are not in the original sequence (note on in the prediction, off in ground-truth). $FN(t)$ (false negative) is the number on unreported notes (note off in prediction, on in ground-truth). 
+%
+%Instead of binary values, activation probabilities are used for the predicted samples in order to reduce the sampling noise. In the case this probability is intractable, one should sample many predicted frames for each time frame and compute the mean value of those samples.
+%
+%\paragraph{Results}
+%We evaluated the \textit{cRBM} and \textit{FGcRBM} previously presented \prettyref{sec:state_of_the_art} in both the frame-level and event-level frameworks. Those two models are compared to a random prediction of each frame and to a simple model that outputs the previous frame as the current frame prediction (i.e. a untrained 1 order linear predictor). The results are presented in \prettyref{fig:result_frame}. 
+%We observed an important bias in the measurement : the performance of a model heavily rely on the time quantization chosen in the pianoroll representation. Those kind of phenomenon doesn't really occur for continuous data (\textit{e.g.} audio signal) where a higher frequency sampling rate is positively received as an increased amount of information. In our case, a very short time quantization would lead to learn a model which simply repeats the previous frames, since this is actually what is observed most of the time.
+%
+%We also present the result of those models on a purely predictive task for automatic music generation. Those results are only here for comparison purposes of the models in a well-established framework and to highlight the measurement bias. See \cite{boulanger2012modeling} for details about the evaluation framework and the \textit{RNN-RBM} model.
+%
+%\subsubsection{Event-level accuracy}
+%A major flaw in the frame-level accuracy measure is its dependence to the rhythmic quantization chosen. Indeed, when the quantization become too small, it becomes highly probable that a frame is simply repeated at the next time frame. Hence, the best predictive model is simply a model which predict that the next time frame is the same as the frame $t-1$. This is not a desirable behaviour, and we propose an evaluation based on an event-level to address that issue.
+%
+%A musical event is defined as a change in the orchestral score, either a note being switched on or off. The predictive event-level accuracy measure relies on the same accuracy measure previously defined \prettyref{eq:accuracy}. The only difference is that it occurs at each new event instead of each new time frame. Since the task is slightly different, the training phase has been consequently changed so that a model is trained only on new event frames.
+%
+% Frame
+% Event
+%
+% Precision et accuracy
+%
+% Séparer repeat et change true/false positive
+%%%%%%%%%%%%%%%%%%\\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%\\
+%%%%%%%%%\\
+%%%%%%%%%%%%%%%%%%\\
+% Coller une image
+%\begin{figure}
+%\centering
+%\begin{tabular}{c c}
+%\hline
+%\multirow{2}{*}{Model} & Orchestral Frame-level (\%)\\
+%\hline
+%Random & 0.51\\ 
+%Repeat & 93.25\\ 
+%\hline \hline
+%CRBM & 45.07\\ 
+%FGCRBM & 2.05\\ 
+%\end{tabular}
+%\caption{Frame-level accuracy}
+%\label{fig:result_frame}
+%\end{figure}
+%
+%\begin{figure}
+%\centering
+%\begin{tabular}{c c}
+%\hline
+%\multirow{2}{*}{Model} & Orchestral Event-level (\%)\\
+%\hline
+%Random & 0.50\\ 
+%Repeat & 93.25\\ 
+%\hline \hline
+%CRBM & 27.78\\ 
+%FGCRBM & \\ 
+%\end{tabular}
+%\caption{Event-level accuracy}
+%\label{fig:result_frame}
+%\end{figure}
+%% C'est de la merde, même le edvent-level ça règle pas du tout le problème : soit on prédit l'event mais avec un context basé sur les frames, et dans ce cas là le modèle repeat est bon, soit on prends que les event mais ça n'a aucun sens (pas de rythme...)
+%%%%%%%%%
+%%%%%%%%%
+%%%%%%%%%\\
+%%%%%%%%%
+%%%%%%%%%\\
+
+
 %\section{Live Orchestral Piano}
 
 \section{Conclusion and future works}
-
- Better DB
- 
- Change the data representation (dynamics, distributed rpz)
- 
- Measure ?
- 
- Different temporal granularities while keeping conditional on piano score (LSTM + CRBM -> LSCRTBM !!!)
+% Better DB
+% Change the data representation
 
 % Acknowledgmentsinclude
 

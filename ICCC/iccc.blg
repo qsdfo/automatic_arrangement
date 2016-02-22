@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99d (TeX Live 2015)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: iccc.aux
+The style file: iccc.bst
+Database file #1: ../Biblio/biblio.bib
+Warning--can't use both author and editor fields in Fischer2012
+You've used 11 entries,
+            2568 wiz_defined-function locations,
+            648 strings with 6603 characters,
+and the built_in function-call counts, 4767 in all, are:
+= -- 526
+> -- 144
+< -- 6
++ -- 47
+- -- 46
+* -- 349
+:= -- 741
+add.period$ -- 61
+call.type$ -- 11
+change.case$ -- 65
+chr.to.int$ -- 11
+cite$ -- 12
+duplicate$ -- 206
+empty$ -- 363
+format.name$ -- 65
+if$ -- 1021
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 13
+newline$ -- 74
+num.names$ -- 33
+pop$ -- 60
+preamble$ -- 1
+purify$ -- 78
+quote$ -- 0
+skip$ -- 170
+stack$ -- 0
+substring$ -- 289
+swap$ -- 67
+text.length$ -- 6
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 80
+warning$ -- 1
+while$ -- 43
+width$ -- 14
+write$ -- 163
+(There was 1 warning)

@@ -1,0 +1,86 @@
+\begin{thebibliography}{}
+
+\bibitem[\protect\citeauthoryear{Bengio}{2009}]{bengio2009learning}
+Bengio, Y.
+\newblock 2009.
+\newblock Learning deep architectures for ai.
+\newblock {\em Foundations and trends in Machine Learning} 2(1):1--127.
+
+\bibitem[\protect\citeauthoryear{Bottou}{2010}]{bottou2010large}
+Bottou, L.
+\newblock 2010.
+\newblock Large-scale machine learning with stochastic gradient descent.
+\newblock In {\em Proceedings of COMPSTAT'2010}. Springer.
+\newblock  177--186.
+
+\bibitem[\protect\citeauthoryear{Boulanger-Lewandowski, Bengio, and
+  Vincent}{2012}]{boulanger2012modeling}
+Boulanger-Lewandowski, N.; Bengio, Y.; and Vincent, P.
+\newblock 2012.
+\newblock Modeling temporal dependencies in high-dimensional sequences:
+  Application to polyphonic music generation and transcription.
+\newblock {\em arXiv preprint arXiv:1206.6392}.
+
+\bibitem[\protect\citeauthoryear{Carreira-Perpinan and
+  Hinton}{2005}]{carreira2005contrastive}
+Carreira-Perpinan, M.~A., and Hinton, G.~E.
+\newblock 2005.
+\newblock On contrastive divergence learning.
+\newblock In {\em Proceedings of the tenth international workshop on artificial
+  intelligence and statistics},  33--40.
+\newblock Citeseer.
+
+\bibitem[\protect\citeauthoryear{Fischer and Igel}{2012}]{Fischer2012}
+Fischer, A., and Igel, C.
+\newblock 2012.
+\newblock {\em Progress in Pattern Recognition, Image Analysis, Computer
+  Vision, and Applications: 17th Iberoamerican Congress, CIARP 2012, Buenos
+  Aires, Argentina, September 3-6, 2012. Proceedings}.
+\newblock Berlin, Heidelberg: Springer Berlin Heidelberg.
+\newblock chapter An Introduction to Restricted Boltzmann Machines,  14--36.
+
+\bibitem[\protect\citeauthoryear{Hinton, Osindero, and
+  Teh}{2006}]{hinton2006fast}
+Hinton, G.; Osindero, S.; and Teh, Y.-W.
+\newblock 2006.
+\newblock A fast learning algorithm for deep belief nets.
+\newblock {\em Neural computation} 18(7):1527--1554.
+
+\bibitem[\protect\citeauthoryear{Hinton}{2002}]{hinton2002training}
+Hinton, G.~E.
+\newblock 2002.
+\newblock Training products of experts by minimizing contrastive divergence.
+\newblock {\em Neural computation} 14(8):1771--1800.
+
+\bibitem[\protect\citeauthoryear{Lavrenko and
+  Pickens}{2003}]{lavrenko2003polyphonic}
+Lavrenko, V., and Pickens, J.
+\newblock 2003.
+\newblock Polyphonic music modeling with random fields.
+\newblock In {\em Proceedings of the eleventh ACM international conference on
+  Multimedia},  120--129.
+\newblock ACM.
+
+\bibitem[\protect\citeauthoryear{Piston}{1955}]{piston-orch}
+Piston, W.
+\newblock 1955.
+\newblock {\em Orchestration}.
+\newblock New York: Norton.
+
+\bibitem[\protect\citeauthoryear{Taylor and Hinton}{2009}]{taylor2009factored}
+Taylor, G.~W., and Hinton, G.~E.
+\newblock 2009.
+\newblock Factored conditional restricted boltzmann machines for modeling
+  motion style.
+\newblock In {\em Proceedings of the 26th annual international conference on
+  machine learning},  1025--1032.
+\newblock ACM.
+
+\bibitem[\protect\citeauthoryear{Yao \bgroup et al.\egroup
+  }{2015}]{DBLP:journals/corr/YaoCVDD15}
+Yao, K.; Cohn, T.; Vylomova, K.; Duh, K.; and Dyer, C.
+\newblock 2015.
+\newblock Depth-gated {LSTM}.
+\newblock {\em CoRR} abs/1508.03790.
+
+\end{thebibliography}

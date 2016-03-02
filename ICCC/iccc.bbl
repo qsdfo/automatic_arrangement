@@ -1,10 +1,24 @@
 \begin{thebibliography}{}
 
+\bibitem[\protect\citeauthoryear{Bengio, Courville, and
+  Vincent}{2013}]{bengio2013representation}
+Bengio, Y.; Courville, A.; and Vincent, P.
+\newblock 2013.
+\newblock Representation learning: A review and new perspectives.
+\newblock {\em Pattern Analysis and Machine Intelligence, IEEE Transactions on}
+  35(8):1798--1828.
+
 \bibitem[\protect\citeauthoryear{Bengio}{2009}]{bengio2009learning}
 Bengio, Y.
 \newblock 2009.
 \newblock Learning deep architectures for ai.
 \newblock {\em Foundations and trends in Machine Learning} 2(1):1--127.
+
+\bibitem[\protect\citeauthoryear{Bishop}{2006}]{bishop2006pattern}
+Bishop, C.~M.
+\newblock 2006.
+\newblock {\em Pattern recognition and machine learning}.
+\newblock springer.
 
 \bibitem[\protect\citeauthoryear{Bottou}{2010}]{bottou2010large}
 Bottou, L.
@@ -21,14 +35,11 @@ Boulanger-Lewandowski, N.; Bengio, Y.; and Vincent, P.
   Application to polyphonic music generation and transcription.
 \newblock {\em arXiv preprint arXiv:1206.6392}.
 
-\bibitem[\protect\citeauthoryear{Carreira-Perpinan and
-  Hinton}{2005}]{carreira2005contrastive}
-Carreira-Perpinan, M.~A., and Hinton, G.~E.
-\newblock 2005.
-\newblock On contrastive divergence learning.
-\newblock In {\em Proceedings of the tenth international workshop on artificial
-  intelligence and statistics},  33--40.
-\newblock Citeseer.
+\bibitem[\protect\citeauthoryear{Esling}{2012}]{eslingthesis}
+Esling, P.
+\newblock 2012.
+\newblock {\em Multiobjective time series matching and classification}.
+\newblock Ph.D. Dissertation, IRCAM.
 
 \bibitem[\protect\citeauthoryear{Fischer and Igel}{2012}]{Fischer2012}
 Fischer, A., and Igel, C.
@@ -52,6 +63,12 @@ Hinton, G.~E.
 \newblock Training products of experts by minimizing contrastive divergence.
 \newblock {\em Neural computation} 14(8):1771--1800.
 
+\bibitem[\protect\citeauthoryear{Hinton}{2010}]{hinton2010practical}
+Hinton, G.
+\newblock 2010.
+\newblock A practical guide to training restricted boltzmann machines.
+\newblock {\em Momentum} 9(1):926.
+
 \bibitem[\protect\citeauthoryear{Lavrenko and
   Pickens}{2003}]{lavrenko2003polyphonic}
 Lavrenko, V., and Pickens, J.
@@ -61,11 +78,41 @@ Lavrenko, V., and Pickens, J.
   Multimedia},  120--129.
 \newblock ACM.
 
+\bibitem[\protect\citeauthoryear{LeCun, Bengio, and
+  Hinton}{2015}]{LeCun:2015aa}
+LeCun, Y.; Bengio, Y.; and Hinton, G.
+\newblock 2015.
+\newblock Deep learning.
+\newblock {\em Nature} 521(7553):436--444.
+
+\bibitem[\protect\citeauthoryear{McAdams}{2013}]{mcadams2013timbre}
+McAdams, S.
+\newblock 2013.
+\newblock Timbre as a structuring force in music.
+\newblock In {\em Proceedings of Meetings on Acoustics}, volume~19,  035050.
+\newblock Acoustical Society of America.
+
+\bibitem[\protect\citeauthoryear{Peeters \bgroup et al.\egroup
+  }{2011}]{peeters2011timbre}
+Peeters, G.; Giordano, B.~L.; Susini, P.; Misdariis, N.; and McAdams, S.
+\newblock 2011.
+\newblock The timbre toolbox: Extracting audio descriptors from musical
+  signals.
+\newblock {\em The Journal of the Acoustical Society of America}
+  130(5):2902--2916.
+
 \bibitem[\protect\citeauthoryear{Piston}{1955}]{piston-orch}
 Piston, W.
 \newblock 1955.
 \newblock {\em Orchestration}.
 \newblock New York: Norton.
+
+\bibitem[\protect\citeauthoryear{Tardieu and
+  McAdams}{2012}]{tardieu2012perception}
+Tardieu, D., and McAdams, S.
+\newblock 2012.
+\newblock Perception of dyads of impulsive and sustained instrument sounds.
+\newblock {\em Music Perception} 30(2):117--128.
 
 \bibitem[\protect\citeauthoryear{Taylor and Hinton}{2009}]{taylor2009factored}
 Taylor, G.~W., and Hinton, G.~E.
@@ -75,6 +122,14 @@ Taylor, G.~W., and Hinton, G.~E.
 \newblock In {\em Proceedings of the 26th annual international conference on
   machine learning},  1025--1032.
 \newblock ACM.
+
+\bibitem[\protect\citeauthoryear{Taylor, Hinton, and
+  Roweis}{2006}]{taylor2006modeling}
+Taylor, G.~W.; Hinton, G.~E.; and Roweis, S.~T.
+\newblock 2006.
+\newblock Modeling human motion using binary latent variables.
+\newblock In {\em Advances in neural information processing systems},
+  1345--1352.
 
 \bibitem[\protect\citeauthoryear{Yao \bgroup et al.\egroup
   }{2015}]{DBLP:journals/corr/YaoCVDD15}

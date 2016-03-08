@@ -4,6 +4,9 @@ import cPickle
 import os
 import csv
 
+# To save a numpy array :
+# cPickle.dump(data, open(path_to_data + 'data.p', 'wb'))
+# OR  numpy.save(open(path_to_data + 'data.p', 'wb'), data)
 
 def pianoroll_to_csv(path_to_data, save_path='CSV_pianoroll'):
     # Load data
@@ -65,15 +68,5 @@ def pr_to_csv_aux(pianoroll, quantization=4, filename='unnamed'):
     notes.insert(0, ['t0', 'dt', 'pitch', 'dyn', 'quantization', 'filename'])
     return notes
 
-# def write_note(pianoroll_svg, x, dx, y, note_height, h_note):
-#     g = pianoroll_svg << g(
-#         transform="translate(" + x + "," + y ")")
-#     g << rect(width=dx, height=note_height,
-#               style="fill:rgb(" + h_note + "," + h_note + "," + h_note + ")")
-#     x_text = x + 1
-#     y_text = y + note_height / 2
-#     text = g << text("T=" + x + ":" + dx + " P:" + pitch + " D:" + h_note,
-#                      x=x_text, y=y_text,
-#                      style="fill:rgb(0,255,0)", display="none",)
 if __name__ == '__main__':
-    pianoroll_to_csv('../../../Data/data.p')
+    pianoroll_to_csv('aaa.p')

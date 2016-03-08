@@ -5,6 +5,8 @@ import os
 import csv
 import numpy as np
 
+# To save a numpy array in a csv file :
+# np.savetxt('dump.csv', data_np, delimiter=',')
 
 def dump_to_csv(path_to_data='dump.csv', save_path='data.csv'):
     with open(path_to_data, 'rb') as f:
@@ -31,15 +33,6 @@ def mat_to_csv(mat):
     points.insert(0, ['x', 'y', 'z'])
     return points
 
-# def write_note(pianoroll_svg, x, dx, y, note_height, h_note):
-#     g = pianoroll_svg << g(
-#         transform="translate(" + x + "," + y ")")
-#     g << rect(width=dx, height=note_height,
-#               style="fill:rgb(" + h_note + "," + h_note + "," + h_note + ")")
-#     x_text = x + 1
-#     y_text = y + note_height / 2
-#     text = g << text("T=" + x + ":" + dx + " P:" + pitch + " D:" + h_note,
-#                      x=x_text, y=y_text,
-#                      style="fill:rgb(0,255,0)", display="none",)
+
 if __name__ == '__main__':
-    dump_to_csv('dump.csv')
+    dump_to_csv('orch.csv')

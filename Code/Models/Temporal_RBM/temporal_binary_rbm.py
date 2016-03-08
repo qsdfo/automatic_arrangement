@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-import sys
+
 """
 A temporal RBM with binary visible units.
 """
@@ -248,6 +248,7 @@ def train(hyper_parameter, dataset, log_file_path):
     log_file = open(log_file_path, 'ab')
 
     # Load parameters
+    temporal_granularity = (hyper_parameter['temporal_granularity'])
     n_hidden = int(hyper_parameter['n_hidden'])
     temporal_order = int(hyper_parameter['temporal_order'])
     learning_rate = float(hyper_parameter['learning_rate'])
@@ -257,7 +258,14 @@ def train(hyper_parameter, dataset, log_file_path):
 
     log_file.write((u'# Training...\n').encode('utf8'))
 
-    orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index = load_data(data_path=dataset, log_file_path=log_file_path, temporal_order=temporal_order, minibatch_size=batch_size, shuffle=True, split=(0.7, 0.1, 0.2))
+    orch, orch_mapping, piano, piano_mapping, train_index_k, validate_index_k, test_index_k \
+        = load_data(data_path=dataset,
+                    log_file_path=log_file_path,
+                    temporal_granularity=temporal_granularity,
+                    temporal_order=temporal_order,
+                    shared_bool=True,
+                    minibatch_size=batch_size,
+                    split=(0.7, 0.1, 0.2))
 
     # Get dimensions
     # piano_dim = piano.get_value(borrow=True).shape[1]
@@ -266,22 +274,24 @@ def train(hyper_parameter, dataset, log_file_path):
     # total_time = orch.get_value(borrow=True).shape[0]
 
     # Compute number of minibatches for training, validation and testing
-    n_train_batches = len(train_index)
+    import pdb; pdb.set_trace()
+    k_fold = len(train_index_k)
+    n_train_batches = len(train_index_k[0])
     train_size = 0
     for i in xrange(n_train_batches - 1):
-        train_size += train_index[i].size
-    last_batch_size = train_index[n_train_batches - 1].size
+        train_size += train_index_k[0][i].size
+    last_batch_size = train_index_k[0][n_train_batches - 1].size
     train_size += last_batch_size
 
-    n_validate_batches = len(validate_index)
+    n_validate_batches = len(validate_index_k[0])
     validate_size = 0
     for i in xrange(n_validate_batches):
-        validate_size += validate_index[i].size
+        validate_size += validate_index_k[0][i].size
 
-    n_test_batches = len(test_index)
+    n_test_batches = len(test_index_k[0])
     test_size = 0
     for i in xrange(n_test_batches):
-        test_size += test_index[i].size
+        test_size += test_index_k[0][i].size
 
     # # D E B U G G
     # # Set test values
@@ -382,45 +392,49 @@ def train(hyper_parameter, dataset, log_file_path):
     # go through training epochs
     epoch = 0
     overfitting_measure = 0
-    while((epoch < training_epochs) and (overfitting_measure < 0.2)):
-        # go through the training set
-        mean_train_cost = []
-        for batch_index in xrange(n_train_batches - 1):
-            # History indices
+    for k in range(k_fold):
+        train_index = train_index_k[k]
+        validate_index = validate_index_k[k]
+        test_index = test_index_k[k]
+        while((epoch < training_epochs) and (overfitting_measure < 0.2)):
+            # go through the training set
+            mean_train_cost = []
+            for batch_index in xrange(n_train_batches - 1):
+                # History indices
+                hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
+                # Train
+                this_cost = train_temp_rbm(train_index[batch_index], hist_idx.ravel())
+                # Keep track of cost
+                mean_train_cost += [this_cost]
+
+            # Train last batch
+            batch_index = n_train_batches - 1
             hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
-            # Train
-            this_cost = train_temp_rbm(train_index[batch_index], hist_idx.ravel())
-            # Keep track of cost
+            this_cost = train_temp_rbm_last_batch(train_index[batch_index], hist_idx.ravel())
             mean_train_cost += [this_cost]
 
-        # Train last batch
-        batch_index = n_train_batches - 1
-        hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
-        this_cost = train_temp_rbm_last_batch(train_index[batch_index], hist_idx.ravel())
-        mean_train_cost += [this_cost]
+            # Validation
+            all_train_idx = []
+            all_val_idx = []
+            for i in xrange(0, len(train_index)):
+                all_train_idx.extend(train_index[i])
+            all_train_idx = np.array(all_train_idx)     # Oui, c'est dégueulasse, mais vraiment
+            all_train_hist_idx = np.array([all_train_idx - n for n in xrange(1, temporal_order + 1)]).T
+            for i in xrange(0, len(validate_index)):
+                all_val_idx.extend(validate_index[i])
+            all_val_idx = np.array(all_val_idx)     # C'est toujours aussi dégueu
+            all_val_hist_idx = np.array([all_val_idx - n for n in xrange(1, temporal_order + 1)]).T
 
-        # Validation
-        all_train_idx = []
-        all_val_idx = []
-        for i in xrange(0, len(train_index)):
-            all_train_idx.extend(train_index[i])
-        all_train_idx = np.array(all_train_idx)     # Oui, c'est dégueulasse, mais vraiment
-        all_train_hist_idx = np.array([all_train_idx - n for n in xrange(1, temporal_order + 1)]).T
-        for i in xrange(0, len(validate_index)):
-            all_val_idx.extend(validate_index[i])
-        all_val_idx = np.array(all_val_idx)     # C'est toujours aussi dégueu
-        all_val_hist_idx = np.array([all_val_idx - n for n in xrange(1, temporal_order + 1)]).T
+            free_energy_train = np.mean(get_free_energy_train(all_train_idx, all_train_hist_idx.ravel()))
+            free_energy_val = np.mean(get_free_energy_validation(all_val_idx, all_val_hist_idx.ravel()))
+            overfitting_measure = (free_energy_val - free_energy_train) / free_energy_val
+            if (epoch % 10) == 0:
+                log_file.write('Training epoch {}, cost is {}     &     '.format(epoch, np.mean(mean_train_cost)))
+                print ('Training epoch {}, cost is {}     &     '.format(epoch, np.mean(mean_train_cost)))
+                log_file.write('Overfitting measure {}\n'.format(overfitting_measure))
+                print ('Overfitting measure {}\n'.format(overfitting_measure))
 
-        free_energy_train = np.mean(get_free_energy_train(all_train_idx, all_train_hist_idx.ravel()))
-        free_energy_val = np.mean(get_free_energy_validation(all_val_idx, all_val_hist_idx.ravel()))
-        overfitting_measure = (free_energy_val - free_energy_train) / free_energy_val
-        if (epoch % 10) == 0:
-            log_file.write('Training epoch {}, cost is {}     &     '.format(epoch, np.mean(mean_train_cost)))
-            print ('Training epoch {}, cost is {}     &     '.format(epoch, np.mean(mean_train_cost)))
-            log_file.write('Overfitting measure {}\n'.format(overfitting_measure))
-            print ('Overfitting measure {}\n'.format(overfitting_measure))
-
-        epoch += 1
+            epoch += 1
 
     end_time = time.clock()
 

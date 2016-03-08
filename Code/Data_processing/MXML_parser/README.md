@@ -11,9 +11,9 @@ the we can distinguish between a long note or several repeated occurences of the
 Written in python 2.7
 
 ## Packages dependencies :
-- xml.sax
-- Numpy
-- os, re, json, sys
+* xml.sax
+* Numpy
+* os, re, json, sys
 
 ## Files
 ### mxml_parser :

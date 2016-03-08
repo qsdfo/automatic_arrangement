@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
 """
 @author: Pierre Talbot & Mattia G. Bergomi
 """
@@ -10,8 +13,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from itertools import combinations
 
 
-notes = ['C' , 'C#' ,'D' ,'D#' ,'E' ,'F' ,'F#' ,'G' ,'G#' ,'A' ,'A#' ,'B']
-octaves = ['0' , '1' , '2' , '3' , '4' , '5' , '6' , '7' , '8']
+notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+octaves = ['0', '1', '2', '3', '4', '5', '6', '7', '8']
 pause = ['p']
 
 # Wrap pitch value in a class `Pitch`, `next` is a member containing the next pitch (of type `Pitch`) to be played in the voice leading sequence. It is `None` if it is the end of the sequence.
@@ -226,22 +229,22 @@ dist, cost, path = dtw(array, array1)
 dist1, cost1, path1 = dtw(array, array2)
 dist2, cost2, path2 = dtw(array1, array2)
 
-print dist, dist1 , dist2
+print dist, dist1, dist2
 
-plt.imshow(cost.T, origin='lower',  cmap='bone', interpolation='bicubic')
+plt.imshow(cost.T, origin='lower', cmap='bone', interpolation='bicubic')
 plt.plot(path[0], path[1], 'w')
-plt.xlim((-0.5, cost.shape[0]-0.5))
-plt.ylim((-0.5, cost.shape[1]-0.5))
+plt.xlim((-0.5, cost.shape[0] - 0.5))
+plt.ylim((-0.5, cost.shape[1] - 0.5))
 plt.show()
 
-plt.imshow(cost1.T, origin='lower',  cmap='bone', interpolation='bicubic')
+plt.imshow(cost1.T, origin='lower', cmap='bone', interpolation='bicubic')
 plt.plot(path1[0], path1[1], 'w')
-plt.xlim((-0.5, cost1.shape[0]-0.5))
-plt.ylim((-0.5, cost1.shape[1]-0.5))
+plt.xlim((-0.5, cost1.shape[0] - 0.5))
+plt.ylim((-0.5, cost1.shape[1] - 0.5))
 plt.show()
 
-plt.imshow(cost2.T, origin='lower',  cmap='bone', interpolation='bicubic')
+plt.imshow(cost2.T, origin='lower', cmap='bone', interpolation='bicubic')
 plt.plot(path2[0], path2[1], 'w')
-plt.xlim((-0.5, cost2.shape[0]-0.5))
-plt.ylim((-0.5, cost2.shape[1]-0.5))
+plt.xlim((-0.5, cost2.shape[0] - 0.5))
+plt.ylim((-0.5, cost2.shape[1] - 0.5))
 plt.show()

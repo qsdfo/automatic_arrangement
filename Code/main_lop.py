@@ -37,9 +37,12 @@ log_file.write((u'## Temporal granularity : ' + temporal_granularity + '\n').en
 if not os.path.exists(result_folder):
     os.makedirs(result_folder)
 
+########################################################################
+# Hyper parameters
+########################################################################
 # Import hyperparams from a csv file (config.csv) and run each row in this csv
 hyper_parameters = {}
-config_file_path = u'config.csv'
+config_file_path = MAIN_DIR + u'Models/' + model_name + u'/config.csv'
 with open(config_file_path, 'rb') as csvfile:
     config_csv = csv.DictReader(csvfile, delimiter=',')
     headers_config = config_csv.fieldnames
@@ -48,9 +51,13 @@ with open(config_file_path, 'rb') as csvfile:
         hyper_parameters[config_number] = row
         config_number += 1
 config_number_to_train = config_number
+
 # Import from result.csv the alreday tested configurations in a dictionnary
 checked_config = {}
-if os.stat(result_file).st_size == 0:
+if not os.path.isfile(result_file):
+    # No file
+    config_number_trained = 0
+elif os.stat(result_file).st_size == 0:
     # Empty file
     config_number_trained = 0
 else:
@@ -67,8 +74,13 @@ log_file.write((u'## Number of config to train : %d \n' % config_number_to_train
 log_file.write((u'## Number of config already trained : %d \n' % config_number_trained).encode('utf8'))
 log_file.write((u'\n###############################################\n\n').encode('utf8'))
 
+
+########################################################################
+# Train & evaluate
+########################################################################
 # Train the model, looping over the hyperparameters configurations
 config_train = 0
+import pdb; pdb.set_trace()
 for config_hp in hyper_parameters.itervalues():
     log_file.write((u'\n###############################################\n').encode('utf8'))
     log_file.write((u'## Config ' + str(config_train) + '\n').encode('utf8'))

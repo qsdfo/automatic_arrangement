@@ -69,6 +69,28 @@ Hinton, G.
 \newblock A practical guide to training restricted boltzmann machines.
 \newblock {\em Momentum} 9(1):926.
 
+\bibitem[\protect\citeauthoryear{Hochreiter and
+  Schmidhuber}{1997}]{hochreiter1997long}
+Hochreiter, S., and Schmidhuber, J.
+\newblock 1997.
+\newblock Long short-term memory.
+\newblock {\em Neural computation} 9(8):1735--1780.
+
+\bibitem[\protect\citeauthoryear{Kiros \bgroup et al.\egroup
+  }{2015}]{kiros2015skip}
+Kiros, R.; Zhu, Y.; Salakhutdinov, R.~R.; Zemel, R.; Urtasun, R.; Torralba, A.;
+  and Fidler, S.
+\newblock 2015.
+\newblock Skip-thought vectors.
+\newblock In {\em Advances in Neural Information Processing Systems},
+  3276--3284.
+
+\bibitem[\protect\citeauthoryear{Koechlin}{1941}]{koechli_orch}
+Koechlin, C.
+\newblock 1941.
+\newblock {\em Trait{\'e} de l'orchestration}.
+\newblock {\'E}ditions Max Eschig.
+
 \bibitem[\protect\citeauthoryear{Lavrenko and
   Pickens}{2003}]{lavrenko2003polyphonic}
 Lavrenko, V., and Pickens, J.
@@ -106,6 +128,12 @@ Piston, W.
 \newblock 1955.
 \newblock {\em Orchestration}.
 \newblock New York: Norton.
+
+\bibitem[\protect\citeauthoryear{Rimsky-Korsakov}{1873}]{Rimsky-Korsakov:1873aa}
+Rimsky-Korsakov, N.
+\newblock 1873.
+\newblock {\em Principles of Orchestration}.
+\newblock Russischer Musikverlag.
 
 \bibitem[\protect\citeauthoryear{Tardieu and
   McAdams}{2012}]{tardieu2012perception}

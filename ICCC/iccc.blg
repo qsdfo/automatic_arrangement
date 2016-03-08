@@ -3,48 +3,47 @@ Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
 The top-level auxiliary file: iccc.aux
 The style file: iccc.bst
 Database file #1: ../Biblio/biblio.bib
-Warning--I didn't find a database entry for "kiros2015skip"
 Warning--can't use both author and editor fields in Fischer2012
 Warning--can't use both volume and number fields in mcadams2013timbre
-You've used 19 entries,
+You've used 23 entries,
             2568 wiz_defined-function locations,
-            701 strings with 7832 characters,
-and the built_in function-call counts, 7967 in all, are:
-= -- 875
-> -- 254
-< -- 8
-+ -- 85
-- -- 82
-* -- 611
-:= -- 1253
-add.period$ -- 101
-call.type$ -- 19
-change.case$ -- 113
-chr.to.int$ -- 19
-cite$ -- 21
-duplicate$ -- 335
-empty$ -- 590
-format.name$ -- 115
-if$ -- 1676
+            721 strings with 8347 characters,
+and the built_in function-call counts, 9630 in all, are:
+= -- 1048
+> -- 319
+< -- 9
++ -- 107
+- -- 104
+* -- 736
+:= -- 1517
+add.period$ -- 121
+call.type$ -- 23
+change.case$ -- 138
+chr.to.int$ -- 23
+cite$ -- 25
+duplicate$ -- 404
+empty$ -- 715
+format.name$ -- 142
+if$ -- 2025
 int.to.chr$ -- 1
 int.to.str$ -- 0
-missing$ -- 21
-newline$ -- 122
-num.names$ -- 57
-pop$ -- 95
+missing$ -- 27
+newline$ -- 146
+num.names$ -- 69
+pop$ -- 124
 preamble$ -- 1
-purify$ -- 136
+purify$ -- 167
 quote$ -- 0
-skip$ -- 278
+skip$ -- 334
 stack$ -- 0
-substring$ -- 480
-swap$ -- 102
-text.length$ -- 8
+substring$ -- 571
+swap$ -- 121
+text.length$ -- 9
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 140
+type$ -- 164
 warning$ -- 2
-while$ -- 69
-width$ -- 23
-write$ -- 275
-(There were 3 warnings)
+while$ -- 82
+width$ -- 27
+write$ -- 329
+(There were 2 warnings)

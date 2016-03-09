@@ -111,10 +111,13 @@ def get_data(data_path, log_file_path, temporal_granularity, temporal_order, sha
     log_file.write("\nDimension of reduced piano : time = {} pitch = {}".format(np.shape(piano_clean)[0], np.shape(piano_clean)[1]))
     log_file.write("\n")
 
+    # Cast valid_index in a numpy array
+    valid_index = np.array(valid_index)
+
     # Event level indices
     if temporal_granularity == u'event_level':
         event_ind = get_event_ind(orch_clean)
-        valid_index = set(event_ind).intersection(valid_index)
+        valid_index = np.intersect1d(event_ind, valid_index)
 
     if shared_bool:
         # Instanciate shared variables
@@ -122,12 +125,11 @@ def get_data(data_path, log_file_path, temporal_granularity, temporal_order, sha
         piano_shared = theano.shared(np.asarray(piano_clean, dtype=theano.config.floatX))
 
     log_file.close()
-    return orch_shared, orch_mapping, piano_shared, piano_mapping, np.array(valid_index), quantization
+    return orch_shared, orch_mapping, piano_shared, piano_mapping, valid_index, quantization
 
 
 def load_data(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, minibatch_size, split=(0.7, 0.1, 0.2)):
     orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool)
-    import pdb; pdb.set_trace
     train_index, validate_index, test_index = k_fold_cross_validation(log_file_path, valid_index, minibatch_size, split)
     # train_index, validate_index, test_index = tvt_minibatch(log_file_path, valid_index, minibatch_size, shuffle, split)
     return orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index

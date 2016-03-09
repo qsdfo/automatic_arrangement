@@ -20,7 +20,7 @@ def average_dict(dico):
 # Two things define a model : it's architecture and the time granularity
 from Models.Temporal_RBM.temporal_binary_rbm import train, save
 model_name = u'Temporal_RBM'
-temporal_granularity = u'event_level'
+temporal_granularity = u'full_event_level'
 
 # Log file
 MAIN_DIR = os.getcwd().decode('utf8') + u'/'

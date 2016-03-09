@@ -127,6 +127,7 @@ def get_data(data_path, log_file_path, temporal_granularity, temporal_order, sha
 
 def load_data(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, minibatch_size, split=(0.7, 0.1, 0.2)):
     orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool)
+    import pdb; pdb.set_trace
     train_index, validate_index, test_index = k_fold_cross_validation(log_file_path, valid_index, minibatch_size, split)
     # train_index, validate_index, test_index = tvt_minibatch(log_file_path, valid_index, minibatch_size, shuffle, split)
     return orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index

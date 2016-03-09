@@ -63,7 +63,7 @@ class RBM_temporal_bin(object):
         # Initialize random generators
         if np_rng is None:
             # create a number generator
-            np_rng = np.random.RandomState(1234)
+            np_rng = np.random.RandomState(123)
 
         if theano_rng is None:
             theano_rng = RandomStreams(np_rng.randint(2 ** 30))
@@ -142,6 +142,30 @@ class RBM_temporal_bin(object):
         self.pbias = pbias
         self.theano_rng = theano_rng
         self.params = [self.W, self.P, self.hbias, self.vbias, self.pbias]
+
+    def reset(self, np_rng):
+        reset_W = np.asarray(
+            np_rng.uniform(
+                low=-4 * np.sqrt(6. / (self.n_hidden + (self.n_visible + self.n_past))),
+                high=4 * np.sqrt(6. / (self.n_hidden + (self.n_visible + self.n_past))),
+                size=(self.n_visible, self.n_hidden)
+            ),
+            dtype=theano.config.floatX
+        )
+        reset_P = np.asarray(
+            np_rng.uniform(
+                low=-4 * np.sqrt(6. / (self.n_hidden + (self.n_visible + self.n_past))),
+                high=4 * np.sqrt(6. / (self.n_hidden + (self.n_visible + self.n_past))),
+                size=(self.n_past, self.n_hidden)
+            ),
+            dtype=theano.config.floatX
+        )
+        self.W.set_value(reset_W)
+        self.P.set_value(reset_P)
+        self.hbias.set_value(np.zeros(self.n_hidden, dtype=theano.config.floatX))
+        self.vbias.set_value(np.zeros(self.n_visible, dtype=theano.config.floatX))
+        self.pbias.set_value(np.zeros(self.n_past, dtype=theano.config.floatX))
+        return
 
     def free_energy(self, v, p):
         ''' Function to compute the free energy '''
@@ -274,7 +298,6 @@ def train(hyper_parameter, dataset, log_file_path):
     # total_time = orch.get_value(borrow=True).shape[0]
 
     # Compute number of minibatches for training, validation and testing
-    import pdb; pdb.set_trace()
     k_fold = len(train_index_k)
     n_train_batches = len(train_index_k[0])
     train_size = 0
@@ -388,30 +411,43 @@ def train(hyper_parameter, dataset, log_file_path):
                                  name='test_model')
 
     start_time = time.clock()
-
-    # go through training epochs
-    epoch = 0
-    overfitting_measure = 0
+    # Saving structures
+    overfitting_measure_fold = {}
+    train_cost_fold = {}
+    precision = {}
+    recall = {}
+    accuracy = {}
     for k in range(k_fold):
+        log_file.write(u'####### Fold {}\n'.format(k).encode('utf8'))
+        print (u'#######\n Fold {}\n'.format(k).encode('utf8'))
+        # Get train, valid, test indices
         train_index = train_index_k[k]
         validate_index = validate_index_k[k]
         test_index = test_index_k[k]
-        while((epoch < training_epochs) and (overfitting_measure < 0.2)):
+        # Reset monitoring variables
+        epoch = 0
+        overfitting_measure = []
+        overfitting_measure_last_it = 0
+        train_cost = []
+        # Reset the network weights
+        rbm.reset(np.random.RandomState(123 * (k + 1)))
+        # go through training epochs
+        while((epoch < training_epochs) and (overfitting_measure_last_it < 0.2)):
             # go through the training set
-            mean_train_cost = []
+            train_cost_epoch = []
             for batch_index in xrange(n_train_batches - 1):
                 # History indices
                 hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
                 # Train
                 this_cost = train_temp_rbm(train_index[batch_index], hist_idx.ravel())
                 # Keep track of cost
-                mean_train_cost += [this_cost]
+                train_cost_epoch += [this_cost]
 
             # Train last batch
             batch_index = n_train_batches - 1
             hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
             this_cost = train_temp_rbm_last_batch(train_index[batch_index], hist_idx.ravel())
-            mean_train_cost += [this_cost]
+            train_cost_epoch += [this_cost]
 
             # Validation
             all_train_idx = []
@@ -427,66 +463,80 @@ def train(hyper_parameter, dataset, log_file_path):
 
             free_energy_train = np.mean(get_free_energy_train(all_train_idx, all_train_hist_idx.ravel()))
             free_energy_val = np.mean(get_free_energy_validation(all_val_idx, all_val_hist_idx.ravel()))
-            overfitting_measure = (free_energy_val - free_energy_train) / free_energy_val
+            overfitting_measure_last_it = (free_energy_val - free_energy_train) / free_energy_val
+            overfitting_measure += [overfitting_measure_last_it]
+            train_cost += [np.mean(train_cost_epoch)]
             if (epoch % 10) == 0:
-                log_file.write('Training epoch {}, cost is {}     &     '.format(epoch, np.mean(mean_train_cost)))
-                print ('Training epoch {}, cost is {}     &     '.format(epoch, np.mean(mean_train_cost)))
-                log_file.write('Overfitting measure {}\n'.format(overfitting_measure))
-                print ('Overfitting measure {}\n'.format(overfitting_measure))
+                log_file.write('Training epoch {}, cost is {}     &     '.format(epoch, np.mean(train_cost_epoch)).encode('utf8'))
+                print ('Training epoch {}, cost is {}     &     '.format(epoch, np.mean(train_cost_epoch)).encode('utf8'))
+                log_file.write('Overfitting measure {}\n'.format(overfitting_measure_last_it).encode('utf8'))
+                print ('Overfitting measure {}\n'.format(overfitting_measure_last_it).encode('utf8'))
 
             epoch += 1
 
+        # TEST
+        all_test_idx = []
+        for i in xrange(0, len(test_index)):
+            all_test_idx.extend(test_index[i])
+        all_test_idx = np.array(all_test_idx)     # Oui, c'est dégueulasse, mais vraiment
+        all_test_hist_idx = np.array([all_test_idx - n for n in xrange(1, temporal_order + 1)]).T
+        precision_k, recall_k, accuracy_k = test_model(all_test_idx, all_test_hist_idx.ravel())
+
+        # Store in dictionaries the current fold config
+        train_cost_fold[k] = train_cost
+        overfitting_measure_fold[k] = overfitting_measure
+        precision[k] = precision_k
+        recall[k] = recall_k
+        accuracy[k] = accuracy_k
+
+    # Training time for k-fold
     end_time = time.clock()
-
     training_time = (end_time - start_time)
-
-    log_file.write(('Training took %f minutes' % (training_time / 60.)))
-
-    # TEST
-    all_test_idx = []
-    for i in xrange(0, len(test_index)):
-        all_test_idx.extend(test_index[i])
-    all_test_idx = np.array(all_test_idx)     # Oui, c'est dégueulasse, mais vraiment
-    all_test_hist_idx = np.array([all_test_idx - n for n in xrange(1, temporal_order + 1)]).T
-    precision, recall, accuracy = test_model(all_test_idx, all_test_hist_idx.ravel())
+    log_file.write(('Training took %f minutes' % (training_time / 60.)).encode('utf8'))
 
     # Close log file
     log_file.close()
 
-    return rbm, np.mean(precision), np.mean(recall), np.mean(accuracy)
+    # What we would like to keep from a training/validate/test procedure ?
+    # train error evolution
+    # validate error evolution
+    # test errors for the different k-folds
+    record = {}
+    record['train_error'] = train_cost_fold  # A dictionary of size k_fold,
+    # each key a list of size "number of epoch" (different for each fold)
+    # with the evolution of the reconstruction error
+    record['overfitting_measure'] = overfitting_measure_fold
+    # Same for the over-fitting measure
+    record['precision'] = precision
+    record['recall'] = recall
+    record['accuracy'] = accuracy
+    return rbm, record
 
 
 def save(rbm, save_path):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-    np.savetxt(save_path + '/W.csv', rbm.W.get_value(borrow=True), delimiter=",")
-    np.savetxt(save_path + '/P.csv', rbm.P.get_value(borrow=True), delimiter=",")
-    np.savetxt(save_path + '/vbias.csv', rbm.vbias.get_value(borrow=True), delimiter=",")
-    np.savetxt(save_path + '/pbias.csv', rbm.pbias.get_value(borrow=True), delimiter=",")
-    np.savetxt(save_path + '/hbias.csv', rbm.hbias.get_value(borrow=True), delimiter=",")
+    np.savetxt(save_path + 'W.csv', rbm.W.get_value(borrow=True), delimiter=",")
+    np.savetxt(save_path + 'P.csv', rbm.P.get_value(borrow=True), delimiter=",")
+    np.savetxt(save_path + 'vbias.csv', rbm.vbias.get_value(borrow=True), delimiter=",")
+    np.savetxt(save_path + 'pbias.csv', rbm.pbias.get_value(borrow=True), delimiter=",")
+    np.savetxt(save_path + 'hbias.csv', rbm.hbias.get_value(borrow=True), delimiter=",")
 
-    fields = ['instrument', 'start_pitch', 'end_pitch', 'start_index', 'end_index']
-    with open(save_path + '/piano_mapping.csv', "wb") as f:
+    fields = ['instrument', 'start_index', 'end_index', 'start_pitch', 'end_pitch', 'start_index_rec', 'end_index_rec']
+    with open(save_path + 'piano_mapping.csv', "wb") as f:
         w = csv.DictWriter(f, fields)
         w.writeheader()
         for key, val in sorted(rbm.piano_mapping.items()):
             row = {'instrument': key}
             row.update(val)
             w.writerow(row)
-    with open(save_path + '/orch_mapping.csv', "wb") as f:
+    with open(save_path + 'orch_mapping.csv', "wb") as f:
         w = csv.DictWriter(f, fields)
         w.writeheader()
         for key, val in sorted(rbm.orch_mapping.items()):
             row = {'instrument': key}
             row.update(val)
             w.writerow(row)
-
-    # piano_map_file = csv.writer(open(save_path + '/piano_mapping.csv', 'wb'))
-    # for key, value in rbm.piano_mapping.items():
-    #     piano_map_file.writerow([key, value])
-    # orch_map_file = csv.writer(open(save_path + '/orch_mapping.csv', 'wb'))
-    # for key, value in rbm.orch_mapping.items():
-    #     orch_map_file.writerow([key, value])
 
 
 def create_past_vector(piano, orch, batch_size, delay, orch_dim):

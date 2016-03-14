@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
 import theano.tensor as T
 
 
@@ -10,5 +13,7 @@ def accuracy_measure(true_frame, pred_frame):
     quotient = true_positive + false_negative + false_positive
 
     accuracy_measure = T.switch(T.eq(quotient, 0), 0, true_positive / quotient)
+    # Rmq : avec ce switch, si on prédit correctement un silence, le score est de 0...
+    # This has to be fixed.
 
     return accuracy_measure

@@ -156,7 +156,7 @@ A second approximations can be made by starting the chain from the same sample $
 \end{align}
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.7]{RBM}
+\includegraphics[scale=0.6]{RBM}
 \caption{The \textit{Restricted Boltzmann Machine} (RBM) is defined by a set of visible ($v_{i}$) and hidden ($h_{j}$) units.  Symmetric weights ($W_{ij}$) connect a hidden unit to a visible unit which altogether define an energy function $E_{W}(v,h)$. Training an \textit{RBM} consists in modifying the weights $W$ to lower the energy function around the points observed in the training set.}
 \label{fig:RBM}
 \end{figure}
@@ -297,7 +297,7 @@ Instead of binary values, activation probabilities are used for the predicted sa
 \subsection{Results}
 Four models are evaluated on the orchestral inference task. The first model is a random generation of the orchestral frames from a Bernoulli distribution of parameter $0.5$. The second model predicts an orchestral frame at time $t$ by repeating the frame at time $t-1$. Those two naive models constitute a first baseline against which we compare the cRBM and FGcRBM models.
 
-The results are summed up in \prettyref{tab:result_event_level}. As expected, the random model has poor results. The repeat model performs significantly better. Indeed, it is relatively common that a note is sustained between two successive events. The largely cRBM outperform those two models. However, the FGcRBM model has a lower score than the repeat model. We observed that the activation function of the visible units during the generation step was extremely noisy, which suggests that the training procedure mostly failed. We believe that this is due to the number of parameter,  and especially the dimension of the feature units. Indeed, in \cite{taylor2009factored}, only ten different configuration of the feature units were possible, which leads to a small number of different energy landscape. In our case, the number of different configuration for the feature units is equal to the number of different piano present in the database.
+The results are summed up in \prettyref{tab:result_event_level}. As expected, the random model has poor results. The repeat model performs significantly better. Indeed, it is relatively common that a note is sustained between two successive events. The largely cRBM outperform those two models. However, the FGcRBM model has a lower score than the repeat model. We observed that the activation function of the visible units during the generative step was extremely noisy, which suggests that the training procedure mostly failed. We believe that this is due to the number of parameter,  and especially the dimension of the feature units. Indeed, in \cite{taylor2009factored}, only ten different configuration of the feature units were possible. When training on an orchestral database,  each different piano frame define a different configuration.
 
 \begin{table}[h]
 \centering
@@ -384,13 +384,12 @@ the playback, while a high cutoff will produce more sparse orchestration.
 We have introduced a system for real-time projective orchestration of a midi piano input. In order to select the most adapted model, we have proposed an evaluation framework called orchestral inference which rely on an orchestral inference task. We have assessed the performance of the cRBM and FGcRBM, and observed the better performances of the cRBM model.
 
 % Interesting and highly benefit problem
-The general objective of building a generative model for time series is one of the most prominent topic of interest for the machine learning field. Orchestral inference sets a slightly more specific framework where the generated time series is conditioned by an other observed time series (the piano). It is a challenging and worthwhile task and tackle it would benefit the machine learning field in many aspect.
+The general objective of building a generative model for time series is one of the most prominent topic for the machine learning field. Orchestral inference sets a slightly more specific framework where the generated time series is conditioned by an other observed time series (the piano score). Besides, being able to grasp the long range dependencies structuring music appears as a challenging and worthwhile task.
 
 % Increase DB
 The high dimensionality of the data and their sparsity are a major obstacle for learning algorithms.
 A first remark is that a larger database would be required to train any model sufficiently complex to properly represent the underlying distribution of a projective orchestration.
 It is important to build a reference database of piano scores and their orchestration by acknowledge composers, with all instrument name indicated and velocity for the notes. 
-% Change the data representation 
 % Velocities
 Indeed, we believe that taking the notes' velocity into consideration is crucial, since many orchestral effects are justified by intensity variations in the original piano scores. 
 % Find distrib representations

@@ -5,22 +5,17 @@
 import unicodecsv as csv
 import os
 import numpy as np
-
-
-def average_dict(dico):
-    mean_dic = 0
-    counter = 0
-    for v in dico.itervalues():
-        counter += 1
-        mean_dic += np.mean(v)
-    return mean_dic / counter
+# Hyperopt
+import pickle
+import time
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 
 
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
 from Models.Temporal_RBM.temporal_binary_rbm import train, save
 model_name = u'Temporal_RBM'
-temporal_granularity = u'full_event_level'
+temporal_granularity = u'frame_level'
 
 # Log file
 MAIN_DIR = os.getcwd().decode('utf8') + u'/'
@@ -37,6 +32,16 @@ result_file = result_folder + u'results.csv'
 ############################################################################
 ############################################################################
 ############################################################################
+
+
+def average_dict(dico):
+    mean_dic = 0
+    counter = 0
+    for v in dico.itervalues():
+        counter += 1
+        mean_dic += np.mean(v)
+    return mean_dic / counter
+
 
 # Init log_file
 log_file = open(log_file_path, 'wb')
@@ -83,7 +88,6 @@ if os.path.isfile(result_file) and (os.stat(result_file).st_size > 0):
 log_file.write((u'## Number of config to train : %d \n' % config_number_to_train).encode('utf8'))
 log_file.write((u'## Number of config already trained : %d \n' % config_number_trained).encode('utf8'))
 log_file.write((u'\n###############################################\n\n').encode('utf8'))
-
 
 ########################################################################
 # Train & evaluate

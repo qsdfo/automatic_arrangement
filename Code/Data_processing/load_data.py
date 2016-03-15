@@ -13,7 +13,7 @@ from event_level import get_event_ind
 # from matplotlib.backends.backend_pdf import PdfPages
 
 
-def get_data(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool=True):
+def get_data(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool=True, bin_unit_bool=True):
     """
     Load data from pickle (.p) file into a matrix. Return valid indexes for sequential learning
 
@@ -119,6 +119,11 @@ def get_data(data_path, log_file_path, temporal_granularity, temporal_order, sha
         event_ind = get_event_ind(orch_clean)
         valid_index = np.intersect1d(event_ind, valid_index)
 
+    # Binary representation
+    if bin_unit_bool:
+        orch_clean = (orch_clean > 0).astype(int)
+        piano_clean = (piano_clean > 0).astype(int)
+
     if shared_bool:
         # Instanciate shared variables
         orch_shared = theano.shared(np.asarray(orch_clean, dtype=theano.config.floatX))
@@ -128,8 +133,8 @@ def get_data(data_path, log_file_path, temporal_granularity, temporal_order, sha
     return orch_shared, orch_mapping, piano_shared, piano_mapping, valid_index, quantization
 
 
-def load_data_k_fold(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, minibatch_size, split=(0.7, 0.1, 0.2)):
-    orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool)
+def load_data_k_fold(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, bin_unit_bool, minibatch_size, split=(0.7, 0.1, 0.2)):
+    orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, bin_unit_bool)
     train_index, validate_index, test_index = k_fold_cross_validation(log_file_path, valid_index, minibatch_size, split)
     # train_index, validate_index, test_index = tvt_minibatch(log_file_path, valid_index, minibatch_size, shuffle, split)
     return orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index
@@ -154,4 +159,4 @@ if __name__ == '__main__':
     # import pdb; pdb.set_trace()
     # bbb=get_event_ind(aaa)
 
-    orch, orch_mapping, piano, piano_mapping, train_batch_ind, validate_batch_ind, test_batch_ind = load_data(data_path='../../Data/data.p', log_file_path='log_test.txt', temporal_granularity='event_level', temporal_order=8, shared_bool=True, minibatch_size=100, shuffle=True)
+    orch, orch_mapping, piano, piano_mapping, train_batch_ind, validate_batch_ind, test_batch_ind = load_data_tvt(data_path='../../Data/data.p', log_file_path='log_test.txt', temporal_granularity='event_level', temporal_order=8, shared_bool=True, minibatch_size=100, shuffle=True)

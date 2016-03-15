@@ -4,6 +4,8 @@
 # Main script for LOP
 import os
 
+import theano
+theano.config.compute_test_value = 'warn'
 
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
@@ -19,7 +21,8 @@ log_file_path = MAIN_DIR + u'log'
 dataset = MAIN_DIR + u'../Data/data.p'
 
 # Set hyperparameters (can be a grid)
-result_file = u'hopt_results.csv'
+result_file = u'../Results/' + temporal_granularity +\
+              '/' + model_name + u'/hopt_results.csv'
 
 # Config is set now, no need to modify source below for standard use
 ############################################################################
@@ -29,5 +32,6 @@ result_file = u'hopt_results.csv'
 ########################################################################
 # Train step
 ########################################################################
-max_evals = 4  # number of hyper-parameter configurations evaluated
+max_evals = 10  # number of hyper-parameter configurations evaluated
 best = train_hopt(temporal_granularity, dataset, max_evals, log_file_path, result_file)
+print best

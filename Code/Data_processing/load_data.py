@@ -128,6 +128,9 @@ def get_data(data_path, log_file_path, temporal_granularity, temporal_order, sha
         # Instanciate shared variables
         orch_shared = theano.shared(np.asarray(orch_clean, dtype=theano.config.floatX))
         piano_shared = theano.shared(np.asarray(piano_clean, dtype=theano.config.floatX))
+    else:
+        orch_shared = orch_clean
+        piano_shared = piano_clean
 
     log_file.close()
     return orch_shared, orch_mapping, piano_shared, piano_mapping, valid_index, quantization

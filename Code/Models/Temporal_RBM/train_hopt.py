@@ -15,31 +15,32 @@ from hyperopt import hp, fmin, tpe
 from math import log
 # CSV
 import csv
-# Code debug and speed
-import time
 
 from Data_processing.load_data import load_data_tvt
 from Models.Temporal_RBM.class_def import RBM_temporal_bin
 
 
 def train_hopt(temporal_granularity, dataset, max_evals, log_file_path, csv_file_path):
+    # Create/reinit log and csv files
+    open(csv_file_path, 'w').close()
+    open(log_file_path, 'w').close()
+
     # Init log_file
-    with open(log_file_path, 'wb') as log_file:
+    with open(log_file_path, 'ab') as log_file:
         log_file.write((u'# TRBM : Hyperoptimization : \n').encode('utf8'))
         log_file.write((u'# Temporal granularity : ' + temporal_granularity + '\n').encode('utf8'))
 
     # Define hyper-parameter search space
-    header = ['n_hidden', 'temporal_order', 'learning_rate', 'batch_size']
+    header = ['n_hidden', 'temporal_order', 'learning_rate', 'batch_size', 'accuracy']
     space = (hp.qloguniform('n_hidden', log(100), log(5000), 10),
              hp.qloguniform('temporal_order', log(1), log(30), 1),
-             hp.uniform('learning_rate', 0.0001, 1),
+             hp.loguniform('learning_rate', log(0.0001), log(1)),
              hp.quniform('batch_size', 10, 500, 10)
              #  hp.choice('activation_func', ['tanh', 'sigmoid']),
              #  hp.choice('sampling_positive', ['true', 'false'])
              # gibbs_sampling_step_test ???
              )
 
-    # Hyperparameter parameters.... haha, we should optimize them (joke).
     global run_counter
     run_counter = 0
 
@@ -47,7 +48,7 @@ def train_hopt(temporal_granularity, dataset, max_evals, log_file_path, csv_file
         global run_counter
         run_counter += 1
         # log
-        with open(log_file_path, 'wb') as log_file:
+        with open(log_file_path, 'ab') as log_file:
             log_file.write((u'\n###################').encode('utf8'))
             log_file.write((u'# Config :  {}'.format(run_counter)).encode('utf8'))
         # print
@@ -55,15 +56,16 @@ def train_hopt(temporal_granularity, dataset, max_evals, log_file_path, csv_file
         print((u'# Config :  {}'.format(run_counter)).encode('utf8'))
 
         # Train ##############
-        error = train(params, dataset, temporal_granularity, log_file_path)
+        accuracy = train(params, dataset, temporal_granularity, log_file_path)
+        error = -accuracy  # Search for a min
         ######################
 
         # log
-        with open(log_file_path, 'wb') as log_file:
-            log_file.write((u'# Error :  {}\n'.format(error)).encode('utf8'))
+        with open(log_file_path, 'ab') as log_file:
+            log_file.write((u'# Accuracy :  {}'.format(accuracy)).encode('utf8'))
             log_file.write((u'###################\n').encode('utf8'))
         # print
-        print((u'# Error :  {}\n'.format(error)).encode('utf8'))
+        print((u'# Accuracy :  {}'.format(accuracy)).encode('utf8'))
         print((u'###################\n').encode('utf8'))
 
         # Write the result in result.csv
@@ -73,21 +75,18 @@ def train_hopt(temporal_granularity, dataset, max_evals, log_file_path, csv_file
             dico_res = {'n_hidden': n_hidden,
                         'temporal_order': temporal_order,
                         'learning_rate': learning_rate,
-                        'batch_size': batch_size}
+                        'batch_size': batch_size,
+                        'accuracy': accuracy}
             writer.writerow(dico_res)
 
         return error
 
-    with open(csv_file_path, 'wb') as csvfile:
+    with open(csv_file_path, 'ab') as csvfile:
         # Write headers if they don't already exist
         writerHead = csv.writer(csvfile, delimiter=',')
         writerHead.writerow(header)
 
-    start_time = time.clock()
     best = fmin(run_wrapper, space, algo=tpe.suggest, max_evals=max_evals)
-    end_time = time.clock()
-
-    print (start_time - end_time)
 
     return best
 
@@ -104,7 +103,7 @@ def train(params, dataset, temporal_granularity, log_file_path):
     batch_size = int(batch_size)
 
     # Log them
-    with open(log_file_path, 'wb') as log_file:
+    with open(log_file_path, 'ab') as log_file:
         log_file.write((u'# n_hidden :  {}'.format(n_hidden)).encode('utf8'))
         log_file.write((u'# temporal_order :  {}'.format(temporal_order)).encode('utf8'))
         log_file.write((u'# learning_rate :  {}'.format(learning_rate)).encode('utf8'))
@@ -119,6 +118,7 @@ def train(params, dataset, temporal_granularity, log_file_path):
     gibbs_sampling_step_test = 40
 
     # Load data
+    # Dimension : time * pitch
     orch, orch_mapping, piano, piano_mapping, train_index, val_index, _ \
         = load_data_tvt(data_path=dataset,
                         log_file_path='bullshit.txt',
@@ -152,8 +152,6 @@ def train(params, dataset, temporal_granularity, log_file_path):
     # construct the RBM class
     rbm = RBM_temporal_bin(input=v,
                            past=p,
-                           piano_mapping=piano_mapping,
-                           orch_mapping=orch_mapping,
                            n_visible=orch_dim,
                            n_hidden=n_hidden,
                            n_past=n_past,
@@ -162,7 +160,7 @@ def train(params, dataset, temporal_granularity, log_file_path):
 
     # get the cost and the gradient corresponding to one step of CD-15
     cost, updates = rbm.cost_updates(lr=learning_rate, k=10)
-    precision, recall, accuracy, updates_test = rbm.prediction_measure(gibbs_sampling_step_test)
+    precision, recall, accuracy, updates_test = rbm.prediction_measure(k=gibbs_sampling_step_test)
 
     #################################
     #     Training the CRBM         #
@@ -205,7 +203,7 @@ def train(params, dataset, temporal_granularity, log_file_path):
     # Training step
     epoch = 0
     OVERFITTING = False
-    val_order = 3
+    val_order = 4
     val_tab = np.zeros(val_order)
     while (not OVERFITTING):
         # go through the training set
@@ -242,7 +240,7 @@ def train(params, dataset, temporal_granularity, log_file_path):
                 OVERFITTING = True
             val_tab[0] = mean_accuracy
             # Monitor learning
-            with open(log_file_path, 'wb') as log_file:
+            with open(log_file_path, 'ab') as log_file:
                 log_file.write(("Epoch : {} , Rec error : {} , Valid acc : {}"
                                .format(epoch, np.mean(train_cost_epoch), mean_accuracy))
                                .encode('utf8'))
@@ -252,7 +250,7 @@ def train(params, dataset, temporal_granularity, log_file_path):
 
         epoch += 1
 
-    return val_tab[-1]
+    return np.amax(val_tab)
 
 
 def create_past_vector(piano, orch, batch_size, delay, orch_dim):

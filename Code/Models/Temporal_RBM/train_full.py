@@ -99,8 +99,6 @@ def train(hyper_parameter, dataset, log_file_path):
     # construct the RBM class
     rbm = RBM_temporal_bin(input=v,
                            past=p,
-                           piano_mapping=piano_mapping,
-                           orch_mapping=orch_mapping,
                            n_visible=orch_dim,
                            n_hidden=n_hidden,
                            n_past=n_past,

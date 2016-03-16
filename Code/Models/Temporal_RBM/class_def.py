@@ -21,8 +21,6 @@ class RBM_temporal_bin(object):
         self,
         input=None,
         past=None,
-        piano_mapping=None,
-        orch_mapping=None,
         n_visible=0,
         n_hidden=500,
         n_past=0,
@@ -43,10 +41,6 @@ class RBM_temporal_bin(object):
         if not past:
             self.past = T.matrix('past')
 
-        # Stored so that we can save them after training
-        self.piano_mapping = piano_mapping
-        self.orch_mapping = orch_mapping
-
         # Architecture
         self.n_hidden = n_hidden
         self.n_visible = n_visible
@@ -55,7 +49,7 @@ class RBM_temporal_bin(object):
         # Initialize random generators
         if np_rng is None:
             # create a number generator
-            np_rng = np.random.RandomState(123)
+            np_rng = np.random.RandomState(1234)
 
         if theano_rng is None:
             theano_rng = RandomStreams(np_rng.randint(2 ** 30))
@@ -199,10 +193,7 @@ class RBM_temporal_bin(object):
         # Updates
         for gparam, param in zip(gparams, self.params):
             # make sure that the learning rate is of the right dtype
-            updates[param] = param - gparam * T.cast(
-                lr,
-                dtype=theano.config.floatX
-            )
+            updates[param] = param - gparam * T.cast(lr, dtype=theano.config.floatX)
 
         # Monitor reconstruction (log-likelihood proxy)
         monitoring_cost = self.get_reconstruction_cost(mean_neg_v)

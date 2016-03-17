@@ -6,14 +6,14 @@ import cPickle
 import theano
 
 from pianoroll_reduction import remove_unused_pitch
-from minibatch_builder import k_fold_cross_validation, tvt_minibatch
+from minibatch_builder import k_fold_cross_validation, tvt_minibatch, tvt_minibatch_seq
 from event_level import get_event_ind
 
 # from matplotlib import pyplot as plt
 # from matplotlib.backends.backend_pdf import PdfPages
 
 
-def get_data(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool=True, bin_unit_bool=True):
+def get_data(data_path, log_file_path, temporal_granularity, temporal_order, sequential_learning=False, shared_bool=True, bin_unit_bool=True):
     """
     Load data from pickle (.p) file into a matrix. Return valid indexes for sequential learning
 
@@ -91,7 +91,16 @@ def get_data(data_path, log_file_path, temporal_granularity, temporal_order, sha
             orch = np.concatenate((orch, aux_orch), axis=0)
         # Valid indexes
         N_pr = orch.shape[0]
-        valid_index.extend(range(last_stop + temporal_order, N_pr))
+        if sequential_learning:
+            shift = min(100, temporal_order // 2)
+            valid_index.extend(range(last_stop + temporal_order, N_pr, shift))
+            # always add the end of the file to learn "conclusions"
+            if (N_pr not in valid_index) and (aux_orch.shape[0] > temporal_order):
+                valid_index.append(N_pr)  # not minus 1 because it'll be used in
+                # as a bound
+        else:
+            valid_index.extend(range(last_stop + temporal_order, N_pr))
+
         last_stop = N_pr
         # Set flag
         orch_init = False
@@ -137,16 +146,23 @@ def get_data(data_path, log_file_path, temporal_granularity, temporal_order, sha
 
 
 def load_data_k_fold(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, bin_unit_bool, minibatch_size, split=(0.7, 0.1, 0.2)):
-    orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, bin_unit_bool)
+    orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_granularity, temporal_order, False, shared_bool, bin_unit_bool)
     train_index, validate_index, test_index = k_fold_cross_validation(log_file_path, valid_index, minibatch_size, split)
     # train_index, validate_index, test_index = tvt_minibatch(log_file_path, valid_index, minibatch_size, shuffle, split)
     return orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index
 
 
-def load_data_tvt(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, minibatch_size, split=(0.7, 0.1, 0.2)):
-    orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool)
+def load_data_tvt(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, bin_unit_bool, minibatch_size, split=(0.7, 0.1, 0.2)):
+    orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_granularity, temporal_order, False, shared_bool, bin_unit_bool)
     # train_index, validate_index, test_index = k_fold_cross_validation(log_file_path, valid_index, minibatch_size, split)
     train_index, validate_index, test_index = tvt_minibatch(log_file_path, valid_index, minibatch_size, 'block', split)
+    return orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index
+
+
+def load_data_seq_tvt(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, bin_unit_bool, split=(0.7, 0.1, 0.2)):
+    # In this case minibatch_size is equal to temporal_granularity
+    orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_granularity, temporal_order, True, shared_bool, bin_unit_bool)
+    train_index, validate_index, test_index = tvt_minibatch_seq(log_file_path, valid_index, temporal_order, True, split)
     return orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index
 
 

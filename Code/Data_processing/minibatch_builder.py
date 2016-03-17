@@ -12,7 +12,7 @@ def tvt_minibatch(log_file_path, valid_index, minibatch_size, shuffle_type='all'
     valid_index:   numpy array
                 contains the valid indexes, i.e. indexes which more than temporal_order after the beginning
                 of a track
-    shuffle_typz:   * all = shuffle all db, THEN build tvt indices
+    shuffle_type:   * all = shuffle all db, THEN build tvt indices
                     * block = split between tvt, then shuffle inside t,v, or t
                     * none = no shuffling at all
     split:      split proportion of the whole dataset between train, validate and test datasets
@@ -40,7 +40,7 @@ def tvt_minibatch(log_file_path, valid_index, minibatch_size, shuffle_type='all'
                                  minibatch_start + minibatch_size])
         minibatch_start += minibatch_size
 
-    if (minibatch_start != last_train):
+    if minibatch_start != last_train:
         # Make a minibatch out of what is left
         minibatches_train.append(valid_index[minibatch_start:last_train])
         n_batch_train = n_batch_train + 1
@@ -57,7 +57,7 @@ def tvt_minibatch(log_file_path, valid_index, minibatch_size, shuffle_type='all'
                                     minibatch_start + minibatch_size])
         minibatch_start += minibatch_size
 
-    if (minibatch_start != last_validate):
+    if minibatch_start != last_validate:
         # Make a minibatch out of what is left
         minibatches_validate.append(valid_index[minibatch_start:last_validate])
         n_batch_validate = n_batch_validate + 1
@@ -74,10 +74,51 @@ def tvt_minibatch(log_file_path, valid_index, minibatch_size, shuffle_type='all'
                                 minibatch_start + minibatch_size])
         minibatch_start += minibatch_size
 
-    if (minibatch_start != last_test):
+    if minibatch_start != last_test:
         # Make a minibatch out of what is left
         minibatches_test.append(valid_index[minibatch_start:last_test])
         n_batch_test = n_batch_test + 1
+
+    return np.array(minibatches_train), np.array(minibatches_validate), np.array(minibatches_test)
+
+
+def tvt_minibatch_seq(log_file_path, valid_index, temporal_order, shuffle=True, split=(0.7, 0.1, 0.2)):
+    """
+    Used to shuffle the dataset at each iteration.
+
+    valid_index:   numpy array
+                contains the valid indexes, i.e. indexes which more than temporal_order after the beginning
+                of a track
+    shuffle_type:   * all = shuffle all db, THEN build tvt indices
+                    * block = split between tvt, then shuffle inside t,v, or t
+                    * none = no shuffling at all
+    split:      split proportion of the whole dataset between train, validate and test datasets
+    """
+
+    n = valid_index.shape[0]
+    # TRAIN
+    minibatches_train = []
+    n_batch_train = int(n * split[0])
+    for i in range(n_batch_train):
+        minibatches_train.append(range(valid_index[i] - temporal_order, valid_index[i]))
+    if shuffle:
+        np.random.shuffle(minibatches_train)
+
+    # VALIDATE
+    minibatches_validate = []
+    n_batch_validate = int(n * (split[0] + split[1]))
+    for i in range(n_batch_train, n_batch_validate):
+        minibatches_validate.append(range(valid_index[i] - temporal_order, valid_index[i]))
+    if shuffle:
+        np.random.shuffle(minibatches_validate)
+
+    # TEST
+    minibatches_test = []
+    n_batch_test = int(n * (split[0] + split[1] + split[2]))
+    for i in range(n_batch_validate, n_batch_test):
+        minibatches_test.append(range(valid_index[i] - temporal_order, valid_index[i]))
+    if shuffle:
+        np.random.shuffle(minibatches_test)
 
     return np.array(minibatches_train), np.array(minibatches_validate), np.array(minibatches_test)
 

@@ -125,6 +125,7 @@ def train(params, dataset, temporal_granularity, log_file_path):
                         temporal_granularity=temporal_granularity,
                         temporal_order=temporal_order,
                         shared_bool=True,
+                        bin_unit_bool=True,
                         minibatch_size=batch_size,
                         split=(0.7, 0.1, 0.2))
 
@@ -162,8 +163,9 @@ def train(params, dataset, temporal_granularity, log_file_path):
     cost, updates = rbm.cost_updates(lr=learning_rate, k=10)
     precision, recall, accuracy, updates_test = rbm.prediction_measure(k=gibbs_sampling_step_test)
 
+    import pdb; pdb.set_trace()
     #################################
-    #     Training the CRBM         #
+    #     Training the RnnRBM         #
     #################################
 
     # the purpose of train_crbm is solely to update the CRBM parameters

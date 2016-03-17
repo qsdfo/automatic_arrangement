@@ -6,8 +6,8 @@ import os
 
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
-from Models.CRBM.train_hopt import train_hopt
-model_name = u'CRBM'
+from Models.RnnRbm.train_hopt import train_hopt
+model_name = u'RnnRbm'
 temporal_granularity = u'frame_level'
 
 # Get main dir

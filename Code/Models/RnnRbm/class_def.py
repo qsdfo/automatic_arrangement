@@ -35,7 +35,6 @@ class RnnRbm:
                  n_orch=200,
                  n_piano=200,
                  n_hidden=500,
-                 batch_size=100,
                  n_hidden_recurrent=490,
                  weights=(None,) * 12,
                  numpy_rng=None,
@@ -77,7 +76,6 @@ class RnnRbm:
         self.n_piano = n_piano
         self.n_hidden = n_hidden
         self.n_hidden_recurrent = n_hidden_recurrent
-        self.batch_size = batch_size
 
         if weights[0] is None:
             # Wuu
@@ -108,14 +106,12 @@ class RnnRbm:
             self.Wuu, self.Wuh, self.Wuo, self.Wup, self.Who, self.Whp, self.Wou, self.Wpu, self.bu, self.bh, self.bo, self.bp = weights
 
         # learned parameters as shared variables
-        self.params = self.Wuu, self.Wuh, self.Wuo, self.Wup, self.Who, self.Whp, self.Wou, self.Wpu, self.bu, self.bh, self.bo, self.bp
+        self.params_RBM = self.Who, self.Whp, self.bh, self.bo, self.bp
+        self.params_RNN = self.Wuu, self.Wuh, self.Wuo, self.Wup, self.Wou, self.Wpu, self.bu
 
     def infer_hid_seq(self):
-        # Initialize the recurrent hidden states
-        u0 = T.zeros((self.n_hidden_recurrent,))  # initial value for the RNN hidden units
-        u0.tag.test_value = np.zeros((self.n_hidden_recurrent,))
-        self.orch.tag.test_value = np.random.rand(self.batch_size, self.n_orch)
-        self.piano.tag.test_value = np.random.rand(self.batch_size, self.n_piano)
+        # Init hidden recurrent state
+        u0 = T.zeros((self.n_hidden_recurrent,))
 
         def recurrence(o_t, p_t, u_tm1):
             bo_t = self.bo + T.dot(u_tm1, self.Wuo)
@@ -131,7 +127,7 @@ class RnnRbm:
             lambda o_t, p_t, u_tm1, *_: recurrence(o_t, p_t, u_tm1),
             sequences=[self.orch, self.piano],
             outputs_info=[u0, None, None, None],
-            non_sequences=self.params)
+            non_sequences=(self.params_RBM + self.params_RNN))
 
         return (u_t, bo_t, bp_t, bh_t), updates
 
@@ -166,76 +162,84 @@ class RnnRbm:
         else:
             # CD-K in the case of clamped piano units
             # random initialization of the orchestra units
-            orch_init = self.theano_rng.binomial(size=(self.batch_size, self.n_orch), n=1, p=0.5,
+            orch_init = self.theano_rng.binomial(size=(self.n_orch,), n=1, p=0.5,
                                                  dtype=theano.config.floatX)
-            [orch_chain_cp, _, _, _], updates = theano.scan(lambda o, p: gibbs_step(o, p),
-                                                            outputs_info=[orch_init, None, None, None],
-                                                            non_sequences=p_clamped,
-                                                            n_steps=k)
-            import pdb; pdb.set_trace()
+            [orch_chain_cp, mean_orch_chain_cp, _, _], updates = theano.scan(lambda o, p: gibbs_step(o, p),
+                                                                             outputs_info=[orch_init, None, None, None],
+                                                                             non_sequences=p_clamped,
+                                                                             n_steps=k)
 
-        return ([o_sample, mean_o, p_sample, mean_p], updates) if (p_clamped is None) else (orch_chain_cp, updates)
+            orch_cp = orch_chain_cp[-1]
+            mean_orch_cp = mean_orch_chain_cp[-1]
 
-    def cost_updates(self, lr, k=1):
+        return ([o_sample, mean_o, p_sample, mean_p], updates) \
+            if (p_clamped is None) \
+            else (orch_cp, mean_orch_cp, updates)
+
+    def cost_updates(self, lr_RBM, lr_RNN, k=1):
         # Get dynamic biases
         # i.e. the influence of the chain of hidden states
         (u_t, bo_t, bp_t, bh_t), updates_train = self.infer_hid_seq()
         # Perform CD_k in the RBM
         (o_sample, mean_o, p_sample, mean_p), updates_rbm = self.CD_K(bo_t, bp_t, bh_t, k=1)
 
-        # Updates
         updates_train.update(updates_rbm)
 
+        # Monitoring
+        batch_size = self.orch.shape[0]
         monitor_orch = T.xlogx.xlogy0(self.orch, mean_o) + T.xlogx.xlogy0(1 - self.orch, 1 - mean_o)
         monitor_piano = T.xlogx.xlogy0(self.piano, mean_p) + T.xlogx.xlogy0(1 - self.piano, 1 - mean_p)
-        monitor = monitor_orch.sum() / (self.batch_size)
+        monitor = (monitor_piano.sum() + monitor_orch.sum()) / (batch_size)
 
         # Training cost
         def free_energy(o, p):
             return -(o * bo_t).sum() \
                 - (p * bp_t).sum() \
                 - T.log(1 + T.exp(T.dot(o, self.Who) + T.dot(p, self.Whp) + bh_t)).sum()
-        cost = (free_energy(self.orch, self.piano) - free_energy(o_sample, p_sample)) / self.batch_size
+        cost = (free_energy(self.orch, self.piano) - free_energy(o_sample, p_sample)) / batch_size
 
-        # Gradient
-        gparams = T.grad(cost, self.params, consider_constant=[o_sample, p_sample])
-
+        # Gradient for RBM parameters
+        gparams_RBM = T.grad(cost, self.params_RBM, consider_constant=[o_sample, p_sample])
         # Updates
-        for gparam, param in zip(gparams, self.params):
+        for gparam, param in zip(gparams_RBM, self.params_RBM):
             # make sure that the learning rate is of the right dtype
-            updates_train[param] = param - gparam * T.cast(lr, dtype=theano.config.floatX)
+            updates_train[param] = param - gparam * T.cast(lr_RBM, dtype=theano.config.floatX)
+
+        # Gradient for RBM parameters
+        gparams_RNN = T.grad(cost, self.params_RNN, consider_constant=[o_sample, p_sample])
+        # Updates
+        for gparam, param in zip(gparams_RNN, self.params_RNN):
+            # make sure that the learning rate is of the right dtype
+            updates_train[param] = param - gparam * T.cast(lr_RNN, dtype=theano.config.floatX)
 
         return cost, monitor, updates_train
 
-    ################################################
-    ################################################
-    ################################################
-    #  A ECRIRE
-    # def generate_sequence():
-    ################################################
-    ################################################
-    ################################################
-
+    # Infer a sequence of orchestral units given a sequence of piano units
     def orchestral_inference(self, k=20):
         # Initialize the recurrent hidden states
         u0 = T.zeros((self.n_hidden_recurrent,))  # initial value for the RNN hidden units
+
+        # TEST VALUE
+        # u0.tag.test_value = np.zeros((self.n_hidden_recurrent,))  # initial value for the RNN hidden units
+        # self.orch.tag.test_value = np.random.rand(self.batch_size, self.n_orch)
+        # self.piano.tag.test_value = np.random.rand(self.batch_size, self.n_piano)
 
         def recurrence(p_t, u_tm1):
             bo_t = self.bo + T.dot(u_tm1, self.Wuo)
             bp_t = self.bp + T.dot(u_tm1, self.Wup)
             bh_t = self.bh + T.dot(u_tm1, self.Wuh)
             # o_t ? From CD-K in the RBM
-            o_t, updates_CD_K = self.CD_K(bo_t, bp_t, bh_t, k, p_clamped=p_t)
+            o_t, mean_o, updates_CD_K = self.CD_K(bo_t, bp_t, bh_t, k, p_clamped=p_t)
             # Infer hidden recurrent state
             u_t = T.tanh(self.bu + T.dot(o_t, self.Wou) + T.dot(p_t, self.Wpu) + T.dot(u_tm1, self.Wuu))
-            return [o_t, u_t], updates_CD_K
+            return [o_t, mean_o, u_t], updates_CD_K
 
-        (o_t, u_t), updates_orch_inf = theano.scan(
-            lambda p_t, u_tm1, *_: recurrence(u_tm1),
-            sequences=self.piano,
-            outputs_info=[None, u0])
+        (o_chain_t, mean_chain_o, u_chain_t), updates_orch_inf = theano.scan(
+            recurrence,
+            outputs_info=[None, None, u0],
+            sequences=self.piano)
 
-        return (o_t, u_t), updates_orch_inf
+        return (o_chain_t, mean_chain_o, u_chain_t), updates_orch_inf
 
     def prediction_measure(self, k=20):
         """ Generate a sequence frame by frame,
@@ -246,10 +250,8 @@ class RnnRbm:
 
             We do this to be consistent with the evaluation method used for the other models
         """
-        (u_t, bo_t, bp_t, bh_t), updates_train = self.infer_hid_seq()
-        # Perform CD_k in the RBM
-        (_, mean_o, _, _), updates = self.CD_K(bo_t, bp_t, bh_t, k)
+        (_, mean_o, _), updates_orch_inf = self.orchestral_inference(k)
         precision = precision_measure(self.orch, mean_o)
         recall = recall_measure(self.orch, mean_o)
         accuracy = accuracy_measure(self.orch, mean_o)
-        return precision, recall, accuracy, updates
+        return precision, recall, accuracy, updates_orch_inf

@@ -11,92 +11,38 @@ import numpy as np
 import theano
 import theano.tensor as T
 # Hyperopt
-from hyperopt import hp, fmin, tpe
+from hyperopt import hp
 from math import log
-# CSV
-import csv
 
 from Data_processing.load_data import load_data_seq_tvt
 from Models.RnnRbm.class_def import RnnRbm
 
 
-def train_hopt(temporal_granularity, dataset, max_evals, log_file_path, csv_file_path):
-    # Create/reinit log and csv files
-    open(csv_file_path, 'w').close()
-    open(log_file_path, 'w').close()
+# Define hyper-parameter search space
+def get_header():
+    return ['n_hidden', 'n_hidden_recurrent', 'temporal_order',
+            'learning_rate_RBM', 'learning_rate_RNN', 'K', 'accuracy']
 
-    # Init log_file
-    with open(log_file_path, 'ab') as log_file:
-        log_file.write((u'# RnnRbm : Hyperoptimization : \n').encode('utf8'))
-        log_file.write((u'# Temporal granularity : ' + temporal_granularity + '\n').encode('utf8'))
 
-    # Define hyper-parameter search space
-    header = ['n_hidden', 'n_hidden_recurrent', 'temporal_order', 'learning_rate', 'K', 'accuracy']
+def get_hp_space():
     space = (hp.qloguniform('n_hidden', log(100), log(5000), 10),
              hp.qloguniform('n_hidden_recurrent', log(100), log(5000), 1),
              hp.qloguniform('temporal_order', log(10), log(100), 10),
-             hp.loguniform('learning_rate', log(0.0001), log(1)),
-             hp.qloguniform('K', log(1), log(20), 10)
-             #  hp.choice('activation_func', ['tanh', 'sigmoid']),
-             #  hp.choice('sampling_positive', ['true', 'false'])
+             hp.loguniform('learning_rate_RBM', log(0.0001), log(1)),
+             hp.loguniform('learning_rate_RNN', log(0.0001), log(1)),
+             hp.qloguniform('K', log(2), log(20), 1)
+             # Different learninf rate for RBM and RNN
+             # hp.choice('activation_func', ['tanh', 'sigmoid']),
+             # hp.choice('sampling_positive', ['true', 'false'])
              # gibbs_sampling_step_test ???
              )
-
-    global run_counter
-    run_counter = 0
-
-    def run_wrapper(params):
-        global run_counter
-        run_counter += 1
-        # log
-        with open(log_file_path, 'ab') as log_file:
-            log_file.write((u'\n###################').encode('utf8'))
-            log_file.write((u'# Config :  {}'.format(run_counter)).encode('utf8'))
-        # print
-        print((u'\n###################').encode('utf8'))
-        print((u'# Config :  {}'.format(run_counter)).encode('utf8'))
-
-        # Train ##############
-        accuracy = train(params, dataset, temporal_granularity, log_file_path)
-        error = -accuracy  # Search for a min
-        ######################
-
-        # log
-        with open(log_file_path, 'ab') as log_file:
-            log_file.write((u'# Accuracy :  {}'.format(accuracy)).encode('utf8'))
-            log_file.write((u'###################\n').encode('utf8'))
-        # print
-        print((u'# Accuracy :  {}'.format(accuracy)).encode('utf8'))
-        print((u'###################\n').encode('utf8'))
-
-        # Write the result in result.csv
-        with open(csv_file_path, 'ab') as csvfile:
-            n_hidden, n_hidden_recurrent, temporal_order, learning_rate, K = params
-            writer = csv.DictWriter(csvfile, delimiter=',', fieldnames=header)
-            dico_res = {'n_hidden': n_hidden,
-                        'n_hidden_recurrent': n_hidden_recurrent,
-                        'temporal_order': temporal_order,
-                        'learning_rate': learning_rate,
-                        'K': K,
-                        'accuracy': accuracy}
-            writer.writerow(dico_res)
-
-        return error
-
-    with open(csv_file_path, 'ab') as csvfile:
-        # Write headers if they don't already exist
-        writerHead = csv.writer(csvfile, delimiter=',')
-        writerHead.writerow(header)
-
-    best = fmin(run_wrapper, space, algo=tpe.suggest, max_evals=max_evals)
-
-    return best
+    return space
 
 
 def train(params, dataset, temporal_granularity, log_file_path):
     # Hyperparams
     # n_hidden, n_hidden_recurrent, learning_rate, activation_func, sampling_positive = params
-    n_hidden, n_hidden_recurrent, temporal_order, learning_rate, K = params
+    n_hidden, n_hidden_recurrent, temporal_order, learning_rate_RBM, learning_rate_RNN, K = params
 
     # Cast the hp
     n_hidden = int(n_hidden)
@@ -106,16 +52,18 @@ def train(params, dataset, temporal_granularity, log_file_path):
 
     # Log them
     with open(log_file_path, 'ab') as log_file:
-        log_file.write((u'# n_hidden :  {}'.format(n_hidden)).encode('utf8'))
-        log_file.write((u'# n_hidden_recurrent :  {}'.format(n_hidden_recurrent)).encode('utf8'))
-        log_file.write((u'# temporal_order :  {}'.format(temporal_order)).encode('utf8'))
-        log_file.write((u'# learning_rate :  {}'.format(learning_rate)).encode('utf8'))
-        log_file.write((u'# K :  {}'.format(K)).encode('utf8'))
+        log_file.write((u'# n_hidden :  {}\n'.format(n_hidden)).encode('utf8'))
+        log_file.write((u'# n_hidden_recurrent :  {}\n'.format(n_hidden_recurrent)).encode('utf8'))
+        log_file.write((u'# temporal_order :  {}\n'.format(temporal_order)).encode('utf8'))
+        log_file.write((u'# learning_rate_RBM :  {}\n'.format(learning_rate_RBM)).encode('utf8'))
+        log_file.write((u'# learning_rate_RNN :  {}\n'.format(learning_rate_RNN)).encode('utf8'))
+        log_file.write((u'# K :  {}\n'.format(K)).encode('utf8'))
     # Print
     print((u'# n_hidden :  {}'.format(n_hidden)).encode('utf8'))
     print((u'# n_hidden_recurrent :  {}'.format(n_hidden_recurrent)).encode('utf8'))
     print((u'# temporal_order :  {}'.format(temporal_order)).encode('utf8'))
-    print((u'# learning_rate :  {}'.format(learning_rate)).encode('utf8'))
+    print((u'# learning_rate_RBM :  {}'.format(learning_rate_RBM)).encode('utf8'))
+    print((u'# learning_rate_RNN :  {}'.format(learning_rate_RNN)).encode('utf8'))
     print((u'# K :  {}'.format(K)).encode('utf8'))
 
     # Some hp not optimized
@@ -148,11 +96,12 @@ def train(params, dataset, temporal_granularity, log_file_path):
                    n_piano=piano_dim,
                    n_hidden=n_hidden,
                    n_hidden_recurrent=n_hidden_recurrent,
-                   batch_size=temporal_order
                    )
 
     # get the cost and the gradient corresponding to one step of CD-15
-    cost, monitor, updates = model.cost_updates(lr=learning_rate, k=10)
+    cost, monitor, updates = model.cost_updates(lr_RBM=learning_rate_RBM,
+                                                lr_RNN=learning_rate_RNN,
+                                                k=K)
     precision, recall, accuracy, updates_test = model.prediction_measure(k=gibbs_sampling_step_test)
 
     #################################
@@ -214,7 +163,16 @@ def train(params, dataset, temporal_granularity, log_file_path):
 
         epoch += 1
 
-    return np.amax(val_tab)
+    best_accuracy = np.amax(val_tab)
+    dico_res = {'n_hidden': n_hidden,
+                'n_hidden_recurrent': n_hidden_recurrent,
+                'temporal_order': temporal_order,
+                'learning_rate_RBM': learning_rate_RBM,
+                'learning_rate_RNN': learning_rate_RNN,
+                'K': K,
+                'accuracy': best_accuracy}
+
+    return best_accuracy, dico_res
 
 
 def create_past_vector(piano, orch, batch_size, delay, orch_dim):

@@ -2,36 +2,28 @@
 # -*- coding: utf8 -*-
 
 """
-Hyperopt
-cRBM w/ binary units
+A temporal RBM with binary visible units.
 """
 # Numpy
 import numpy as np
 # Theano
 import theano
 import theano.tensor as T
+from theano.tensor.shared_randomstreams import RandomStreams
 # Hyperopt
-from hyperopt import hp, fmin, tpe
+from hyperopt import hp
 from math import log
-# CSV
-import csv
 
 from Data_processing.load_data import load_data_tvt
-from Models.CRBM.class_def import CRBM
+from Models.Temporal_RBM.class_def import RBM_temporal_bin
 
 
-def train_hopt(temporal_granularity, dataset, max_evals, log_file_path, csv_file_path):
-    # Create/reinit log and csv files
-    open(csv_file_path, 'w').close()
-    open(log_file_path, 'w').close()
+# Define hyper-parameter search space
+def get_header():
+    return ['n_hidden', 'temporal_order', 'learning_rate', 'batch_size', 'accuracy']
 
-    # Init log_file
-    with open(log_file_path, 'ab') as log_file:
-        log_file.write((u'# cRBM : Hyperoptimization : \n').encode('utf8'))
-        log_file.write((u'# Temporal granularity : ' + temporal_granularity + '\n').encode('utf8'))
 
-    # Define hyper-parameter search space
-    header = ['n_hidden', 'temporal_order', 'learning_rate', 'batch_size', 'accuracy']
+def get_hp_space():
     space = (hp.qloguniform('n_hidden', log(100), log(5000), 10),
              hp.qloguniform('temporal_order', log(1), log(30), 1),
              hp.loguniform('learning_rate', log(0.0001), log(1)),
@@ -40,55 +32,7 @@ def train_hopt(temporal_granularity, dataset, max_evals, log_file_path, csv_file
              #  hp.choice('sampling_positive', ['true', 'false'])
              # gibbs_sampling_step_test ???
              )
-
-    global run_counter
-    run_counter = 0
-
-    def run_wrapper(params):
-        global run_counter
-        run_counter += 1
-        # log
-        with open(log_file_path, 'ab') as log_file:
-            log_file.write((u'\n###################').encode('utf8'))
-            log_file.write((u'# Config :  {}'.format(run_counter)).encode('utf8'))
-        # print
-        print((u'\n###################').encode('utf8'))
-        print((u'# Config :  {}'.format(run_counter)).encode('utf8'))
-
-        # Train ##############
-        accuracy = train(params, dataset, temporal_granularity, log_file_path)
-        error = -accuracy  # Search for a min
-        ######################
-
-        # log
-        with open(log_file_path, 'ab') as log_file:
-            log_file.write((u'# Accuracy :  {}'.format(accuracy)).encode('utf8'))
-            log_file.write((u'###################\n').encode('utf8'))
-        # print
-        print((u'# Accuracy :  {}'.format(accuracy)).encode('utf8'))
-        print((u'###################\n').encode('utf8'))
-
-        # Write the result in result.csv
-        with open(csv_file_path, 'ab') as csvfile:
-            n_hidden, temporal_order, learning_rate, batch_size = params
-            writer = csv.DictWriter(csvfile, delimiter=',', fieldnames=header)
-            dico_res = {'n_hidden': n_hidden,
-                        'temporal_order': temporal_order,
-                        'learning_rate': learning_rate,
-                        'batch_size': batch_size,
-                        'accuracy': accuracy}
-            writer.writerow(dico_res)
-
-        return error
-
-    with open(csv_file_path, 'ab') as csvfile:
-        # Write headers if they don't already exist
-        writerHead = csv.writer(csvfile, delimiter=',')
-        writerHead.writerow(header)
-
-    best = fmin(run_wrapper, space, algo=tpe.suggest, max_evals=max_evals)
-
-    return best
+    return space
 
 
 def train(params, dataset, temporal_granularity, log_file_path):
@@ -125,6 +69,7 @@ def train(params, dataset, temporal_granularity, log_file_path):
                         temporal_granularity=temporal_granularity,
                         temporal_order=temporal_order,
                         shared_bool=True,
+                        bin_unit_bool=True,
                         minibatch_size=batch_size,
                         split=(0.7, 0.1, 0.2))
 
@@ -143,47 +88,51 @@ def train(params, dataset, temporal_granularity, log_file_path):
     # allocate symbolic variables for the data
     index = T.lvector()             # index to a [mini]batch
     index_history = T.lvector()     # index for history
-    v = T.matrix('v')  # the data
-    p = T.matrix('p')
+    v = T.matrix('v')  # the data is presented as rasterized images
+    p = T.matrix('p')  # the data is presented as rasterized images
+
+    rng = np.random.RandomState(123)
+    theano_rng = RandomStreams(rng.randint(2 ** 30))
 
     # construct the RBM class
-    crbm = CRBM(input=v,
-                input_history=p,
-                n_visible=orch_dim,
-                n_hidden=n_hidden,
-                n_past=n_past,
-                )
+    rbm = RBM_temporal_bin(input=v,
+                           past=p,
+                           n_visible=orch_dim,
+                           n_hidden=n_hidden,
+                           n_past=n_past,
+                           np_rng=rng,
+                           theano_rng=theano_rng)
 
     # get the cost and the gradient corresponding to one step of CD-15
-    cost, updates = crbm.cost_updates(lr=learning_rate, k=10)
-    precision, recall, accuracy, updates_test = crbm.prediction_measure(k=gibbs_sampling_step_test)
+    cost, updates = rbm.cost_updates(lr=learning_rate, k=10)
+    precision, recall, accuracy, updates_test = rbm.prediction_measure(k=gibbs_sampling_step_test)
 
     #################################
-    #     Training the CRBM         #
+    #     Training the RnnRBM         #
     #################################
 
     # the purpose of train_crbm is solely to update the CRBM parameters
-    train_crbm = theano.function(inputs=[index, index_history],
-                                 outputs=cost,
-                                 updates=updates,
-                                 givens={v: orch[index],
-                                         p: create_past_vector(piano[index],
-                                                               orch[index_history],
-                                                               batch_size,
-                                                               temporal_order,
-                                                               orch_dim)},
-                                 name='train_crbm')
+    train_temp_rbm = theano.function(inputs=[index, index_history],
+                                     outputs=cost,
+                                     updates=updates,
+                                     givens={v: orch[index],
+                                             p: create_past_vector(piano[index],
+                                                                   orch[index_history],
+                                                                   batch_size,
+                                                                   temporal_order,
+                                                                   orch_dim)},
+                                     name='train_temp_rbm')
 
-    train_crbm_last_batch = theano.function(inputs=[index, index_history],
-                                            outputs=cost,
-                                            updates=updates,
-                                            givens={v: orch[index],
-                                                    p: create_past_vector(piano[index],
-                                                                          orch[index_history],
-                                                                          last_batch_size,
-                                                                          temporal_order,
-                                                                          orch_dim)},
-                                            name='train_crbm_last_batch')
+    train_temp_rbm_last_batch = theano.function(inputs=[index, index_history],
+                                                outputs=cost,
+                                                updates=updates,
+                                                givens={v: orch[index],
+                                                        p: create_past_vector(piano[index],
+                                                                              orch[index_history],
+                                                                              last_batch_size,
+                                                                              temporal_order,
+                                                                              orch_dim)},
+                                                name='train_temp_rbm_last_batch')
 
     validation_error = theano.function(inputs=[index, index_history],
                                        outputs=[precision, recall, accuracy],
@@ -208,14 +157,14 @@ def train(params, dataset, temporal_granularity, log_file_path):
             # History indices
             hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
             # Train
-            this_cost = train_crbm(train_index[batch_index], hist_idx.ravel())
+            this_cost = train_temp_rbm(train_index[batch_index], hist_idx.ravel())
             # Keep track of cost
             train_cost_epoch += [this_cost]
 
         # Train last batch
         batch_index = n_train_batches - 1
         hist_idx = np.array([train_index[batch_index] - n for n in xrange(1, temporal_order + 1)]).T
-        this_cost = train_crbm_last_batch(train_index[batch_index], hist_idx.ravel())
+        this_cost = train_temp_rbm_last_batch(train_index[batch_index], hist_idx.ravel())
         train_cost_epoch += [this_cost]
 
         if (epoch % 5 == 0):
@@ -231,7 +180,7 @@ def train(params, dataset, temporal_granularity, log_file_path):
             # "FIFO" from the left
             val_tab[1:] = val_tab[0:-1]
             mean_accuracy = 100 * np.mean(accuracy)
-            check_increase = np.sum(mean_accuracy >= val_tab[1:])
+            check_increase = np.sum(mean_accuracy > val_tab[1:])
             if check_increase == 0:
                 OVERFITTING = True
             val_tab[0] = mean_accuracy
@@ -246,10 +195,43 @@ def train(params, dataset, temporal_granularity, log_file_path):
 
         epoch += 1
 
-    return np.amax(val_tab)
+    best_accuracy = np.amax(val_tab)
+    dico_res = {'n_hidden': n_hidden,
+                'temporal_order': temporal_order,
+                'learning_rate': learning_rate,
+                'batch_size': batch_size,
+                'accuracy': best_accuracy}
+
+    return best_accuracy, dico_res
 
 
 def create_past_vector(piano, orch, batch_size, delay, orch_dim):
+    # Piano is a matrix : num_batch x piano_dim
+    # Orch a matrix : num_batch x ()
+    # import sys
+    # debug = sys.gettrace() is not None
+    # import pdb; pdb.set_trace()
+    # if debug:
+    #     # Reshape checked, and has the expected behavior
+    #     piano_dim = 5
+    #     orch_dim = 10
+    #     delay = 2
+    #     batch_size = 3
+    #     piano.tag.test_value = np.random.rand(batch_size, piano_dim)
+    #     orch.tag.test_value = np.random.rand(batch_size * delay, orch_dim)
     orch_reshape = T.reshape(orch, (batch_size, delay * orch_dim))
     past = T.concatenate((piano, orch_reshape), axis=1)
     return past
+
+if __name__ == '__main__':
+    # Main can't be used because of relative import
+    # Just here for an example of the hyperparameters structure
+    # Hyper-parameter
+    hyper_parameter = {}
+    hyper_parameter['n_hidden'] = 500
+    hyper_parameter['temporal_order'] = 10
+    hyper_parameter['learning_rate'] = 0.1
+    hyper_parameter['training_epochs'] = 1000
+    hyper_parameter['batch_size'] = 100
+    # File
+    dataset = '../../../Data/data.p'

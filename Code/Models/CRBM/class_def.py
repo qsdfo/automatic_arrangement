@@ -142,83 +142,42 @@ class CRBM(object):
 
         return visible_term - hidden_term
 
-    def propup(self, vis, v_history):
-        ''' This function propagates the visible units activation upwards to
-        the hidden units
-
-        Note that we return also the pre-sigmoid activation of the layer. As
-        it will turn out later, due to how Theano deals with optimizations,
-        this symbolic variable will be needed to write down a more
-        stable computational graph (see details in the reconstruction cost
-        function)
-        '''
-        pre_sigmoid_activation = T.dot(vis, self.W) + \
-            T.dot(v_history, self.B) + self.hbias
-        return [pre_sigmoid_activation, T.nnet.sigmoid(pre_sigmoid_activation)]
-
     def sample_h_given_v(self, v0_sample, v_history):
         ''' This function infers state of hidden units given visible units '''
-        # compute the activation of the hidden units given a sample of the
-        # visibles
-        # pre_sigmoid_h1, h1_mean = self.propup(v0_sample)
-        pre_sigmoid_h1, h1_mean = self.propup(v0_sample, v_history)
-        # get a sample of the hiddens given their activation
-        # Note that theano_rng.binomial returns a symbolic sample of dtype
-        # int64 by default. If we want to keep our computations in floatX
-        # for the GPU we need to specify to return the dtype floatX
+        pre_sigmoid_h1 = T.dot(v0_sample, self.W) + T.dot(v_history, self.B) + self.hbias
+        h1_mean = T.nnet.sigmoid(pre_sigmoid_h1)
         h1_sample = self.theano_rng.binomial(size=h1_mean.shape, n=1,
                                              p=h1_mean,
                                              dtype=theano.config.floatX)
         return [pre_sigmoid_h1, h1_mean, h1_sample]
 
-    def propdown(self, hid, v_history):
-        '''This function propagates the hidden units activation downwards to
-        the visible units
-
-        Note that we return also the pre_sigmoid_activation of the layer. As
-        it will turn out later, due to how Theano deals with optimizations,
-        this symbolic variable will be needed to write down a more
-        stable computational graph (see details in the reconstruction cost
-        function)
-        '''
-        mean_activation = T.dot(hid, self.W.T) + T.dot(v_history, self.A) + \
-            self.vbias
-        return mean_activation
-
     def sample_v_given_h(self, h0_sample, v_history):
         ''' This function infers state of visible units given hidden units '''
-        # compute the activation of the visible given the hidden sample
-        # pre_sigmoid_v1, v1_mean = self.propdown(h0_sample)
-        v1_mean = self.propdown(h0_sample, v_history)
-        # get a sample of the visible given their activation
-        # Note that theano_rng.binomial returns a symbolic sample of dtype
-        # int64 by default. If we want to keep our computations in floatX
-        # for the GPU we need to specify to return the dtype floatX
-        # v1_sample = self.theano_rng.binomial(size=v1_mean.shape,
-        #                                     n=1, p=v1_mean,
-        #        dtype = theano.config.floatX)
-        v1_sample = v1_mean  # mean-field
-        return [v1_mean, v1_sample]
+        pre_sigmoid_v1 = T.dot(h0_sample, self.W.T) + T.dot(v_history, self.A) + self.vbias
+        v1_mean = T.nnet.sigmoid(pre_sigmoid_v1)
+        v1_sample = self.theano_rng.binomial(size=v1_mean.shape, n=1,
+                                             p=v1_mean,
+                                             dtype=theano.config.floatX)
+        return [pre_sigmoid_v1, v1_mean, v1_sample]
 
     def gibbs_hvh(self, h0_sample, v_history):
         ''' This function implements one step of Gibbs sampling,
             starting from the hidden state'''
-        v1_mean, v1_sample = self.sample_v_given_h(h0_sample, v_history)
-        pre_sigmoid_h1, h1_mean, h1_sample = self.sample_h_given_v(v1_sample,
+        pre_sigmoid_v1, v1_mean, v1_sample = self.sample_v_given_h(h0_sample, v_history)
+        # Using mean-field reconstruction : v1_mean
+        pre_sigmoid_h1, h1_mean, h1_sample = self.sample_h_given_v(v1_mean,
                                                                    v_history)
 
-        return [v1_mean, v1_sample, pre_sigmoid_h1, h1_mean, h1_sample]
+        return [pre_sigmoid_v1, v1_mean, v1_sample, pre_sigmoid_h1, h1_mean, h1_sample]
 
     def gibbs_vhv(self, v0_sample, v_history):
         ''' This function implements one step of Gibbs sampling,
             starting from the visible state'''
-        # pre_sigmoid_h1, h1_mean, h1_sample = self.sample_h_given_v(v0_sample)
-        # pre_sigmoid_v1, v1_mean, v1_sample = self.sample_v_given_h(h1_sample)
         pre_sigmoid_h1, h1_mean, h1_sample = self.sample_h_given_v(v0_sample,
                                                                    v_history)
-        v1_mean, v1_sample = self.sample_v_given_h(h1_sample, v_history)
+        pre_sigmoid_v1, v1_mean, v1_sample = self.sample_v_given_h(h1_sample, v_history)
 
-        return [pre_sigmoid_h1, h1_mean, h1_sample, v1_mean, v1_sample]
+        return [pre_sigmoid_h1, h1_mean, h1_sample, pre_sigmoid_v1, v1_mean, v1_sample]
 
     def cost_updates(self, lr=0.1, k=1):
         """
@@ -251,13 +210,13 @@ class CRBM(object):
         # the scan will return the entire Gibbs chain
         # updates dictionary is important because it contains the updates
         # for the random number generator
-        [nv_means, nv_samples, pre_sigmoid_nhs, nh_means,
+        [pre_sigmoid_nvs, nv_means, nv_samples, pre_sigmoid_nhs, nh_means,
          nh_samples], updates = theano.scan(self.gibbs_hvh,
                                             # the None are place holders, saying that
                                             # chain_start is the initial
                                             # state corresponding to the
                                             # 5th output
-                                            outputs_info=[None, None, None, None, chain_start],
+                                            outputs_info=[None, None, None, None, None, chain_start],
                                             non_sequences=self.input_history,
                                             n_steps=k)
 
@@ -286,32 +245,36 @@ class CRBM(object):
 
         return monitoring_cost, updates
 
-    def get_reconstruction_cost(self, updates, pre_sigmoid_nv):
+    def get_reconstruction_cost(self, updates, mean_nv):
         """Approximation to the reconstruction error
         """
-        # sum over dimensions, mean over cases
-        recon = T.mean(T.sum(T.sqr(self.input - pre_sigmoid_nv), axis=1))
-
+        # sum over input dimension, mean over cases
+        recon = T.mean(T.sum(T.sqr(self.input - mean_nv), axis=1))
         return recon
 
     def prediction_measure(self, k=20):
-        mean_pred_v, updates = self.sampling_Gibbs(k)
+        mean_pred_v, updates = self.generate(k)
         precision = precision_measure(self.input, mean_pred_v)
         recall = recall_measure(self.input, mean_pred_v)
         accuracy = accuracy_measure(self.input, mean_pred_v)
         return precision, recall, accuracy, updates
 
-    def sampling_Gibbs(self, k=20):
+    def generate(self, k=20):
+        # Random initialization of the visible units
+        input_init = self.theano_rng.binomial(size=self.input.shape,
+                                              n=1,
+                                              p=0.5,
+                                              dtype=theano.config.floatX)
         # compute positive phase
         pre_sigmoid_ph, ph_mean, ph_sample = \
-            self.sample_h_given_v(self.input, self.input_history)
+            self.sample_h_given_v(input_init, self.input_history)
 
         # for CD, we use the newly generate hidden sample
         chain_start = ph_sample
 
-        [nv_means, nv_samples, pre_sigmoid_nhs, nh_means,
+        [pre_sigmoid_nvs, nv_means, nv_samples, pre_sigmoid_nhs, nh_means,
          nh_samples], updates = theano.scan(self.gibbs_hvh,
-                                            outputs_info=[None, None, None, None, chain_start],
+                                            outputs_info=[None, None, None, None, None, chain_start],
                                             non_sequences=self.input_history,
                                             n_steps=k)
 

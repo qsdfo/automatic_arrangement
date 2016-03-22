@@ -163,7 +163,6 @@ def train(params, dataset, temporal_granularity, log_file_path):
     cost, updates = rbm.cost_updates(lr=learning_rate, k=10)
     precision, recall, accuracy, updates_test = rbm.prediction_measure(k=gibbs_sampling_step_test)
 
-    import pdb; pdb.set_trace()
     #################################
     #     Training the RnnRBM         #
     #################################

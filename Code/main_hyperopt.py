@@ -18,9 +18,11 @@ theano.config.optimizer = 'None'
 theano.config.exception_verbosity = 'high'
 # theano.config.compute_test_value = 'warn'
 
+from load_data import load_data_seq_tvt
+
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
-from acidano.models.Variational_LSTM.train import get_header, get_hp_space, train
+from acidano.models.lop.Variational_LSTM.train import get_header, get_hp_space, train
 model_name = u'Variational_LSTM'
 temporal_granularity = u'frame_level'
 
@@ -28,7 +30,7 @@ temporal_granularity = u'frame_level'
 MAIN_DIR = os.getcwd().decode('utf8') + u'/'
 
 # Build the matrix database (stored in a data.p file in Data) from a music XML database
-dataset = MAIN_DIR + u'../Data/data.p'
+dataset_path = MAIN_DIR + u'../Data/data.p'
 
 # Set hyperparameters (can be a grid)
 result_folder = MAIN_DIR + u'../Results/' + temporal_granularity + '/' + model_name
@@ -40,7 +42,7 @@ log_file_path = MAIN_DIR + u'/' + model_name + u'log'
 ############################################################################
 
 
-def train_hopt(temporal_granularity, dataset, max_evals, log_file_path, csv_file_path):
+def train_hopt(temporal_granularity, dataset_path, max_evals, log_file_path, csv_file_path):
     # Create/reinit log and csv files
     open(csv_file_path, 'w').close()
     open(log_file_path, 'w').close()
@@ -52,9 +54,13 @@ def train_hopt(temporal_granularity, dataset, max_evals, log_file_path, csv_file
     print((u'# ' + model_name + ' : Hyperoptimization').encode('utf8'))
     print((u'# Temporal granularity : ' + temporal_granularity).encode('utf8'))
 
+    ########################
     # Define hyper-parameter search space
     header = get_header()
     space = get_hp_space()
+    # /!\ temporal_order has to be the first
+    assert (header[0] == 'temporal_order'), \
+        "temporal_order is not the first hyper-parameter dimension !!"
 
     global run_counter
     run_counter = 0
@@ -71,6 +77,16 @@ def train_hopt(temporal_granularity, dataset, max_evals, log_file_path, csv_file
         print((u'# Config :  {}'.format(run_counter)).encode('utf8'))
 
         # Train ##############
+        # The temporal_order is needed to build the dataset
+        import pdb; pdb.set_trace()
+        temporal_order = int(params[0])
+        dataset = load_data_seq_tvt(data_path=dataset_path,
+                                    log_file_path='bullshit.txt',
+                                    temporal_granularity=temporal_granularity,
+                                    temporal_order=temporal_order,
+                                    shared_bool=True,
+                                    bin_unit_bool=True,
+                                    split=(0.7, 0.1, 0.2))
         accuracy, dico_res = train(params, dataset, temporal_granularity, log_file_path)
         error = -accuracy  # Search for a min
         ######################
@@ -107,5 +123,5 @@ if __name__ == "__main__":
     if not os.path.isdir(result_folder):
         os.mkdir(result_folder)
 
-    best = train_hopt(temporal_granularity, dataset, max_evals, log_file_path, result_file)
+    best = train_hopt(temporal_granularity, dataset_path, max_evals, log_file_path, result_file)
     print best

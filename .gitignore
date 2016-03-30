@@ -1,6 +1,7 @@
 # Folders
 Database
 Data
+TRASH
 
 # Image files
 **/*.pdf
@@ -26,5 +27,3 @@ Data
 **/*.synctex.gz
 ICCC/ICCC-author-kit/
 ICCC/Corrections*
-
-TRASH

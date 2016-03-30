@@ -6,11 +6,23 @@ import os
 import csv
 from hyperopt import fmin, tpe
 
+# Reminder for plotting tools
+import matplotlib.pyplot as plt
+# Histogram
+# n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
+# plt.show()
+
+# Debugging compiler flags
+import theano
+theano.config.optimizer = 'None'
+theano.config.exception_verbosity = 'high'
+# theano.config.compute_test_value = 'warn'
+
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
-from Models.RnnRbm.train import get_header, get_hp_space, train
-model_name = u'RnnRbm'
-temporal_granularity = u'event_level'
+from acidano.models.Variational_LSTM.train import get_header, get_hp_space, train
+model_name = u'Variational_LSTM'
+temporal_granularity = u'frame_level'
 
 # Get main dir
 MAIN_DIR = os.getcwd().decode('utf8') + u'/'

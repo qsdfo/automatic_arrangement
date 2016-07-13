@@ -14,9 +14,9 @@ import matplotlib.pyplot as plt
 
 # Debugging compiler flags
 import theano
-theano.config.optimizer = 'None'
-theano.config.exception_verbosity = 'high'
-# theano.config.compute_test_value = 'warn'
+# theano.config.optimizer = 'None'
+# theano.config.exception_verbosity = 'high'
+theano.config.compute_test_value = 'warn'
 
 from load_data import load_data_seq_tvt
 
@@ -49,11 +49,16 @@ def train_hopt(temporal_granularity, dataset_path, max_evals, log_file_path, csv
 
     # Init log_file
     with open(log_file_path, 'ab') as log_file:
-        log_file.write((u'# ' + model_name + ' : Hyperoptimization : \n').encode('utf8'))
+        log_file.write((u'####################\n').encode('utf8'))
+        log_file.write((u'##   L O P\n\n').encode('utf8'))
+        log_file.write((u'** ' + model_name + ' **\n\n').encode('utf8'))
+        log_file.write((u'# Hyperoptimization\n').encode('utf8'))
         log_file.write((u'# Temporal granularity : ' + temporal_granularity + '\n').encode('utf8'))
-    print((u'# ' + model_name + ' : Hyperoptimization').encode('utf8'))
-    print((u'# Temporal granularity : ' + temporal_granularity).encode('utf8'))
-
+    print((u'####################').encode('utf8'))
+    print((u'##   L O P\n').encode('utf8'))
+    print((u'** ' + model_name + ' **\n').encode('utf8'))
+    print((u'# Hyperoptimization').encode('utf8'))
+    print((u'# Temporal granularity : ' + temporal_granularity + '').encode('utf8'))
     ########################
     # Define hyper-parameter search space
     header = get_header()
@@ -78,7 +83,6 @@ def train_hopt(temporal_granularity, dataset_path, max_evals, log_file_path, csv
 
         # Train ##############
         # The temporal_order is needed to build the dataset
-        import pdb; pdb.set_trace()
         temporal_order = int(params[0])
         dataset = load_data_seq_tvt(data_path=dataset_path,
                                     log_file_path='bullshit.txt',

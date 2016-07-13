@@ -4,16 +4,13 @@
 import numpy as np
 import cPickle
 import theano
+import math
 
-from acidano.data_processing.pianoroll_reduction import remove_unused_pitch
 from acidano.data_processing.minibatch_builder import k_fold_cross_validation, tvt_minibatch, tvt_minibatch_seq
 from acidano.data_processing.event_level import get_event_ind
 
-# from matplotlib import pyplot as plt
-# from matplotlib.backends.backend_pdf import PdfPages
 
-
-def get_data(data_path, log_file_path, temporal_granularity, temporal_order, sequential_learning=False, shared_bool=True, bin_unit_bool=True):
+def get_data(data_path, temporal_granularity, temporal_order, sequential_learning=False, shared_bool=True, bin_unit_bool=True):
     """
     Load data from pickle (.p) file into a matrix. Return valid indexes for sequential learning
 
@@ -26,156 +23,113 @@ def get_data(data_path, log_file_path, temporal_granularity, temporal_order, seq
 
     """
 
-    # Open log file
-    log_file = open(log_file_path, "ab")
-    log_file.write("### LOADING DATA ###\n")
-    log_file.write("## Unpickle data... ")
+    data = cPickle.load(open(data_path, "rb"))
 
-    data_all = cPickle.load(open(data_path, "rb"))
-    log_file.write("Done !\n")
+    # Unpack matrices
+    pr_orchestra = data['pr_orchestra']
+    pr_piano = data['pr_piano']
+    new_track_ind = data['change_track']
 
-    quantization = data_all['quantization']
-    log_file.write("## Quantization : %d\n" % quantization)
+    # Build valid indices for building minibatches
+    pad_indices = []
+    T = pr_orchestra.shape[0]
+    l1 = new_track_ind[:]  # [:] = copy by value
+    l2 = new_track_ind[:]
+    l2.append(T)
+    l2.pop(0)
+    # Two cases :
+    if sequential_learning:
+        # RNN-like models: chunk of size temporal_order, overlap 50%
+        for s, e in zip(l1, l2):
+            step = math.floor(temporal_order / 2)
+            for i in range(s + temporal_order, e, step):
+                pad_indices.append(i)
+    else:
+        # others
+        for s, e in zip(l1, l2):
+            pad_indices.extend(range(s + temporal_order, e))
 
-    # Build the pianoroll and valid indexes
-    log_file.write("## Reading scores :\n")
-    scores = data_all['scores']
-    instru_mapping = data_all['instru_mapping']
-    orchestra_dimension = data_all['orchestra_dimension']
-    piano_dimension = instru_mapping['Piano'][1] - instru_mapping['Piano'][0]   # Should be 128
-    # Time increment variables
-    last_stop = 0
-    start_time = 0
-    end_time = 0
-    # Keep trace of the valid indices
-    valid_index = []
-    # Write flags
-    time_updated = False
-    orch_init = False
-    for info in scores.itervalues():
-        # Concatenate pianoroll along time dimension
-        # Construct an auxiliary pianoroll
-        for instru, pianoroll_instru in info['pianoroll'].iteritems():
-            if not time_updated:
-                # set start and end time
-                start_time = end_time
-                end_time = start_time + np.shape(pianoroll_instru)[0]
-                time_updated = True
-            if instru == 'Piano':
-                # concatenate empty pianoroll
-                aux_piano = pianoroll_instru
-            else:
-                # if 'orch' not in locals():
-                #     aux_orch = np.zeros([end_time, orchestra_dimension])
-                #     orch_init = True
-                if not orch_init:
-                    # concatenate empty pianoroll
-                    aux_orch = np.zeros([end_time - start_time, orchestra_dimension])
-                    # orch = np.concatenate((orch, empty_orch), axis=0)
-                    orch_init = True
-                instru_ind_start = instru_mapping[instru][0]
-                instru_ind_end = instru_mapping[instru][1]
-                aux_orch[0:end_time - start_time, instru_ind_start:instru_ind_end] = pianoroll_instru
-        if temporal_granularity == u'full_event_level':
-            # in a full event_level granularity, we immediately split the database
-            event_ind = get_event_ind(aux_orch)
-            aux_orch = aux_orch[event_ind, :]
-            aux_piano = aux_piano[event_ind, :]
-        if 'piano' not in locals():
-            piano = aux_piano
-        else:
-            piano = np.concatenate((piano, aux_piano), axis=0)
-        if 'orch' not in locals():
-            orch = aux_orch
-        else:
-            orch = np.concatenate((orch, aux_orch), axis=0)
-        # Valid indexes
-        N_pr = orch.shape[0]
-        if sequential_learning:
-            shift = min(100, temporal_order // 2)
-            valid_index.extend(range(last_stop + temporal_order, N_pr, shift))
-            # always add the end of the file to learn "conclusions"
-            if (N_pr not in valid_index) and (aux_orch.shape[0] > temporal_order):
-                valid_index.append(N_pr)  # not minus 1 because it'll be used in
-                # as a bound
-        else:
-            valid_index.extend(range(last_stop + temporal_order, N_pr))
-
-        last_stop = N_pr
-        # Set flag
-        orch_init = False
-        time_updated = False
-
-        log_file.write("    # Score '%s' : " % info['filename'])
-        log_file.write(" written.\n     Time indices : {} -> {}\n".format(start_time, end_time))
-
-    log_file.write("\nDimension of the orchestra : time = {} pitch = {}".format(np.shape(orch)[0], np.shape(orch)[1]))
-    log_file.write("\nDimension of the piano : time = {} pitch = {}".format(np.shape(piano)[0], np.shape(piano)[1]))
-
-    # Remove unused pitches
-    log_file.write("\n## Remove unused pitches")
-    orch_clean, orch_mapping = remove_unused_pitch(orch, instru_mapping)
-    piano_clean, piano_mapping = remove_unused_pitch(piano, {'Piano': (0, 128)})
-    log_file.write("\nDimension of reduced orchestra : time = {} pitch = {}".format(np.shape(orch_clean)[0], np.shape(orch_clean)[1]))
-    log_file.write("\nDimension of reduced piano : time = {} pitch = {}".format(np.shape(piano_clean)[0], np.shape(piano_clean)[1]))
-    log_file.write("\n")
+    # Temporal granularity
+    if temporal_granularity == 'frame_level':
+        valid_indices = pad_indices
+    elif temporal_granularity == 'event_level':
+        new_event_ind = get_event_ind(pr_orchestra)
+        # Valid indices are the intersection of new event and valid
+        # Note that this operation shuffle the indices
+        valid_indices = set(new_event_ind).intersection(pad_indices)
+    elif temporal_granularity == 'full_event_level':
+        new_event_ind = get_event_ind(pr_orchestra)
+        # Reduce pr
+        pr_orchestra = pr_orchestra[new_event_ind, :]
+        pr_piano = pr_piano[new_event_ind, :]
+        # Compute valid indices
+        l3 = new_track_ind[:]
+        l3.append(T)
+        valid_indices = full_event_level_ind(l3, new_event_ind, temporal_order)
 
     # Cast valid_index in a numpy array
-    valid_index = np.array(valid_index)
-
-    # Event level indices
-    if temporal_granularity == u'event_level':
-        event_ind = get_event_ind(orch_clean)
-        valid_index = np.intersect1d(event_ind, valid_index)
+    valid_indices = np.array(valid_indices)
 
     # Binary representation
     if bin_unit_bool:
-        orch_clean = (orch_clean > 0).astype(int)
-        piano_clean = (piano_clean > 0).astype(int)
+        pr_orchestra = (pr_orchestra > 0).astype(int)
+        pr_piano = (pr_piano > 0).astype(int)
 
     if shared_bool:
         # Instanciate shared variables
-        orch_shared = theano.shared(np.asarray(orch_clean, dtype=theano.config.floatX))
-        piano_shared = theano.shared(np.asarray(piano_clean, dtype=theano.config.floatX))
+        orch_shared = theano.shared(np.asarray(pr_orchestra, dtype=theano.config.floatX))
+        piano_shared = theano.shared(np.asarray(pr_piano, dtype=theano.config.floatX))
     else:
-        orch_shared = orch_clean
-        piano_shared = piano_clean
+        orch_shared = pr_orchestra
+        piano_shared = pr_piano
 
-    log_file.close()
-    return orch_shared, orch_mapping, piano_shared, piano_mapping, valid_index, quantization
+    return orch_shared, piano_shared, valid_indices
 
 
-def load_data_k_fold(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, bin_unit_bool, minibatch_size, split=(0.7, 0.1, 0.2)):
-    orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_granularity, temporal_order, False, shared_bool, bin_unit_bool)
-    train_index, validate_index, test_index = k_fold_cross_validation(log_file_path, valid_index, minibatch_size, split)
+def full_event_level_ind(new_track_ind, new_event_ind, temporal_order):
+    m = 0
+    n = 0
+    counter = 0
+    out_list = []
+    for elem in new_event_ind:
+        if new_track_ind[n] <= elem:
+            n += 1
+            counter = 1
+        else:
+            if counter >= temporal_order:
+                out_list.append(m)
+            counter += 1
+        m += 1
+    return out_list
+
+
+def load_data_k_fold(data_path, temporal_granularity, temporal_order, shared_bool, bin_unit_bool, minibatch_size, split=(0.7, 0.1, 0.2)):
+    orch, piano, valid_index = get_data(data_path, temporal_granularity, temporal_order, False, shared_bool, bin_unit_bool)
+    train_index, validate_index, test_index = k_fold_cross_validation(valid_index, minibatch_size, split)
     # train_index, validate_index, test_index = tvt_minibatch(log_file_path, valid_index, minibatch_size, shuffle, split)
-    return orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index
+    return orch, piano, train_index, validate_index, test_index
 
 
-def load_data_tvt(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, bin_unit_bool, minibatch_size, split=(0.7, 0.1, 0.2)):
-    orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_granularity, temporal_order, False, shared_bool, bin_unit_bool)
+def load_data_tvt(data_path, temporal_granularity, temporal_order, shared_bool, bin_unit_bool, minibatch_size, split=(0.7, 0.1, 0.2)):
+    orch, piano, valid_index = get_data(data_path, temporal_granularity, temporal_order, False, shared_bool, bin_unit_bool)
     # train_index, validate_index, test_index = k_fold_cross_validation(log_file_path, valid_index, minibatch_size, split)
-    train_index, validate_index, test_index = tvt_minibatch(log_file_path, valid_index, minibatch_size, 'block', split)
-    return orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index
+    train_index, validate_index, test_index = tvt_minibatch(valid_index, minibatch_size, 'block', split)
+    return orch, piano, train_index, validate_index, test_index
 
 
-def load_data_seq_tvt(data_path, log_file_path, temporal_granularity, temporal_order, shared_bool, bin_unit_bool, split=(0.7, 0.1, 0.2)):
+def load_data_seq_tvt(data_path, temporal_granularity, temporal_order, shared_bool, bin_unit_bool, split=(0.7, 0.1, 0.2)):
     # In this case minibatch_size is equal to temporal_granularity
-    orch, orch_mapping, piano, piano_mapping, valid_index, quantization = get_data(data_path, log_file_path, temporal_granularity, temporal_order, True, shared_bool, bin_unit_bool)
-    train_index, validate_index, test_index = tvt_minibatch_seq(log_file_path, valid_index, temporal_order, True, split)
-    return orch, orch_mapping, piano, piano_mapping, train_index, validate_index, test_index
+    orch, piano, valid_index = get_data(data_path, temporal_granularity, temporal_order, True, shared_bool, bin_unit_bool)
+    train_index, validate_index, test_index = tvt_minibatch_seq(valid_index, temporal_order, True, split)
+    return orch, piano, train_index, validate_index, test_index
 
 
 if __name__ == '__main__':
-    # train_batch_ind, validate_batch_ind, test_batch_ind = tvt_minibatch('test', np.arange(20), 3, True)
-    # print(train_batch_ind)
-    # print(validate_batch_ind)
-    # print(test_batch_ind)
-
-    # aaa = np.transpose(np.array([[0.0, 0.0, 0.4, 0.4, 0.7],
-    #                              [0.0, 0.0, 0.2, 0.2, 0.7],
-    #                              [0.0, 0.0, 0.4, 0.4, 0.7]]))
-    # import pdb; pdb.set_trace()
-    # bbb=get_event_ind(aaa)
-
-    orch, orch_mapping, piano, piano_mapping, train_batch_ind, validate_batch_ind, test_batch_ind = load_data_tvt(data_path='../../Data/data.p', log_file_path='log_test.txt', temporal_granularity='event_level', temporal_order=8, shared_bool=True, minibatch_size=100, shuffle=True)
+    orch, orch_mapping, piano, piano_mapping, \
+        train_batch_ind, validate_batch_ind, test_batch_ind =\
+        load_data_tvt(data_path='../Data/data.p',
+                      temporal_granularity='full_event_level',
+                      temporal_order=8,
+                      shared_bool=True,
+                      bin_unit_bool=True,
+                      minibatch_size=100)

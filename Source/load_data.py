@@ -23,12 +23,13 @@ def get_data(data_path, temporal_granularity, temporal_order, sequential_learnin
 
     """
 
-    data = cPickle.load(open(data_path, "rb"))
-
-    # Unpack matrices
-    pr_orchestra = data['pr_orchestra']
-    pr_piano = data['pr_piano']
-    new_track_ind = data['change_track']
+    orchestra_path = data_path + 'pr_orchestra.csv'
+    pr_orchestra = cPickle.load(open(orchestra_path, "rb"))
+    piano_path = data_path + 'pr_piano.csv'
+    pr_piano = cPickle.load(open(piano_path, "rb"))
+    metadata_path = data_path + 'metadata.pkl'
+    metadata = cPickle.load(open(metadata_path, "rb"))
+    new_track_ind = metadata['change_track']
 
     # Build valid indices for building minibatches
     pad_indices = []

@@ -40,7 +40,7 @@ def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
         r1 = csv.DictReader(f1, delimiter=';')
         instru1 = next(r1)
 
-    return pianoroll_0, instru0, T0, pianoroll_1, instru1, T1
+    return pianoroll_0, instru0, T0, mid_files[0], pianoroll_1, instru1, T1, mid_files[1]
 
 
 def unmixed_instru(instru_string):

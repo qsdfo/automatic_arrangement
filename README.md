@@ -1,11 +1,10 @@
 # Base de données
 ## Import données
-- Alignment
-    - Compare :
-        - DTW
-        - Needleman-Munch
-- Check random (centaine de pièces)
-- Finir build_data
+- alignment ?
+    - chopper score alignment sur toute la db et tester plusieurs valeurs de gapopen et gapextend. prendre la meilleure (normaliser par rapport a cette valeur)
+- Re-run avec best parameters pour obtenir une base alignée
+- Écrire un texte sur la database
+- Unit for new beginning/end measure
 
 ## IMSLP
 - Une fois les paires créées, remove les paires égales (ça arrive, les pianorolls peuvent avoir des noms différents, mais même contenu) DANS IMSLP

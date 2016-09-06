@@ -1,6 +1,6 @@
 from distutils.core import setup, Extension
 
-modNeedle = Extension('needleman_chord_2', sources=['needleman_chord_2.c'])
+modNeedle = Extension('needleman', sources=['needleman.c'])
 
 setup(name='PackageName',
       version='1.0',

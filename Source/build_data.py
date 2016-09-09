@@ -16,7 +16,8 @@
 import os
 import numpy as np
 from acidano.data_processing.utils.build_dico import build_dico
-from acidano.data_processing.utils.pianoroll_processing import warp_pr
+from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace
+from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
 import build_data_aux
 import cPickle as pickle
 
@@ -46,12 +47,15 @@ def get_dim_matrix(path_db, subfolder_names, quantization, meta_info_path='temp.
                 continue
             # Get instrus and prs from a folder name
             try:
-                pr0, instru0, T0, pr1, instru1, T1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization)
+                pr0, instru0, T0, name0, pr1, instru1, T1, name1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization)
             except:
                 with open('log', 'wb') as f:
                     f.write('Bad file' + folder_path + '\n')
                 continue
-            T += min(T0, T1)
+            # Get T
+            trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1))
+            trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
+            T += sum(trace_prod)
             # Modify the mapping from instrument to indices in pianorolls and pitch bounds
             instrument_mapping = build_data_aux.instru_pitch_range(instrumentation=instru0,
                                                                    pr=pr0,
@@ -62,7 +66,8 @@ def get_dim_matrix(path_db, subfolder_names, quantization, meta_info_path='temp.
             #                   f(a)  where a is modified inside the function
             # but i prefer to make the reallocation explicit
             #                   a = f(a) with f returning the modified value of a.
-            # Does it change anything for computation speed ?
+            # Does it change anything for computation speed ? (Python pass by reference,
+            # but a slightly different version of it, not clear to me)
             instrument_mapping = build_data_aux.instru_pitch_range(instrumentation=instru1,
                                                                    pr=pr1,
                                                                    instrument_mapping=instrument_mapping,
@@ -73,6 +78,7 @@ def get_dim_matrix(path_db, subfolder_names, quantization, meta_info_path='temp.
 
     # Build the index_min and index_max in the instrument_mapping dictionary
     counter = 0
+    import pdb; pdb.set_trace()
     for k, v in instrument_mapping.iteritems():
         if k == 'piano':
             index_min = 0
@@ -94,23 +100,29 @@ def get_dim_matrix(path_db, subfolder_names, quantization, meta_info_path='temp.
     temp['instrument_mapping'] = instrument_mapping
     temp['quantization'] = quantization
     temp['T'] = T
-    temp['counter'] = counter
+    temp['N'] = counter
     pickle.dump(temp, open(meta_info_path, 'wb'))
     return
 
 
 def build_data(path_db, subfolder_names, save_path='../Data/data_midi.p', meta_info_path='temp.p'):
+    # Get dimensions
+    get_dim_matrix(path_db, subfolder_names, quantization=12, meta_info_path='temp.p')
+
     temp = pickle.load(open(meta_info_path, 'rb'))
     instrument_mapping = temp['instrument_mapping']
     quantization = temp['quantization']
     T = temp['T']
-    counter = temp['counter']
+    N = temp['N']
 
     print 'T = ' + str(T)
+    print 'N = ' + str(N)
+
     ########################################
     ########################################
     ########################################
-    pr_orchestra = np.zeros((T, counter), dtype=np.int16)
+    import pdb; pdb.set_trace()
+    pr_orchestra = np.zeros((T, N), dtype=np.int16)
     pr_piano = np.zeros((T, instrument_mapping['piano']['index_max']), dtype=np.int16)
 
     # Write the prs in the matrix
@@ -131,30 +143,44 @@ def build_data(path_db, subfolder_names, save_path='../Data/data_midi.p', meta_i
             # It's a new track ! Let's write its time index in change_track !!
             change_track.append(time)
             # Get instrus and prs from a folder name name
+            import pdb; pdb.set_trace()
             pr0, instru0, T0, pr1, instru1, T1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization)
             duration = min(T0, T1)
-            # !! Time warping !! (tonnerre et tout)     :)
-            # In fact just do a linear warping          :(
-            if T0 > T1:
-                pr0 = warp_pr(pr0, T_target=T1)
-            elif T0 < T1:
-                pr1 = warp_pr(pr1, T_target=T0)
-            # Do nothing if T0 = T1
+
+            # Get trace from needleman_wunsch algorithm
+            # Traces are binary lists, 0 meaning a gap is inserted
+            trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1))
+
+            # Wrap dictionnaries according to the traces
+            assert(len(trace_0) == len(trace_1)), "size mismatch"
+            pr0_warp = warp_dictionnary_trace(pr0, trace_0)
+            pr1_warp = warp_dictionnary_trace(pr1, trace_1)
+
+            # In fact we just discard 0 in traces for both pr
+            trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
+            if sum(trace_prod) == 0:
+                # It's definitely not a match...
+                # Check for the files : are they really an piano score and its orchestration ??
+                with(open('log.txt', 'a')) as f:
+                    f.write(folder_path + '\n')
+                continue
+            pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
+            pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 
             # Find which pr is orchestra, which one is piano
             if len(set(instru0.keys())) > len(set(instru1.keys())):
                 # Add the small pr to the general structure
                 # pr0 is orchestra
-                pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(pr0, instru0, time, duration, instrument_mapping, pr_orchestra)
-                pr_piano = build_data_aux.cast_small_pr_into_big_pr(pr1, {}, time, duration, instrument_mapping, pr_piano)
+                pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(pr0_aligned, instru0, time, duration, instrument_mapping, pr_orchestra)
+                pr_piano = build_data_aux.cast_small_pr_into_big_pr(pr1_aligned, {}, time, duration, instrument_mapping, pr_piano)
             elif len(set(instru0.keys())) < len(set(instru1.keys())):
                 # pr1 is orchestra
-                pr_piano = build_data_aux.cast_small_pr_into_big_pr(pr0, {}, time, duration, instrument_mapping, pr_piano)
-                pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(pr1, instru1, time, duration, instrument_mapping, pr_orchestra)
+                pr_piano = build_data_aux.cast_small_pr_into_big_pr(pr0_aligned, {}, time, duration, instrument_mapping, pr_piano)
+                pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(pr1_aligned, instru1, time, duration, instrument_mapping, pr_orchestra)
             else:
                 print('The two midi files have the same number of instruments')
+
             time += duration
-            del pr0, pr1, instru0, instru1
 
     # Save pr_orchestra, pr_piano, instrument_mapping
     metadata = {}
@@ -176,7 +202,6 @@ if __name__ == '__main__':
         'hand_picked_Spotify',
     ]
     # subfolder_names = ['test']
-    # get_dim_matrix(folder_path, subfolder_names, quantization=12, meta_info_path='temp.p')
     print '#'*50
     print '#'*50
     print '#'*50

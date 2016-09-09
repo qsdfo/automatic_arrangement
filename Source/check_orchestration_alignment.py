@@ -114,7 +114,7 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
             counter = counter + 1
 
             # Save every 100 example
-            if not counter % 50 == 0:
+            if not counter % 10 == 0:
                 continue
 
             save_folder_name = output_dir +\

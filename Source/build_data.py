@@ -16,13 +16,25 @@
 import os
 import numpy as np
 from acidano.data_processing.utils.build_dico import build_dico
-from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace
+from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
+from acidano.data_processing.utils.event_level import get_event_ind_dict
 import build_data_aux
 import cPickle as pickle
+import theano
+
+from acidano.visualization.numpy_array.write_numpy_array_html import write_numpy_array_html
+from acidano.visualization.numpy_array.dumped_numpy_to_csv import dump_to_csv
 
 
-def get_dim_matrix(index_files_dict, quantization, meta_info_path='temp.p'):
+def aux(var, name, csv_path, html_path):
+    np.savetxt(csv_path, var, delimiter=',')
+    dump_to_csv(csv_path, csv_path)
+    write_numpy_array_html(html_path, name)
+    return
+
+
+def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, temporal_granularity='frame_level'):
     # Determine the temporal size of the matrices
     # If the two files have different sizes, we use the shortest (to limit the use of memory,
     # we better contract files instead of expanding them).
@@ -54,6 +66,14 @@ def get_dim_matrix(index_files_dict, quantization, meta_info_path='temp.p'):
                         with open('log', 'wb') as f:
                             f.write('Bad file' + folder_path + '\n')
                         continue
+
+                    # Temporal granularity
+                    if temporal_granularity == 'event_level':
+                        new_event_0 = get_event_ind_dict(pr0)
+                        pr0 = warp_pr_aux(pr0, new_event_0)
+                        new_event_1 = get_event_ind_dict(pr1)
+                        pr1 = warp_pr_aux(pr1, new_event_1)
+
                     # Get T
                     trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1))
                     trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
@@ -79,7 +99,6 @@ def get_dim_matrix(index_files_dict, quantization, meta_info_path='temp.p'):
                     del pr0, pr1, instru0, instru1
         T_dict[set_identifier] = T
 
-    import pdb; pdb.set_trace()
     # Build the index_min and index_max in the instrument_mapping dictionary
     counter = 0
     for k, v in instrument_mapping.iteritems():
@@ -108,9 +127,29 @@ def get_dim_matrix(index_files_dict, quantization, meta_info_path='temp.p'):
     return
 
 
-def process_folder(folder_path, quantization):
+def process_folder(folder_path, quantization, temporal_granularity):
     # Get instrus and prs from a folder name name
-    pr0, instru0, T0, name0, pr1, instru1, T1, name1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization)
+    pr0, instru0, _, name0, pr1, instru1, _, name1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization)
+
+    # Temporal granularity
+    if temporal_granularity == 'event_level':
+        pr0 =warp_pr_aux(pr0, get_event_ind_dict(pr0))
+        pr1 =warp_pr_aux(pr1, get_event_ind_dict(pr1))
+        ####################################################################
+        ####################################################################
+        ####################################################################
+        # aux(var=sum_along_instru_dim(pr0),
+        #     name='piano',
+        #     csv_path='DEBUG/piano.csv',
+        #     html_path='DEBUG/piano.html')
+        #
+        # aux(var=sum_along_instru_dim(pr1),
+        #     name='orchestra',
+        #     csv_path='DEBUG/orchestra.csv',
+        #     html_path='DEBUG/orchestra.html')
+        ####################################################################
+        ####################################################################
+        ####################################################################
 
     # Get trace from needleman_wunsch algorithm
     # Traces are binary lists, 0 meaning a gap is inserted
@@ -130,6 +169,22 @@ def process_folder(folder_path, quantization):
     pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 
+    ####################################################################
+    ####################################################################
+    ####################################################################
+    # aux(var=sum_along_instru_dim(pr0_aligned),
+    #     name='piano_aligned',
+    #     csv_path='DEBUG/piano_aligned.csv',
+    #     html_path='DEBUG/piano_aligned.html')
+    #
+    # aux(var=sum_along_instru_dim(pr1_aligned),
+    #     name='orchestra_aligned',
+    #     csv_path='DEBUG/orchestra_aligned.csv',
+    #     html_path='DEBUG/orchestra_aligned.html')
+    # import pdb; pdb.set_trace()
+    ####################################################################
+    ####################################################################
+    ####################################################################
     return pr0_aligned, instru0, name0, pr1_aligned, instru1, name1, duration
 
 
@@ -148,9 +203,9 @@ def cast_pr(pr0, instru0, pr1, instru1, start_time, duration, instrument_mapping
         print('The two midi files have the same number of instruments')
 
 
-def build_data(index_files_dict, meta_info_path='temp.p'):
+def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, temporal_granularity='frame_level'):
     # Get dimensions
-    get_dim_matrix(index_files_dict, quantization=12, meta_info_path='temp.p')
+    get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=quantization, temporal_granularity=temporal_granularity)
 
     temp = pickle.load(open(meta_info_path, 'rb'))
     instrument_mapping = temp['instrument_mapping']
@@ -168,8 +223,8 @@ def build_data(index_files_dict, meta_info_path='temp.p'):
         ########################################
         ########################################
         ########################################
-        pr_orchestra = np.zeros((T, N_orchestra), dtype=np.int16)
-        pr_piano = np.zeros((T, N_piano), dtype=np.int16)
+        pr_orchestra = np.zeros((T, N_orchestra), dtype=theano.config.floatX)
+        pr_piano = np.zeros((T, N_piano), dtype=theano.config.floatX)
 
         # Write the prs in the matrix
         time = 0
@@ -186,7 +241,7 @@ def build_data(index_files_dict, meta_info_path='temp.p'):
                         continue
 
                     # Get pr warped and duration
-                    pr0, instru0, name0, pr1, instru1, name1, duration = process_folder(folder_path, quantization)
+                    pr0, instru0, name0, pr1, instru1, name1, duration = process_folder(folder_path, quantization, temporal_granularity)
 
                     # SKip shitty files
                     if pr0 is None:
@@ -206,11 +261,27 @@ def build_data(index_files_dict, meta_info_path='temp.p'):
                     # Increment time counter
                     time += duration
 
-        with open('../Data/pr_orchestra_' + set_identifier + '.csv', 'wb') as outfile:
+        with open('../Data/orchestra_' + set_identifier + '.csv', 'wb') as outfile:
             np.save(outfile, pr_orchestra)
-        with open('../Data/pr_piano_' + set_identifier + '.csv', 'wb') as outfile:
+        with open('../Data/piano_' + set_identifier + '.csv', 'wb') as outfile:
             np.save(outfile, pr_piano)
         pickle.dump(tracks_start_end, open('../Data/tracks_start_end_' + set_identifier + '.pkl', 'wb'))
+
+        ####################################################################
+        ####################################################################
+        ####################################################################
+        aux(var=pr_piano,
+            name='piano_' + set_identifier + '_' + temporal_granularity,
+            csv_path='DEBUG/piano_' + set_identifier + '_' + temporal_granularity + '.csv',
+            html_path='DEBUG/piano_' + set_identifier + '_' + temporal_granularity + '.html')
+
+        aux(var=pr_orchestra,
+            name='orchestra_' + set_identifier + '_' + temporal_granularity,
+            csv_path='DEBUG/orchestra_' + set_identifier + '_' + temporal_granularity +'.csv',
+            html_path='DEBUG/orchestra_' + set_identifier + '_' + temporal_granularity + '.html')
+        ####################################################################
+        ####################################################################
+        ####################################################################
 
     # Save pr_orchestra, pr_piano, instrument_mapping
     metadata = {}
@@ -232,4 +303,4 @@ if __name__ == '__main__':
     index_files_dict['test'] = [
         PREFIX_INDEX_FOLDER + "debug_test.txt",
     ]
-    build_data(index_files_dict=index_files_dict, meta_info_path='temp.p')
+    build_data(index_files_dict=index_files_dict, meta_info_path='temp.p', quantization=12, temporal_granularity='event_level')

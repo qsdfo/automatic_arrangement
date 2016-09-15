@@ -136,10 +136,9 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instrument_mappi
 
     return pr_big
 
+
 if __name__=='__main__':
     name = 'DEBUG/test.mid'
     reader = Read_midi(name, 12)
     time = reader.get_time()
     pr = reader.read_file()
-
-    write_midi(pr_warp, 12, 'DEBUG/out.mid')

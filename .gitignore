@@ -18,6 +18,8 @@ Source/Needlepote
 
 # Text and log files
 **/log
+**/*.p
+**/*.pkl
 **/*.txt
 
 # Compiled code

@@ -22,20 +22,23 @@ import numpy as np
 
 ####################
 # Debugging compiler flags
-import theano
+# import theano
 # theano.config.optimizer = 'None'
 # theano.config.mode = 'FAST_COMPILE'
 # theano.config.exception_verbosity = 'high'
-theano.config.compute_test_value = 'warn'
+# theano.config.compute_test_value = 'warn'
 
 ####################
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
-from acidano.models.lop.RnnRbm import RnnRbm as Model_class
+from acidano.models.lop.cRBM import cRBM as Model_class
 from acidano.utils.optim import gradient_descent as Optimization_method
 
-# Temporal granularity
+# Build data parameters :
+REBUILD_DATABASE = False
+# Temporal granularity and quantization
 temporal_granularity = u'frame_level'
+quantization = 4
 
 # Get main dir
 MAIN_DIR = os.getcwd().decode('utf8') + u'/'
@@ -91,7 +94,7 @@ def train_hopt(temporal_granularity, max_evals, log_file_path, csv_file_path):
         #############################################
 
         # Train #####################################
-        dico_res = train(model_param, optim_param, temporal_granularity, max_iter, log_file_path)
+        dico_res = train(model_param, optim_param, max_iter, log_file_path)
         error = -dico_res['accuracy']  # Search for a min
         #############################################
 
@@ -118,7 +121,7 @@ def train_hopt(temporal_granularity, max_evals, log_file_path, csv_file_path):
     return best
 
 
-def train(model_param, optim_param, temporal_granularity, max_iter, log_file_path):
+def train(model_param, optim_param, max_iter, log_file_path):
     ############################################################
     ############################################################
     ############################################################
@@ -139,11 +142,12 @@ def train(model_param, optim_param, temporal_granularity, max_iter, log_file_pat
     ################################################################
     # DATA
     # Dimension : time * pitch
-    train_piano, train_orchestra, train_index, \
-        valid_piano, valid_orchestra, valid_index, \
-        test_piano, test_orchestra, test_index \
+    piano_train, orchestra_train, train_index, \
+        piano_valid, orchestra_valid, valid_index, \
+        piano_test, orchestra_test, test_index \
         = load_data(model_param['temporal_order'],
                     model_param['batch_size'],
+                    binary_unit=True,
                     skip_sample=1,
                     logger_load=logger_load)
     # For large datasets
@@ -151,10 +155,10 @@ def train(model_param, optim_param, temporal_granularity, max_iter, log_file_pat
     #   use borrow=True (avoid copying the whole matrix) ?
     #   Load as much as the GPU can handle, train then load other
     #       part of the dataset using shared_variable.set_value(new_value)
-    input_dim = train_pr.get_value().shape[1]
-    n_train_batches = train_index.shape[0]
+    piano_dim = piano_train.get_value().shape[1]
+    orchestra_dim = orchestra_train.get_value().shape[1]
+    n_train_batches = len(train_index)
     n_val_batches = len(valid_index)
-
     logger_train.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
     logger_train.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
 
@@ -165,7 +169,8 @@ def train(model_param, optim_param, temporal_granularity, max_iter, log_file_pat
     # dimensions dictionary
     dimensions = {'batch_size': model_param['batch_size'],
                   'temporal_order': model_param['temporal_order'],
-                  'input_dim': input_dim}
+                  'piano_dim': piano_dim,
+                  'orchestra_dim': orchestra_dim}
     model = Model_class(model_param, dimensions)
     # Define an optimizer
     optimizer = Optimization_method(optim_param)
@@ -178,14 +183,16 @@ def train(model_param, optim_param, temporal_granularity, max_iter, log_file_pat
     index = T.ivector()
     # Compilation of the training function is encapsulated in the class since the 'givens'
     # can vary with the model
-    train_iteration = model.get_train_function(index, train_pr, optimizer, name='train_iteration')
+    train_iteration = model.get_train_function(index, piano_train, orchestra_train, optimizer, name='train_iteration')
     # Same for the validation
-    validation_error = model.get_validation_error(index, valid_pr, name='validation_error')
+    validation_error = model.get_validation_error(index, piano_valid, orchestra_valid, name='validation_error')
 
     ############################################################
     ############################################################
     ############################################################
     # TRAINING
+    logger_train.info("#")
+    logger_train.info("# Training")
     epoch = 0
     OVERFITTING = False
     val_order = 4
@@ -193,23 +200,14 @@ def train(model_param, optim_param, temporal_granularity, max_iter, log_file_pat
     while (not OVERFITTING or epoch!=max_iter):
         # go through the training set
         train_cost_epoch = []
+        train_monitor_epoch = []
         for batch_index in xrange(n_train_batches):
-            print("##########")
-            print(batch_index)
-            this_cost = train_iteration(train_index[batch_index])
-            print("W : " + str(np.sum(model.W.get_value())))
-            print("bv : " + str(np.sum(model.bv.get_value())))
-            print("bh : " + str(np.sum(model.bh.get_value())))
-            print("Wuh : " + str(np.sum(model.Wuh.get_value())))
-            print("Wuv : " + str(np.sum(model.Wuv.get_value())))
-            print("Wvu : " + str(np.sum(model.Wvu.get_value())))
-            print("Wuu : " + str(np.sum(model.Wuu.get_value())))
-            print("bu : " + str(np.sum(model.bu.get_value())))
-            print(np.mean(this_cost))
+            this_cost, this_monitor = train_iteration(train_index[batch_index])
             # Keep track of cost
-            train_cost_epoch += [this_cost]
+            train_cost_epoch.append(this_cost)
+            train_monitor_epoch.append(this_monitor)
 
-        if (epoch % 5 == 0):
+        if ((epoch % 5 == 0) or (epoch < 10)):
             accuracy = []
             for batch_index in xrange(n_val_batches):
                 _, _, accuracy_batch = validation_error(valid_index[batch_index])
@@ -224,8 +222,8 @@ def train(model_param, optim_param, temporal_granularity, max_iter, log_file_pat
                 OVERFITTING = True
             val_tab[0] = mean_accuracy
             # Monitor learning
-            logger_train.info(("Epoch : {} , Rec error : {} , Valid acc : {}"
-                              .format(epoch, np.mean(train_cost_epoch), mean_accuracy))
+            logger_train.info(("Epoch : {} , Monitor : {} , Rec error : {} , Valid acc : {}"
+                              .format(epoch, np.mean(train_monitor_epoch), np.mean(train_cost_epoch), mean_accuracy))
                               .encode('utf8'))
 
         epoch += 1
@@ -276,26 +274,48 @@ if __name__ == "__main__":
     logger_load = logging.getLogger('load')
 
     ######################################
+    ###### Rebuild database
+    if REBUILD_DATABASE:
+        logging.info('# ** Database REBUILT **')
+        PREFIX_INDEX_FOLDER = "../Data/Index/"
+        index_files_dict = {}
+        index_files_dict['train'] = [
+            PREFIX_INDEX_FOLDER + "debug_train.txt",
+        ]
+        index_files_dict['valid'] = [
+            PREFIX_INDEX_FOLDER + "debug_valid.txt",
+        ]
+        index_files_dict['test'] = [
+            PREFIX_INDEX_FOLDER + "debug_test.txt",
+        ]
+        build_data(index_files_dict=index_files_dict,
+                   meta_info_path='temp.p',
+                   quantization=quantization,
+                   temporal_granularity=temporal_granularity)
+    else:
+        logging.info('# ** Database NOT rebuilt ** ')
+    ######################################
+
+    ######################################
     ###### HOPT function
-    # best = train_hopt(temporal_granularity, max_evals, log_file_path, result_file)
-    # logging.info(best)
+    best = train_hopt(temporal_granularity, max_evals, log_file_path, result_file)
+    logging.info(best)
     ######################################
 
     ######################################
     ###### Or directly call the train function for one set of HPARAMS
-    model_param = {
-        'temporal_order': 100,
-        'n_hidden': 150,
-        'n_hidden_recurrent': 100,
-        'batch_size': 2,
-        'gibbs_steps': 15
-    }
-    optim_param = {
-        'lr': 0.001
-    }
-    dico_res = train(model_param,
-                     optim_param,
-                     temporal_granularity,
-                     max_iter,
-                     log_file_path)
+    # model_param = {
+    #     'temporal_order': 100,
+    #     'n_hidden': 150,
+    #     'batch_size': 2,
+    #     'gibbs_steps': 15
+    # }
+    # optim_param = {
+    #     'lr': 0.001
+    # }
+    # dico_res = train(model_param,
+    #                  optim_param,
+    #                  temporal_granularity,
+    #                  max_iter,
+    #                  log_file_path)
     ######################################

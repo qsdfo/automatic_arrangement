@@ -11,6 +11,7 @@ from hyperopt import fmin, tpe
 import logging
 # Perso
 from load_data import load_data
+from build_data import build_data
 import theano.tensor as T
 import numpy as np
 ####################
@@ -37,7 +38,7 @@ from acidano.utils.optim import gradient_descent as Optimization_method
 # Build data parameters :
 REBUILD_DATABASE = False
 # Temporal granularity and quantization
-temporal_granularity = u'frame_level'
+temporal_granularity = u'event_level'
 quantization = 4
 
 # Get main dir
@@ -49,7 +50,7 @@ result_file = result_folder + u'/hopt_results.csv'
 log_file_path = result_folder + '/' + Model_class.name() + u'.log'
 
 # Fixed hyper parameter
-max_evals = 3       # number of hyper-parameter configurations evaluated
+max_evals = 20       # number of hyper-parameter configurations evaluated
 max_iter = 200      # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 ############################################################################
@@ -280,13 +281,19 @@ if __name__ == "__main__":
         PREFIX_INDEX_FOLDER = "../Data/Index/"
         index_files_dict = {}
         index_files_dict['train'] = [
-            PREFIX_INDEX_FOLDER + "debug_train.txt",
+            PREFIX_INDEX_FOLDER + "bouliane_train.txt",
+            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
+            PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
         ]
         index_files_dict['valid'] = [
-            PREFIX_INDEX_FOLDER + "debug_valid.txt",
+            PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
+            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
+            PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
         ]
         index_files_dict['test'] = [
-            PREFIX_INDEX_FOLDER + "debug_test.txt",
+            PREFIX_INDEX_FOLDER + "bouliane_test.txt",
+            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
+            PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
         ]
         build_data(index_files_dict=index_files_dict,
                    meta_info_path='temp.p',

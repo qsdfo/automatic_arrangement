@@ -158,7 +158,7 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
 
 
 if __name__ == '__main__':
-    folder_path = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/Orchestration_checked'
+    folder_path = '../../database/Orchestration/Orchestration_checked'
     subfolder_names = [
         'bouliane',
         'hand_picked_Spotify',

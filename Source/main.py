@@ -32,13 +32,14 @@ import numpy as np
 ####################
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
-from acidano.models.lop.cRBM import cRBM as Model_class
+from acidano.models.lop.RBM import RBM as Model_class
 from acidano.utils.optim import gradient_descent as Optimization_method
 
 # Build data parameters :
 REBUILD_DATABASE = False
 # Temporal granularity and quantization
 temporal_granularity = u'event_level'
+binary_unit = True
 quantization = 4
 
 # Get main dir
@@ -57,7 +58,7 @@ max_iter = 200      # nb max of iterations when training 1 configuration of hpar
 ############################################################################
 
 
-def train_hopt(temporal_granularity, max_evals, log_file_path, csv_file_path):
+def train_hopt(max_evals, log_file_path, csv_file_path):
     # Create/reinit csv file
     open(csv_file_path, 'w').close()
 
@@ -130,6 +131,7 @@ def train(model_param, optim_param, max_iter, log_file_path):
     # If you use train directly, bypassing the hparameter loop,
     # be careful that the keys match the constructor arguments of both model and optimizer
 
+    import pdb; pdb.set_trace()
     # Log them
     logger_train.info((u'##### Model parameters').encode('utf8'))
     for k, v in model_param.iteritems():
@@ -148,7 +150,7 @@ def train(model_param, optim_param, max_iter, log_file_path):
         piano_test, orchestra_test, test_index \
         = load_data(model_param['temporal_order'],
                     model_param['batch_size'],
-                    binary_unit=True,
+                    binary_unit=binary_unit,
                     skip_sample=1,
                     logger_load=logger_load)
     # For large datasets
@@ -305,24 +307,23 @@ if __name__ == "__main__":
 
     ######################################
     ###### HOPT function
-    best = train_hopt(temporal_granularity, max_evals, log_file_path, result_file)
-    logging.info(best)
+    # best = train_hopt(max_evals, log_file_path, result_file)
+    # logging.info(best)
     ######################################
 
     ######################################
     ###### Or directly call the train function for one set of HPARAMS
-    # model_param = {
-    #     'temporal_order': 100,
-    #     'n_hidden': 150,
-    #     'batch_size': 2,
-    #     'gibbs_steps': 15
-    # }
-    # optim_param = {
-    #     'lr': 0.001
-    # }
-    # dico_res = train(model_param,
-    #                  optim_param,
-    #                  temporal_granularity,
-    #                  max_iter,
-    #                  log_file_path)
+    model_param = {
+        'temporal_order': 100,
+        'n_hidden': 150,
+        'batch_size': 2,
+        'gibbs_steps': 15
+    }
+    optim_param = {
+        'lr': 0.001
+    }
+    dico_res = train(model_param,
+                     optim_param,
+                     max_iter,
+                     log_file_path)
     ######################################

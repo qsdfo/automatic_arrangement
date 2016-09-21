@@ -23,16 +23,16 @@ import numpy as np
 
 ####################
 # Debugging compiler flags
-# import theano
-# theano.config.optimizer = 'None'
+import theano
+theano.config.optimizer = 'None'
 # theano.config.mode = 'FAST_COMPILE'
-# theano.config.exception_verbosity = 'high'
-# theano.config.compute_test_value = 'warn'
+theano.config.exception_verbosity = 'high'
+theano.config.compute_test_value = 'off'
 
 ####################
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
-from acidano.models.lop.RBM import RBM as Model_class
+from acidano.models.lop.FGcRBM import FGcRBM as Model_class
 from acidano.utils.optim import gradient_descent as Optimization_method
 
 # Build data parameters :
@@ -131,7 +131,6 @@ def train(model_param, optim_param, max_iter, log_file_path):
     # If you use train directly, bypassing the hparameter loop,
     # be careful that the keys match the constructor arguments of both model and optimizer
 
-    import pdb; pdb.set_trace()
     # Log them
     logger_train.info((u'##### Model parameters').encode('utf8'))
     for k, v in model_param.iteritems():
@@ -283,19 +282,22 @@ if __name__ == "__main__":
         PREFIX_INDEX_FOLDER = "../Data/Index/"
         index_files_dict = {}
         index_files_dict['train'] = [
-            PREFIX_INDEX_FOLDER + "bouliane_train.txt",
-            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
-            PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
+            PREFIX_INDEX_FOLDER + "debug_train.txt",
+            # PREFIX_INDEX_FOLDER + "bouliane_train.txt",
+            # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
+            # PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
         ]
         index_files_dict['valid'] = [
-            PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
-            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
-            PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
+            PREFIX_INDEX_FOLDER + "debug_valid.txt",
+            # PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
+            # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
+            # PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
         ]
         index_files_dict['test'] = [
-            PREFIX_INDEX_FOLDER + "bouliane_test.txt",
-            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
-            PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
+            PREFIX_INDEX_FOLDER + "debug_test.txt",
+            # PREFIX_INDEX_FOLDER + "bouliane_test.txt",
+            # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
+            # PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
         ]
         build_data(index_files_dict=index_files_dict,
                    meta_info_path='temp.p',
@@ -314,10 +316,11 @@ if __name__ == "__main__":
     ######################################
     ###### Or directly call the train function for one set of HPARAMS
     model_param = {
-        'temporal_order': 100,
+        'temporal_order': 20,
         'n_hidden': 150,
+        'n_factor': 100,
         'batch_size': 2,
-        'gibbs_steps': 15
+        'gibbs_steps': 10
     }
     optim_param = {
         'lr': 0.001

@@ -24,15 +24,15 @@ import numpy as np
 ####################
 # Debugging compiler flags
 import theano
-theano.config.optimizer = 'None'
+# theano.config.optimizer = 'None'
 # theano.config.mode = 'FAST_COMPILE'
-theano.config.exception_verbosity = 'high'
 theano.config.compute_test_value = 'off'
+# theano.config.exception_verbosity = 'high'
 
 ####################
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
-from acidano.models.lop.FGcRBM import FGcRBM as Model_class
+from acidano.models.lop.cRBM import cRBM as Model_class
 from acidano.utils.optim import gradient_descent as Optimization_method
 
 # Build data parameters :
@@ -199,7 +199,7 @@ def train(model_param, optim_param, max_iter, log_file_path):
     OVERFITTING = False
     val_order = 4
     val_tab = np.zeros(val_order)
-    while (not OVERFITTING or epoch!=max_iter):
+    while (not OVERFITTING and epoch != max_iter):
         # go through the training set
         train_cost_epoch = []
         train_monitor_epoch = []
@@ -282,22 +282,22 @@ if __name__ == "__main__":
         PREFIX_INDEX_FOLDER = "../Data/Index/"
         index_files_dict = {}
         index_files_dict['train'] = [
-            PREFIX_INDEX_FOLDER + "debug_train.txt",
-            # PREFIX_INDEX_FOLDER + "bouliane_train.txt",
-            # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
-            # PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
+            # PREFIX_INDEX_FOLDER + "debug_train.txt",
+            PREFIX_INDEX_FOLDER + "bouliane_train.txt",
+            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
+            PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
         ]
         index_files_dict['valid'] = [
-            PREFIX_INDEX_FOLDER + "debug_valid.txt",
-            # PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
-            # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
-            # PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
+            # PREFIX_INDEX_FOLDER + "debug_valid.txt",
+            PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
+            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
+            PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
         ]
         index_files_dict['test'] = [
-            PREFIX_INDEX_FOLDER + "debug_test.txt",
-            # PREFIX_INDEX_FOLDER + "bouliane_test.txt",
-            # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
-            # PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
+            # PREFIX_INDEX_FOLDER + "debug_test.txt",
+            PREFIX_INDEX_FOLDER + "bouliane_test.txt",
+            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
+            PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
         ]
         build_data(index_files_dict=index_files_dict,
                    meta_info_path='temp.p',
@@ -309,24 +309,24 @@ if __name__ == "__main__":
 
     ######################################
     ###### HOPT function
-    # best = train_hopt(max_evals, log_file_path, result_file)
-    # logging.info(best)
+    best = train_hopt(max_evals, log_file_path, result_file)
+    logging.info(best)
     ######################################
 
     ######################################
     ###### Or directly call the train function for one set of HPARAMS
-    model_param = {
-        'temporal_order': 20,
-        'n_hidden': 150,
-        'n_factor': 100,
-        'batch_size': 2,
-        'gibbs_steps': 10
-    }
-    optim_param = {
-        'lr': 0.001
-    }
-    dico_res = train(model_param,
-                     optim_param,
-                     max_iter,
-                     log_file_path)
+    # model_param = {
+    #     'temporal_order': 20,
+    #     'n_hidden': 150,
+    #     'n_factor': 100,
+    #     'batch_size': 2,
+    #     'gibbs_steps': 10
+    # }
+    # optim_param = {
+    #     'lr': 0.001
+    # }
+    # dico_res = train(model_param,
+    #                  optim_param,
+    #                  max_iter,
+    #                  log_file_path)
     ######################################

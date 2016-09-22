@@ -52,7 +52,7 @@ log_file_path = result_folder + '/' + Model_class.name() + u'.log'
 
 # Fixed hyper parameter
 max_evals = 20       # number of hyper-parameter configurations evaluated
-max_iter = 200      # nb max of iterations when training 1 configuration of hparams
+max_iter = 5      # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 ############################################################################
 ############################################################################
@@ -223,10 +223,18 @@ def train(model_param, optim_param, max_iter, log_file_path):
             if check_increase == 0:
                 OVERFITTING = True
             val_tab[0] = mean_accuracy
+
             # Monitor learning
             logger_train.info(("Epoch : {} , Monitor : {} , Rec error : {} , Valid acc : {}"
                               .format(epoch, np.mean(train_monitor_epoch), np.mean(train_cost_epoch), mean_accuracy))
                               .encode('utf8'))
+
+            # Plot weights every 10 epoch
+            if((epoch%10==0) or (epoch<5)):
+                weights_folder = result_folder + '/' + str(run_counter) + '/' + str(epoch)
+                if not os.path.isdir(weights_folder):
+                    os.makedirs(weights_folder)
+                model.weights_visualization(weights_folder)
 
         epoch += 1
 
@@ -309,22 +317,22 @@ if __name__ == "__main__":
 
     ######################################
     ###### HOPT function
-    # best = train_hopt(max_evals, log_file_path, result_file)
-    # logging.info(best)
+    best = train_hopt(max_evals, log_file_path, result_file)
+    logging.info(best)
     ######################################
 
     ######################################
     ###### Or directly call the train function for one set of HPARAMS
-    model_param = {
-        'temporal_order': 20,
-        'n_hidden': 150,
-        'batch_size': 2,
-    }
-    optim_param = {
-        'lr': 0.001
-    }
-    dico_res = train(model_param,
-                     optim_param,
-                     max_iter,
-                     log_file_path)
+    # model_param = {
+    #     'temporal_order': 20,
+    #     'n_hidden': 150,
+    #     'batch_size': 2,
+    # }
+    # optim_param = {
+    #     'lr': 0.001
+    # }
+    # dico_res = train(model_param,
+    #                  optim_param,
+    #                  max_iter,
+    #                  log_file_path)
     ######################################

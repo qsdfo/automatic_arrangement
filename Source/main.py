@@ -24,15 +24,15 @@ import numpy as np
 ####################
 # Debugging compiler flags
 import theano
-theano.config.optimizer = 'None'
+# theano.config.optimizer = 'None'
 # theano.config.mode = 'FAST_COMPILE'
-theano.config.exception_verbosity = 'high'
+# theano.config.exception_verbosity = 'high'
 theano.config.compute_test_value = 'off'
 
 ####################
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
-from acidano.models.lop.FGcRBM import FGcRBM as Model_class
+from acidano.models.lop.LSTM import LSTM as Model_class
 from acidano.utils.optim import gradient_descent as Optimization_method
 
 # Build data parameters :
@@ -46,7 +46,7 @@ quantization = 4
 MAIN_DIR = os.getcwd().decode('utf8') + u'/'
 
 # Set hyperparameters (can be a grid)
-result_folder = MAIN_DIR + u'../Results/' + temporal_granularity + '/' + Model_class.name()
+result_folder = MAIN_DIR + u'../Results/' + temporal_granularity + '/' + Optimization_method.name() + '/' + Model_class.name()
 result_file = result_folder + u'/hopt_results.csv'
 log_file_path = result_folder + '/' + Model_class.name() + u'.log'
 
@@ -199,7 +199,7 @@ def train(model_param, optim_param, max_iter, log_file_path):
     OVERFITTING = False
     val_order = 4
     val_tab = np.zeros(val_order)
-    while (not OVERFITTING or epoch!=max_iter):
+    while (not OVERFITTING and epoch!=max_iter):
         # go through the training set
         train_cost_epoch = []
         train_monitor_epoch = []
@@ -242,7 +242,7 @@ def train(model_param, optim_param, max_iter, log_file_path):
 if __name__ == "__main__":
     # Check is the result folder exists
     if not os.path.isdir(result_folder):
-        os.mkdir(result_folder)
+        os.makedirs(result_folder)
 
     ############################################################
     ####  L  O  G  G  I  N  G  #################################
@@ -318,9 +318,7 @@ if __name__ == "__main__":
     model_param = {
         'temporal_order': 20,
         'n_hidden': 150,
-        'n_factor': 100,
         'batch_size': 2,
-        'gibbs_steps': 10
     }
     optim_param = {
         'lr': 0.001

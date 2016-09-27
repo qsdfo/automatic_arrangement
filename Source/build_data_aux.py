@@ -48,7 +48,7 @@ def unmixed_instru(instru_string):
     return instru_list
 
 
-def instru_pitch_range(instrumentation, pr, instrument_mapping, instrument_list_from_dico):
+def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from_dico):
     for k,v in instrumentation.iteritems():
         if k not in pr.keys():
             # BAD BAD BAD
@@ -62,36 +62,36 @@ def instru_pitch_range(instrumentation, pr, instrument_mapping, instrument_list_
             # instrumental mixes are not taken into consideration for pitch ranges
             continue
         pr_instru = pr[k]
-        if v in instrument_mapping.keys():
-            old_min = instrument_mapping[v]['pitch_min']
-            old_max = instrument_mapping[v]['pitch_max']
+        if v in instru_mapping.keys():
+            old_min = instru_mapping[v]['pitch_min']
+            old_max = instru_mapping[v]['pitch_max']
             # Get the min :
             #   - sum along time dimension
             #   - get the first non-zero index
             this_min = min(np.nonzero(np.sum(pr_instru, axis=0))[0])
             this_max = max(np.nonzero(np.sum(pr_instru, axis=0))[0])
-            instrument_mapping[v]['pitch_min'] = min(old_min, this_min)
-            instrument_mapping[v]['pitch_max'] = max(old_max, this_max)
+            instru_mapping[v]['pitch_min'] = min(old_min, this_min)
+            instru_mapping[v]['pitch_max'] = max(old_max, this_max)
         else:
             # Sanity check : notations consistency
             v_no_suffix = re.split(ur'\s', v)[0]
             if (v_no_suffix not in instrument_list_from_dico) and (v not in instrument_list_from_dico):
                 print 'V PAS DANS INSTRUMENT LISTE'
                 import pdb; pdb.set_trace()
-            instrument_mapping[v] = {}
+            instru_mapping[v] = {}
             this_min = min(np.nonzero(np.sum(pr_instru, axis=0))[0])
             this_max = max(np.nonzero(np.sum(pr_instru, axis=0))[0])
-            instrument_mapping[v]['pitch_min'] = this_min
-            instrument_mapping[v]['pitch_max'] = this_max
-    return instrument_mapping
+            instru_mapping[v]['pitch_min'] = this_min
+            instru_mapping[v]['pitch_max'] = this_max
+    return instru_mapping
 
 
-def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instrument_mapping, pr_big):
+def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, pr_big):
     # Detremine x_min and x_max thanks to time and duration
     # Parse pr_small by keys (instrument)
     # Get insrument name in instru
     # For pr_instrument, remove the column out of pitch_min and pitch_max
-    # Determine thanks to instrument_mapping the y_min and y_max in pr_big
+    # Determine thanks to instru_mapping the y_min and y_max in pr_big
 
     # Detremine t_min and t_max thanks to time and duration
     t_min = time
@@ -117,16 +117,16 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instrument_mappi
             # harpsichord was only present as a mixed instrument in the database
             # Then it never appears in the instrument mapping though
             # it is a track name for valid names...
-            if instru_name not in instrument_mapping.keys():
+            if instru_name not in instru_mapping.keys():
                 print instru_name + ' does not have pitch and indices ranges'
                 continue
             # For pr_instrument, remove the column out of pitch_min and pitch_max
-            pitch_min = instrument_mapping[instru_name]['pitch_min']
-            pitch_max = instrument_mapping[instru_name]['pitch_max']
+            pitch_min = instru_mapping[instru_name]['pitch_min']
+            pitch_max = instru_mapping[instru_name]['pitch_max']
 
-            # Determine thanks to instrument_mapping the y_min and y_max in pr_big
-            index_min = instrument_mapping[instru_name]['index_min']
-            index_max = instrument_mapping[instru_name]['index_max']
+            # Determine thanks to instru_mapping the y_min and y_max in pr_big
+            index_min = instru_mapping[instru_name]['index_min']
+            index_max = instru_mapping[instru_name]['index_max']
 
             # Insert the small pr in the big one :)
             try:

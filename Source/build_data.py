@@ -40,8 +40,8 @@ def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, t
     # we better contract files instead of expanding them).
     # Get instrument names
     instrument_list_from_dico = build_dico().keys()
-    instrument_mapping = {}
-    # instrument_mapping = {'piano': {'pitch_min': 24, 'pitch_max':117, 'ind_min': 0, 'ind_max': 92},
+    instru_mapping = {}
+    # instru_mapping = {'piano': {'pitch_min': 24, 'pitch_max':117, 'ind_min': 0, 'ind_max': 92},
     #                         'harp' ... }
     T_dict = {}      # indexed by set_identifier
     for set_identifier, index_files in index_files_dict.iteritems():
@@ -79,47 +79,47 @@ def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, t
                     trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
                     T += sum(trace_prod)
                     # Modify the mapping from instrument to indices in pianorolls and pitch bounds
-                    instrument_mapping = build_data_aux.instru_pitch_range(instrumentation=instru0,
-                                                                           pr=pr0,
-                                                                           instrument_mapping=instrument_mapping,
-                                                                           instrument_list_from_dico=instrument_list_from_dico,
-                                                                           )
-                    # remark : instrument_mapping would be modified if it is only passed to the function,
+                    instru_mapping = build_data_aux.instru_pitch_range(instrumentation=instru0,
+                                                                       pr=pr0,
+                                                                       instru_mapping=instru_mapping,
+                                                                       instrument_list_from_dico=instrument_list_from_dico,
+                                                                       )
+                    # remark : instru_mapping would be modified if it is only passed to the function,
                     #                   f(a)  where a is modified inside the function
                     # but i prefer to make the reallocation explicit
                     #                   a = f(a) with f returning the modified value of a.
                     # Does it change anything for computation speed ? (Python pass by reference,
                     # but a slightly different version of it, not clear to me)
-                    instrument_mapping = build_data_aux.instru_pitch_range(instrumentation=instru1,
-                                                                           pr=pr1,
-                                                                           instrument_mapping=instrument_mapping,
-                                                                           instrument_list_from_dico=instrument_list_from_dico
-                                                                           )
+                    instru_mapping = build_data_aux.instru_pitch_range(instrumentation=instru1,
+                                                                       pr=pr1,
+                                                                       instru_mapping=instru_mapping,
+                                                                       instrument_list_from_dico=instrument_list_from_dico
+                                                                       )
                     # Delete prs
                     del pr0, pr1, instru0, instru1
         T_dict[set_identifier] = T
 
-    # Build the index_min and index_max in the instrument_mapping dictionary
+    # Build the index_min and index_max in the instru_mapping dictionary
     counter = 0
-    for k, v in instrument_mapping.iteritems():
+    for k, v in instru_mapping.iteritems():
         if k == 'piano':
             index_min = 0
             index_max = v['pitch_max'] - v['pitch_min']
-            instrument_mapping[k]['index_min'] = index_min
-            instrument_mapping[k]['index_max'] = index_max
+            v['index_min'] = index_min
+            v['index_max'] = index_max
             continue
         index_min = counter
         counter = counter + v['pitch_max'] - v['pitch_min']
         index_max = counter
-        instrument_mapping[k]['index_min'] = index_min
-        instrument_mapping[k]['index_max'] = index_max
+        v['index_min'] = index_min
+        v['index_max'] = index_max
 
     # Instanciate the matrices
     ########################################
     ########################################
     ########################################
     temp = {}
-    temp['instrument_mapping'] = instrument_mapping
+    temp['instru_mapping'] = instru_mapping
     temp['quantization'] = quantization
     temp['T'] = T_dict
     temp['N_orchestra'] = counter
@@ -188,17 +188,17 @@ def process_folder(folder_path, quantization, temporal_granularity):
     return pr0_aligned, instru0, name0, pr1_aligned, instru1, name1, duration
 
 
-def cast_pr(pr0, instru0, pr1, instru1, start_time, duration, instrument_mapping, pr_orchestra, pr_piano):
+def cast_pr(pr0, instru0, pr1, instru1, start_time, duration, instru_mapping, pr_orchestra, pr_piano):
     # Find which pr is orchestra, which one is piano
     if len(set(instru0.keys())) > len(set(instru1.keys())):
         # Add the small pr to the general structure
         # pr0 is orchestra
-        pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(pr0, instru0, start_time, duration, instrument_mapping, pr_orchestra)
-        pr_piano = build_data_aux.cast_small_pr_into_big_pr(pr1, {}, start_time, duration, instrument_mapping, pr_piano)
+        pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(pr0, instru0, start_time, duration, instru_mapping, pr_orchestra)
+        pr_piano = build_data_aux.cast_small_pr_into_big_pr(pr1, {}, start_time, duration, instru_mapping, pr_piano)
     elif len(set(instru0.keys())) < len(set(instru1.keys())):
         # pr1 is orchestra
-        pr_piano = build_data_aux.cast_small_pr_into_big_pr(pr0, {}, start_time, duration, instrument_mapping, pr_piano)
-        pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(pr1, instru1, start_time, duration, instrument_mapping, pr_orchestra)
+        pr_piano = build_data_aux.cast_small_pr_into_big_pr(pr0, {}, start_time, duration, instru_mapping, pr_piano)
+        pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(pr1, instru1, start_time, duration, instru_mapping, pr_orchestra)
     else:
         print('The two midi files have the same number of instruments')
 
@@ -208,11 +208,11 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
     get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=quantization, temporal_granularity=temporal_granularity)
 
     temp = pickle.load(open(meta_info_path, 'rb'))
-    instrument_mapping = temp['instrument_mapping']
+    instru_mapping = temp['instru_mapping']
     quantization = temp['quantization']
     T_dict = temp['T']
     N_orchestra = temp['N_orchestra']
-    N_piano = instrument_mapping['piano']['index_max']
+    N_piano = instru_mapping['piano']['index_max']
 
     for set_identifier, index_files in index_files_dict.iteritems():
         T = T_dict[set_identifier]
@@ -253,7 +253,7 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
 
                     # Find which pr is orchestra, which one is piano
                     # and cast them in the appropriate bigger structure
-                    cast_pr(pr0, instru0, pr1, instru1, time, duration, instrument_mapping, pr_orchestra, pr_piano)
+                    cast_pr(pr0, instru0, pr1, instru1, time, duration, instru_mapping, pr_orchestra, pr_piano)
 
                     # Store beginning and end of this track
                     tracks_start_end[folder_path] = (time, time+duration)
@@ -283,10 +283,10 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
         ####################################################################
         ####################################################################
 
-    # Save pr_orchestra, pr_piano, instrument_mapping
+    # Save pr_orchestra, pr_piano, instru_mapping
     metadata = {}
     metadata['quantization'] = quantization
-    metadata['instru_mapping'] = instrument_mapping
+    metadata['instru_mapping'] = instru_mapping
     with open('../Data/metadata.pkl', 'wb') as outfile:
         pickle.dump(metadata, outfile)
 

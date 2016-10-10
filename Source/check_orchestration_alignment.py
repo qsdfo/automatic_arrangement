@@ -118,7 +118,7 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
                 continue
 
             save_folder_name = output_dir +\
-                               '/' + sub_db + '_' + folder_name
+                '/' + sub_db + '_' + folder_name
 
             if not os.path.exists(save_folder_name):
                 os.makedirs(save_folder_name)

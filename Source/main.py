@@ -6,7 +6,6 @@
 import os
 import csv
 import logging
-import theano.tensor as T
 import numpy as np
 import cPickle as pickle
 # Hyperopt
@@ -26,7 +25,7 @@ from reconstruct_pr import reconstruct_pr
 ####################
 # Debugging compiler flags
 import theano
-# theano.config.optimizer = 'None'
+# theano.config.optimizer = 'fast_compile'
 # theano.config.mode = 'FAST_COMPILE'
 # theano.config.exception_verbosity = 'high'
 theano.config.compute_test_value = 'off'
@@ -34,7 +33,7 @@ theano.config.compute_test_value = 'off'
 ####################
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
-from acidano.models.lop.LSTM import LSTM as Model_class
+from acidano.models.lop.RBM import RBM as Model_class
 from acidano.utils.optim import gradient_descent as Optimization_method
 
 # Build data parameters :
@@ -53,8 +52,8 @@ result_file = result_folder + u'/hopt_results.csv'
 log_file_path = result_folder + '/' + Model_class.name() + u'.log'
 
 # Fixed hyper parameter
-max_evals = 20       # number of hyper-parameter configurations evaluated
-max_iter = 5      # nb max of iterations when training 1 configuration of hparams
+max_evals = 2       # number of hyper-parameter configurations evaluated
+max_iter = 2      # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 
 # Generation
@@ -224,13 +223,11 @@ def train(piano_train, orchestra_train, train_index,
     ############################################################
     ############################################################
     # COMPILE FUNCTIONS
-    # index to a [mini]batch : int32
-    index = T.ivector()
     # Compilation of the training function is encapsulated in the class since the 'givens'
     # can vary with the model
-    train_iteration = model.get_train_function(index, piano_train, orchestra_train, optimizer, name='train_iteration')
+    train_iteration = model.get_train_function(piano_train, orchestra_train, optimizer, name='train_iteration')
     # Same for the validation
-    validation_error = model.get_validation_error(index, piano_valid, orchestra_valid, name='validation_error')
+    validation_error = model.get_validation_error(piano_valid, orchestra_valid, name='validation_error')
 
     ############################################################
     ############################################################
@@ -273,7 +270,7 @@ def train(piano_train, orchestra_train, train_index,
                               .encode('utf8'))
 
             # Plot weights every 10 epoch
-            if((epoch%10==0) or (epoch<5)):
+            if((epoch%20==0) or (epoch<5) or OVERFITTING):
                 weights_folder_epoch = weights_folder + '/' + str(epoch)
                 if not os.path.isdir(weights_folder_epoch):
                     os.makedirs(weights_folder_epoch)
@@ -299,28 +296,26 @@ def generate(model,
     # Note that generation length is fixed by the length of the piano input
     logger_generate.info("# Generating")
 
-    index_theano = T.iscalar()
     generate_sequence = model.get_generate_function(
-        index=index_theano,
         piano=piano, orchestra=orchestra,
-        generation_length=generation_length, seed_size=seed_size,
+        generation_length=generation_length,
+        seed_size=seed_size,
+        batch_generation_size=len(indices),
         name="generate_sequence")
-
-    write_counter = 0
 
     # Load the mapping between pitch space and instrument
     metadata = pickle.load(open('../Data/metadata.pkl', 'rb'))
     instru_mapping = metadata['instru_mapping']
 
-    for end_seq_index in indices:
-        # Given a last index, generate a batch of sequences
-        (generated_sequence,) = generate_sequence(end_seq_index)
-
-        if generated_folder is not None:
+    # Given last indices, generate a batch of sequences
+    (generated_sequence,) = generate_sequence(indices)
+    if generated_folder is not None:
+        for write_counter in xrange(generated_sequence.shape[0]):
             # Write midi
-            pr_orchestra = reconstruct_pr(generated_sequence, instru_mapping, binary_unit)
+            pr_orchestra = reconstruct_pr(generated_sequence[write_counter], instru_mapping, binary_unit)
             write_path = generated_folder + '/' + str(write_counter) + '.mid'
             write_midi(pr_orchestra, quantization_write, write_path, tempo=80)
+
     return
 
 
@@ -403,7 +398,9 @@ if __name__ == "__main__":
     # ###### Or directly call the train function for one set of HPARAMS
     # model_param = {
     #     'temporal_order': 20,
+    #     'gibbs_steps': 3,
     #     'n_hidden': 150,
+    #     'n_factor': 104,
     #     'batch_size': 2,
     # }
     # optim_param = {
@@ -418,9 +415,10 @@ if __name__ == "__main__":
     #                 binary_unit=binary_unit,
     #                 skip_sample=1,
     #                 logger_load=logger_load)
+    #
     # weights_folder = '../debug/weights/'
     # generated_folder = '../debug/generated/'
-    # max_iter=1
+    # max_iter = 0
     # model, dico_res = train(piano_train, orchestra_train, train_index,
     #                         piano_valid, orchestra_valid, valid_index,
     #                         model_param, optim_param,
@@ -428,6 +426,7 @@ if __name__ == "__main__":
     #
     # generate(model=model,
     #          piano=piano_test, orchestra=orchestra_test, indices=generation_index,
-    #          quantization_write=quantization_write, seed_size=seed_size,
-    #          generated_folder=generated_folder)
+    #          generation_length=generation_length, seed_size=seed_size,
+    #          quantization_write=quantization_write,
+    #          generated_folder=generated_folder, logger_generate=logger_generate)
     ######################################

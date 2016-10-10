@@ -61,6 +61,21 @@ def load_data(temporal_order=20, batch_size=100, generation_length=100,
             valid_ind.extend(range(start_track+temporal_order-1, end_track, skip_sample))
         return valid_ind
 
+    def last_indices(tracks_start_end, temporal_order):
+        valid_ind = []
+        for (start_track, end_track) in tracks_start_end.values():
+            # If the middle of the track is more than temporal_order,
+            # Then store it as a generation index
+            # if not, take the last index
+            # If last index is still not enough, just skip the track
+            half_duration = (end_track-start_track) / 2
+            middle_track = start_track + half_duration
+            if half_duration > temporal_order:
+                valid_ind.append(middle_track)
+            elif (end_track-start_track) > temporal_order:
+                valid_ind.append(end_track-1)
+        return valid_ind
+
     def build_batches(valid_ind):
         batches = []
         position = 0
@@ -83,8 +98,12 @@ def load_data(temporal_order=20, batch_size=100, generation_length=100,
     test_index = valid_indices(tracks_start_end_test, temporal_order)
     test_batches = build_batches(test_index)
 
-    generation_index = valid_indices(tracks_start_end_test, generation_length)
-    # For generation, just return the generation indices
+    # Generation indices :
+    #       For each track :
+    #           - middle of track is > temporal_order
+    #           - end if not
+    #           - nothing if end < temporal_order
+    generation_index = last_indices(tracks_start_end_test, generation_length)
 
     return piano_train_shared, orchestra_train_shared, np.asarray(train_batches, dtype=np.int32),\
         piano_valid_shared, orchestra_valid_shared, np.asarray(valid_batches, dtype=np.int32),\

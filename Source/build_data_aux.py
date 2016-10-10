@@ -8,7 +8,6 @@ from unidecode import unidecode
 import numpy as np
 from acidano.data_processing.midi.read_midi import Read_midi
 from acidano.data_processing.utils.pianoroll_processing import clip_pr, get_pianoroll_time
-from acidano.data_processing.midi.write_midi import write_midi
 
 
 def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
@@ -130,7 +129,8 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
 
             # Insert the small pr in the big one :)
             try:
-                pr_big[t_min:t_max, index_min:index_max] = pr_instru[:, pitch_min:pitch_max]
+                # Insertion is max between already written notes and new ones
+                pr_big[t_min:t_max, index_min:index_max] = np.maximum(pr_big[t_min:t_max, index_min:index_max], pr_instru[:, pitch_min:pitch_max])
             except:
                 import pdb; pdb.set_trace()
 

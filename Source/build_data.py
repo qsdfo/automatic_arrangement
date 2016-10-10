@@ -133,23 +133,8 @@ def process_folder(folder_path, quantization, temporal_granularity):
 
     # Temporal granularity
     if temporal_granularity == 'event_level':
-        pr0 =warp_pr_aux(pr0, get_event_ind_dict(pr0))
-        pr1 =warp_pr_aux(pr1, get_event_ind_dict(pr1))
-        ####################################################################
-        ####################################################################
-        ####################################################################
-        # aux(var=sum_along_instru_dim(pr0),
-        #     name='piano',
-        #     csv_path='DEBUG/piano.csv',
-        #     html_path='DEBUG/piano.html')
-        #
-        # aux(var=sum_along_instru_dim(pr1),
-        #     name='orchestra',
-        #     csv_path='DEBUG/orchestra.csv',
-        #     html_path='DEBUG/orchestra.html')
-        ####################################################################
-        ####################################################################
-        ####################################################################
+        pr0 = warp_pr_aux(pr0, get_event_ind_dict(pr0))
+        pr1 = warp_pr_aux(pr1, get_event_ind_dict(pr1))
 
     # Get trace from needleman_wunsch algorithm
     # Traces are binary lists, 0 meaning a gap is inserted
@@ -169,22 +154,6 @@ def process_folder(folder_path, quantization, temporal_granularity):
     pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 
-    ####################################################################
-    ####################################################################
-    ####################################################################
-    # aux(var=sum_along_instru_dim(pr0_aligned),
-    #     name='piano_aligned',
-    #     csv_path='DEBUG/piano_aligned.csv',
-    #     html_path='DEBUG/piano_aligned.html')
-    #
-    # aux(var=sum_along_instru_dim(pr1_aligned),
-    #     name='orchestra_aligned',
-    #     csv_path='DEBUG/orchestra_aligned.csv',
-    #     html_path='DEBUG/orchestra_aligned.html')
-    # import pdb; pdb.set_trace()
-    ####################################################################
-    ####################################################################
-    ####################################################################
     return pr0_aligned, instru0, name0, pr1_aligned, instru1, name1, duration
 
 

@@ -15,6 +15,7 @@ from acidano.data_processing.midi.write_midi import write_midi
 from load_data import load_data
 from build_data import build_data
 from reconstruct_pr import reconstruct_pr
+
 ####################
 # Reminder for plotting tools
 # import matplotlib.pyplot as plt
@@ -53,8 +54,13 @@ log_file_path = result_folder + '/' + Model_class.name() + u'.log'
 
 # Fixed hyper parameter
 max_evals = 2       # number of hyper-parameter configurations evaluated
-max_iter = 2      # nb max of iterations when training 1 configuration of hparams
+max_iter = 200      # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
+
+# Validation
+validation_order = 5
+initial_derivative_length = 10
+check_derivative_length = 5
 
 # Generation
 generation_length = 50
@@ -237,8 +243,7 @@ def train(piano_train, orchestra_train, train_index,
     logger_train.info("# Training")
     epoch = 0
     OVERFITTING = False
-    val_order = 4
-    val_tab = np.zeros(val_order)
+    val_tab = np.zeros(max_iter)
     while (not OVERFITTING and epoch!=max_iter):
         # go through the training set
         train_cost_epoch = []
@@ -249,32 +254,55 @@ def train(piano_train, orchestra_train, train_index,
             train_cost_epoch.append(this_cost)
             train_monitor_epoch.append(this_monitor)
 
-        if ((epoch % 5 == 0) or (epoch < 10)):
-            accuracy = []
-            for batch_index in xrange(n_val_batches):
-                _, _, accuracy_batch = validation_error(valid_index[batch_index])
-                accuracy += [accuracy_batch]
+        # Validation
+        accuracy = []
+        for batch_index in xrange(n_val_batches):
+            _, _, accuracy_batch = validation_error(valid_index[batch_index])
+            accuracy += [accuracy_batch]
 
-            # Stop if validation error decreased over the last three validation
-            # "FIFO" from the left
-            val_tab[1:] = val_tab[0:-1]
-            mean_accuracy = 100 * np.mean(accuracy)
-            check_increase = np.sum(mean_accuracy >= val_tab[1:])
-            if check_increase == 0:
+        # # Stop if validation error decreased over the last three validation
+        # # "FIFO" from the left
+        # val_tab[1:] = val_tab[0:-1]
+        # mean_accuracy = 100 * np.mean(accuracy)
+        # check_increase = np.sum(mean_accuracy >= val_tab[1:])
+        # if check_increase == 0:
+        #     OVERFITTING = True
+        # val_tab[0] = mean_accuracy
+        # if check_increase == 0:
+        #     OVERFITTING = True
+        # val_tab[0] = mean_accuracy
+
+        # Early stopping criterion
+        # Note that sum_{i=0}^{n} der = der(n) - der(0)
+        # So mean over successive derivatives makes no sense
+        # 1/ Get the mean derivative between 5 and 10 =
+        #       \sum_{i=validation_order}^{validation_order+initial_derivative_length} E(i) - E(i-validation_order) / validation_order
+        #
+        # 2/ At each iteration, compare the mean derivative over the last five epochs :
+        #       \sum_{i=0}^{validation_order} E(t)
+        mean_accuracy = 100 * np.mean(accuracy)
+        val_tab[epoch] = mean_accuracy
+        if epoch == initial_derivative_length-1:
+            ind = np.arange(validation_order-1, initial_derivative_length)
+            increase_reference = (val_tab[ind] - val_tab[ind-validation_order+1]).sum() / (validation_order * len(ind))
+        elif epoch >= initial_derivative_length:
+            ind = np.arange(epoch - check_derivative_length + 1, epoch+1)
+            derivative_mean = (val_tab[ind] - val_tab[ind-validation_order+1]).sum() / (validation_order * len(ind))
+            # Mean derivative is less than 10% of increase reference
+            if derivative_mean < 0.1 * increase_reference:
                 OVERFITTING = True
-            val_tab[0] = mean_accuracy
 
-            # Monitor learning
-            logger_train.info(("Epoch : {} , Monitor : {} , Rec error : {} , Valid acc : {}"
-                              .format(epoch, np.mean(train_monitor_epoch), np.mean(train_cost_epoch), mean_accuracy))
-                              .encode('utf8'))
+        # Monitor learning
+        logger_train.info(("Epoch : {} , Monitor : {} , Cost : {} , Valid acc : {}"
+                          .format(epoch, np.mean(train_monitor_epoch), np.mean(train_cost_epoch), mean_accuracy))
+                          .encode('utf8'))
 
-            # Plot weights every 10 epoch
-            if((epoch%20==0) or (epoch<5) or OVERFITTING):
-                weights_folder_epoch = weights_folder + '/' + str(epoch)
-                if not os.path.isdir(weights_folder_epoch):
-                    os.makedirs(weights_folder_epoch)
-                model.weights_visualization(weights_folder_epoch)
+        # Plot weights every ?? epoch
+        if((epoch%20==0) or (epoch<5) or OVERFITTING):
+            weights_folder_epoch = weights_folder + '/' + str(epoch)
+            if not os.path.isdir(weights_folder_epoch):
+                os.makedirs(weights_folder_epoch)
+            model.weights_visualization(weights_folder_epoch)
 
         epoch += 1
 

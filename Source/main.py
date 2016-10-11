@@ -3,6 +3,7 @@
 
 # Main script for music generation
 
+import time
 import os
 import csv
 import logging
@@ -34,7 +35,7 @@ theano.config.compute_test_value = 'off'
 ####################
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the time granularity
-from acidano.models.lop.RBM import RBM as Model_class
+from acidano.models.lop.cRBM import cRBM as Model_class
 from acidano.utils.optim import gradient_descent as Optimization_method
 
 # Build data parameters :
@@ -53,8 +54,8 @@ result_file = result_folder + u'/hopt_results.csv'
 log_file_path = result_folder + '/' + Model_class.name() + u'.log'
 
 # Fixed hyper parameter
-max_evals = 2       # number of hyper-parameter configurations evaluated
-max_iter = 200      # nb max of iterations when training 1 configuration of hparams
+max_evals = 3       # number of hyper-parameter configurations evaluated
+max_iter = 5      # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 
 # Validation
@@ -121,6 +122,7 @@ def train_hopt(max_evals, csv_file_path):
         #############################################
 
         # Load data #################################
+        time_load_0 = time.time()
         piano_train, orchestra_train, train_index, \
             piano_valid, orchestra_valid, valid_index, \
             piano_test, orchestra_test, test_index, generation_index \
@@ -129,6 +131,8 @@ def train_hopt(max_evals, csv_file_path):
                         binary_unit=binary_unit,
                         skip_sample=1,
                         logger_load=logger_load)
+        time_load_1 = time.time()
+        logger_load.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
         # For large datasets
         #   http://deeplearning.net/software/theano/tutorial/aliasing.html
         #   use borrow=True (avoid copying the whole matrix) ?
@@ -137,17 +141,23 @@ def train_hopt(max_evals, csv_file_path):
         #############################################
 
         # Train #####################################
+        time_train_0 = time.time()
         model, dico_res = train(piano_train, orchestra_train, train_index,
                                 piano_valid, orchestra_valid, valid_index,
                                 model_param, optim_param, max_iter, weights_folder)
+        time_train_1 = time.time()
+        logger_train.info('TTT : Training data took {} seconds'.format(time_train_1-time_train_0))
         error = -dico_res['accuracy']  # Search for a min
         #############################################
 
         # Generate ##################################
+        time_generate_0 = time.time()
         generate(model,
                  piano_test, orchestra_test, generation_index,
                  generation_length, seed_size, quantization_write,
                  generated_folder, logger_generate)
+        time_generate_1 = time.time()
+        logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
         #############################################
 
         # Save ######################################

@@ -27,15 +27,15 @@ from reconstruct_pr import reconstruct_pr
 ####################
 # Debugging compiler flags
 import theano
-# theano.config.optimizer = 'fast_compile'
+theano.config.optimizer = 'fast_compile'
 # theano.config.mode = 'FAST_COMPILE'
 # theano.config.exception_verbosity = 'high'
 theano.config.compute_test_value = 'off'
 
 ####################
 # Select a model (path to the .py file)
-# Two things define a model : it's architecture and the time granularity
-from acidano.models.lop.cRBM import cRBM as Model_class
+# Two things define a model : it's architecture and the optimization method
+from acidano.models.lop.cRnnRbm import cRnnRbm as Model_class
 from acidano.utils.optim import gradient_descent as Optimization_method
 
 # Build data parameters :
@@ -55,7 +55,7 @@ log_file_path = result_folder + '/' + Model_class.name() + u'.log'
 
 # Fixed hyper parameter
 max_evals = 3       # number of hyper-parameter configurations evaluated
-max_iter = 5      # nb max of iterations when training 1 configuration of hparams
+max_iter = 3      # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 
 # Validation
@@ -253,7 +253,7 @@ def train(piano_train, orchestra_train, train_index,
     logger_train.info("# Training")
     epoch = 0
     OVERFITTING = False
-    val_tab = np.zeros(max_iter)
+    val_tab = np.zeros(max(1,max_iter))
     while (not OVERFITTING and epoch!=max_iter):
         # go through the training set
         train_cost_epoch = []
@@ -263,7 +263,6 @@ def train(piano_train, orchestra_train, train_index,
             # Keep track of cost
             train_cost_epoch.append(this_cost)
             train_monitor_epoch.append(this_monitor)
-
         # Validation
         accuracy = []
         for batch_index in xrange(n_val_batches):

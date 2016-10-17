@@ -13,7 +13,9 @@ from acidano.data_processing.utils.pianoroll_processing import clip_pr, get_pian
 def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
     # There should be 2 files
     mid_files = glob.glob(folder_path + '/*.mid')
-    csv_files = glob.glob(folder_path + '/*.csv')
+    # Deduce csv files
+    csv_files = [re.sub(r'\.mid', '.csv', e) for e in mid_files]
+
     # Time
     if len(mid_files) != 2:
         raise Exception('There should be two midi files in ' + folder_path)

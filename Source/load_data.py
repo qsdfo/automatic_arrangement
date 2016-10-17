@@ -9,7 +9,8 @@ import random
 import cPickle as pickle
 
 
-def load_data(temporal_order=20, batch_size=100, binary_unit=True, skip_sample=1,logger_load=None):
+def load_data(temporal_order=20, batch_size=100, generation_length=100,
+              binary_unit=True, skip_sample=1,logger_load=None):
     # If no logger, create one
     if logger_load is None:
         logging.basicConfig(level=logging.INFO,
@@ -54,10 +55,25 @@ def load_data(temporal_order=20, batch_size=100, binary_unit=True, skip_sample=1
     tracks_start_end_test = pickle.load(open('../Data/tracks_start_end_test.pkl', 'rb'))
 
     # Get valid indices given start_track and temporal_order
-    def valid_indices(tracks_start_end):
+    def valid_indices(tracks_start_end, temporal_order):
         valid_ind = []
         for (start_track, end_track) in tracks_start_end.values():
             valid_ind.extend(range(start_track+temporal_order-1, end_track, skip_sample))
+        return valid_ind
+
+    def last_indices(tracks_start_end, temporal_order):
+        valid_ind = []
+        for (start_track, end_track) in tracks_start_end.values():
+            # If the middle of the track is more than temporal_order,
+            # Then store it as a generation index
+            # if not, take the last index
+            # If last index is still not enough, just skip the track
+            half_duration = (end_track-start_track) / 2
+            middle_track = start_track + half_duration
+            if half_duration > temporal_order:
+                valid_ind.append(middle_track)
+            elif (end_track-start_track) > temporal_order:
+                valid_ind.append(end_track-1)
         return valid_ind
 
     def build_batches(valid_ind):
@@ -73,15 +89,22 @@ def load_data(temporal_order=20, batch_size=100, binary_unit=True, skip_sample=1
             position += batch_size
         return batches
 
-    train_index = valid_indices(tracks_start_end_train)
+    train_index = valid_indices(tracks_start_end_train, temporal_order)
     train_batches = build_batches(train_index)
 
-    valid_index = valid_indices(tracks_start_end_valid)
+    valid_index = valid_indices(tracks_start_end_valid, temporal_order)
     valid_batches = build_batches(valid_index)
 
-    test_index = valid_indices(tracks_start_end_test)
+    test_index = valid_indices(tracks_start_end_test, temporal_order)
     test_batches = build_batches(test_index)
+
+    # Generation indices :
+    #       For each track :
+    #           - middle of track is > temporal_order
+    #           - end if not
+    #           - nothing if end < temporal_order
+    generation_index = last_indices(tracks_start_end_test, generation_length)
 
     return piano_train_shared, orchestra_train_shared, np.asarray(train_batches, dtype=np.int32),\
         piano_valid_shared, orchestra_valid_shared, np.asarray(valid_batches, dtype=np.int32),\
-        piano_test_shared, orchestra_test_shared, np.asarray(test_batches, dtype=np.int32)
+        piano_test_shared, orchestra_test_shared, np.asarray(test_batches, dtype=np.int32), np.asarray(generation_index, dtype=np.int32)

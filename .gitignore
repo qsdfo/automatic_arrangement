@@ -6,6 +6,7 @@ Articles
 Results
 TRASH
 Source/Needlepote
+Source/test.py
 
 # Image files
 **/*.pdf
@@ -14,6 +15,7 @@ Source/Needlepote
 
 # CSV, but not the config file and results files
 **/*.csv
+**/*.html
 **/DEBUG/**
 
 # Text and log files

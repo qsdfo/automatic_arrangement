@@ -3,17 +3,20 @@
 
 # Main script for music generation
 
+import time
 import os
 import csv
+import logging
+import numpy as np
+import cPickle as pickle
 # Hyperopt
 from hyperopt import fmin, tpe
-# Logging
-import logging
 # Perso
+from acidano.data_processing.midi.write_midi import write_midi
 from load_data import load_data
 from build_data import build_data
-import theano.tensor as T
-import numpy as np
+from reconstruct_pr import reconstruct_pr
+
 ####################
 # Reminder for plotting tools
 # import matplotlib.pyplot as plt
@@ -24,14 +27,14 @@ import numpy as np
 ####################
 # Debugging compiler flags
 import theano
-# theano.config.optimizer = 'None'
+theano.config.optimizer = 'fast_compile'
 # theano.config.mode = 'FAST_COMPILE'
+theano.config.exception_verbosity = 'high'
 theano.config.compute_test_value = 'off'
-# theano.config.exception_verbosity = 'high'
 
 ####################
 # Select a model (path to the .py file)
-# Two things define a model : it's architecture and the time granularity
+# Two things define a model : it's architecture and the optimization method
 from acidano.models.lop.cRBM import cRBM as Model_class
 from acidano.utils.optim import gradient_descent as Optimization_method
 
@@ -46,19 +49,29 @@ quantization = 4
 MAIN_DIR = os.getcwd().decode('utf8') + u'/'
 
 # Set hyperparameters (can be a grid)
-result_folder = MAIN_DIR + u'../Results/' + temporal_granularity + '/' + Model_class.name()
+result_folder = MAIN_DIR + u'../Results/' + temporal_granularity + '/' + Optimization_method.name() + '/' + Model_class.name()
 result_file = result_folder + u'/hopt_results.csv'
 log_file_path = result_folder + '/' + Model_class.name() + u'.log'
 
 # Fixed hyper parameter
-max_evals = 20       # number of hyper-parameter configurations evaluated
-max_iter = 200      # nb max of iterations when training 1 configuration of hparams
+max_evals = 3       # number of hyper-parameter configurations evaluated
+max_iter = 3      # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
+
+# Validation
+validation_order = 5
+initial_derivative_length = 10
+check_derivative_length = 5
+
+# Generation
+generation_length = 50
+seed_size = 10
+quantization_write = quantization
 ############################################################################
 ############################################################################
 
 
-def train_hopt(max_evals, log_file_path, csv_file_path):
+def train_hopt(max_evals, csv_file_path):
     # Create/reinit csv file
     open(csv_file_path, 'w').close()
 
@@ -95,9 +108,61 @@ def train_hopt(max_evals, log_file_path, csv_file_path):
         optim_param = Optimization_method.get_param_dico(params[num_model_param:])
         #############################################
 
+        # Weights plotted and stored in a folder ####
+        # Same for generated midi sequences #########
+        weights_folder = result_folder + '/' + str(run_counter) + '/' + 'weights'
+        if not os.path.isdir(weights_folder):
+            os.makedirs(weights_folder)
+        generated_folder = result_folder + '/' + str(run_counter) + '/generated_sequences'
+        if not os.path.isdir(generated_folder):
+            os.makedirs(generated_folder)
+        model_folder = result_folder + '/' + str(run_counter) + '/model'
+        if not os.path.isdir(model_folder):
+            os.makedirs(model_folder)
+        #############################################
+
+        # Load data #################################
+        time_load_0 = time.time()
+        piano_train, orchestra_train, train_index, \
+            piano_valid, orchestra_valid, valid_index, \
+            piano_test, orchestra_test, test_index, generation_index \
+            = load_data(model_param['temporal_order'],
+                        model_param['batch_size'],
+                        binary_unit=binary_unit,
+                        skip_sample=1,
+                        logger_load=logger_load)
+        time_load_1 = time.time()
+        logger_load.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
+        # For large datasets
+        #   http://deeplearning.net/software/theano/tutorial/aliasing.html
+        #   use borrow=True (avoid copying the whole matrix) ?
+        #   Load as much as the GPU can handle, train then load other
+        #       part of the dataset using shared_variable.set_value(new_value)
+        #############################################
+
         # Train #####################################
-        dico_res = train(model_param, optim_param, max_iter, log_file_path)
+        time_train_0 = time.time()
+        model, dico_res = train(piano_train, orchestra_train, train_index,
+                                piano_valid, orchestra_valid, valid_index,
+                                model_param, optim_param, max_iter, weights_folder)
+        time_train_1 = time.time()
+        logger_train.info('TTT : Training data took {} seconds'.format(time_train_1-time_train_0))
         error = -dico_res['accuracy']  # Search for a min
+        #############################################
+
+        # Generate ##################################
+        time_generate_0 = time.time()
+        generate(model,
+                 piano_test, orchestra_test, generation_index,
+                 generation_length, seed_size, quantization_write,
+                 generated_folder, logger_generate)
+        time_generate_1 = time.time()
+        logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
+        #############################################
+
+        # Save ######################################
+        save_model_file = open(model_folder + '/model.pkl', 'wb')
+        pickle.dump(model, save_model_file, protocol=pickle.HIGHEST_PROTOCOL)
         #############################################
 
         # log
@@ -123,7 +188,9 @@ def train_hopt(max_evals, log_file_path, csv_file_path):
     return best
 
 
-def train(model_param, optim_param, max_iter, log_file_path):
+def train(piano_train, orchestra_train, train_index,
+          piano_valid, orchestra_valid, valid_index,
+          model_param, optim_param, max_iter, weights_folder):
     ############################################################
     ############################################################
     ############################################################
@@ -138,31 +205,22 @@ def train(model_param, optim_param, max_iter, log_file_path):
     logger_train.info((u'##### Optimization parameters').encode('utf8'))
     for k, v in optim_param.iteritems():
         logger_train.info((u'# ' + k + ' :  {}'.format(v)).encode('utf8'))
+    logger_generate.info((u'##### Generation parameters').encode('utf8'))
+    logger_generate.info((u'# generation_length : ' + str(generation_length)).encode('utf8'))
+    logger_generate.info((u'# seed_size : ' + str(seed_size)).encode('utf8'))
+    logger_generate.info((u'# quantization_write : ' + str(quantization_write)).encode('utf8'))
 
     ################################################################
     ################################################################
     ################################################################
     # DATA
-    # Dimension : time * pitch
-    piano_train, orchestra_train, train_index, \
-        piano_valid, orchestra_valid, valid_index, \
-        piano_test, orchestra_test, test_index \
-        = load_data(model_param['temporal_order'],
-                    model_param['batch_size'],
-                    binary_unit=binary_unit,
-                    skip_sample=1,
-                    logger_load=logger_load)
-    # For large datasets
-    #   http://deeplearning.net/software/theano/tutorial/aliasing.html
-    #   use borrow=True (avoid copying the whole matrix) ?
-    #   Load as much as the GPU can handle, train then load other
-    #       part of the dataset using shared_variable.set_value(new_value)
     piano_dim = piano_train.get_value().shape[1]
     orchestra_dim = orchestra_train.get_value().shape[1]
     n_train_batches = len(train_index)
     n_val_batches = len(valid_index)
-    logger_train.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
-    logger_train.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
+    logger_load.info((u'##### Data').encode('utf8'))
+    logger_load.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
+    logger_load.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
 
     ################################################################
     ################################################################
@@ -181,13 +239,11 @@ def train(model_param, optim_param, max_iter, log_file_path):
     ############################################################
     ############################################################
     # COMPILE FUNCTIONS
-    # index to a [mini]batch : int32
-    index = T.ivector()
     # Compilation of the training function is encapsulated in the class since the 'givens'
     # can vary with the model
-    train_iteration = model.get_train_function(index, piano_train, orchestra_train, optimizer, name='train_iteration')
+    train_iteration = model.get_train_function(piano_train, orchestra_train, optimizer, name='train_iteration')
     # Same for the validation
-    validation_error = model.get_validation_error(index, piano_valid, orchestra_valid, name='validation_error')
+    validation_error = model.get_validation_error(piano_valid, orchestra_valid, name='validation_error')
 
     ############################################################
     ############################################################
@@ -197,9 +253,8 @@ def train(model_param, optim_param, max_iter, log_file_path):
     logger_train.info("# Training")
     epoch = 0
     OVERFITTING = False
-    val_order = 4
-    val_tab = np.zeros(val_order)
-    while (not OVERFITTING and epoch != max_iter):
+    val_tab = np.zeros(max(1,max_iter))
+    while (not OVERFITTING and epoch!=max_iter):
         # go through the training set
         train_cost_epoch = []
         train_monitor_epoch = []
@@ -208,25 +263,55 @@ def train(model_param, optim_param, max_iter, log_file_path):
             # Keep track of cost
             train_cost_epoch.append(this_cost)
             train_monitor_epoch.append(this_monitor)
+        # Validation
+        accuracy = []
+        for batch_index in xrange(n_val_batches):
+            _, _, accuracy_batch = validation_error(valid_index[batch_index])
+            accuracy += [accuracy_batch]
 
-        if ((epoch % 5 == 0) or (epoch < 10)):
-            accuracy = []
-            for batch_index in xrange(n_val_batches):
-                _, _, accuracy_batch = validation_error(valid_index[batch_index])
-                accuracy += [accuracy_batch]
+        # # Stop if validation error decreased over the last three validation
+        # # "FIFO" from the left
+        # val_tab[1:] = val_tab[0:-1]
+        # mean_accuracy = 100 * np.mean(accuracy)
+        # check_increase = np.sum(mean_accuracy >= val_tab[1:])
+        # if check_increase == 0:
+        #     OVERFITTING = True
+        # val_tab[0] = mean_accuracy
+        # if check_increase == 0:
+        #     OVERFITTING = True
+        # val_tab[0] = mean_accuracy
 
-            # Stop if validation error decreased over the last three validation
-            # "FIFO" from the left
-            val_tab[1:] = val_tab[0:-1]
-            mean_accuracy = 100 * np.mean(accuracy)
-            check_increase = np.sum(mean_accuracy >= val_tab[1:])
-            if check_increase == 0:
+        # Early stopping criterion
+        # Note that sum_{i=0}^{n} der = der(n) - der(0)
+        # So mean over successive derivatives makes no sense
+        # 1/ Get the mean derivative between 5 and 10 =
+        #       \sum_{i=validation_order}^{validation_order+initial_derivative_length} E(i) - E(i-validation_order) / validation_order
+        #
+        # 2/ At each iteration, compare the mean derivative over the last five epochs :
+        #       \sum_{i=0}^{validation_order} E(t)
+        mean_accuracy = 100 * np.mean(accuracy)
+        val_tab[epoch] = mean_accuracy
+        if epoch == initial_derivative_length-1:
+            ind = np.arange(validation_order-1, initial_derivative_length)
+            increase_reference = (val_tab[ind] - val_tab[ind-validation_order+1]).sum() / (validation_order * len(ind))
+        elif epoch >= initial_derivative_length:
+            ind = np.arange(epoch - check_derivative_length + 1, epoch+1)
+            derivative_mean = (val_tab[ind] - val_tab[ind-validation_order+1]).sum() / (validation_order * len(ind))
+            # Mean derivative is less than 10% of increase reference
+            if derivative_mean < 0.1 * increase_reference:
                 OVERFITTING = True
-            val_tab[0] = mean_accuracy
-            # Monitor learning
-            logger_train.info(("Epoch : {} , Monitor : {} , Rec error : {} , Valid acc : {}"
-                              .format(epoch, np.mean(train_monitor_epoch), np.mean(train_cost_epoch), mean_accuracy))
-                              .encode('utf8'))
+
+        # Monitor learning
+        logger_train.info(("Epoch : {} , Monitor : {} , Cost : {} , Valid acc : {}"
+                          .format(epoch, np.mean(train_monitor_epoch), np.mean(train_cost_epoch), mean_accuracy))
+                          .encode('utf8'))
+
+        # Plot weights every ?? epoch
+        if((epoch%20==0) or (epoch<5) or OVERFITTING):
+            weights_folder_epoch = weights_folder + '/' + str(epoch)
+            if not os.path.isdir(weights_folder_epoch):
+                os.makedirs(weights_folder_epoch)
+            model.weights_visualization(weights_folder_epoch)
 
         epoch += 1
 
@@ -236,13 +321,45 @@ def train(model_param, optim_param, max_iter, log_file_path):
     dico_res.update(optim_param)
     dico_res['accuracy'] = best_accuracy
 
-    return dico_res
+    return model, dico_res
+
+
+def generate(model,
+             piano, orchestra, indices,
+             generation_length, seed_size, quantization_write,
+             generated_folder, logger_generate):
+    # Generate sequences from a trained model
+    # piano, orchestra and index are data used to seed the generation
+    # Note that generation length is fixed by the length of the piano input
+    logger_generate.info("# Generating")
+
+    generate_sequence = model.get_generate_function(
+        piano=piano, orchestra=orchestra,
+        generation_length=generation_length,
+        seed_size=seed_size,
+        batch_generation_size=len(indices),
+        name="generate_sequence")
+
+    # Load the mapping between pitch space and instrument
+    metadata = pickle.load(open('../Data/metadata.pkl', 'rb'))
+    instru_mapping = metadata['instru_mapping']
+
+    # Given last indices, generate a batch of sequences
+    (generated_sequence,) = generate_sequence(indices)
+    if generated_folder is not None:
+        for write_counter in xrange(generated_sequence.shape[0]):
+            # Write midi
+            pr_orchestra = reconstruct_pr(generated_sequence[write_counter], instru_mapping, binary_unit)
+            write_path = generated_folder + '/' + str(write_counter) + '.mid'
+            write_midi(pr_orchestra, quantization_write, write_path, tempo=80)
+
+    return
 
 
 if __name__ == "__main__":
     # Check is the result folder exists
     if not os.path.isdir(result_folder):
-        os.mkdir(result_folder)
+        os.makedirs(result_folder)
 
     ############################################################
     ####  L  O  G  G  I  N  G  #################################
@@ -274,6 +391,7 @@ if __name__ == "__main__":
     logger_hopt = logging.getLogger('hyperopt')
     logger_train = logging.getLogger('train')
     logger_load = logging.getLogger('load')
+    logger_generate = logging.getLogger('generate')
 
     ######################################
     ###### Rebuild database
@@ -309,7 +427,7 @@ if __name__ == "__main__":
 
     ######################################
     ###### HOPT function
-    best = train_hopt(max_evals, log_file_path, result_file)
+    best = train_hopt(max_evals, result_file)
     logging.info(best)
     ######################################
 
@@ -321,6 +439,13 @@ if __name__ == "__main__":
     #     'n_factor': 100,
     #     'batch_size': 2,
     #     'gibbs_steps': 10
+    # ###### Or directly call the train function for one set of HPARAMS
+    # model_param = {
+    #     'temporal_order': 20,
+    #     'gibbs_steps': 3,
+    #     'n_hidden': 150,
+    #     'n_factor': 104,
+    #     'batch_size': 2,
     # }
     # optim_param = {
     #     'lr': 0.001
@@ -329,4 +454,27 @@ if __name__ == "__main__":
     #                  optim_param,
     #                  max_iter,
     #                  log_file_path)
+    # piano_train, orchestra_train, train_index, \
+    #     piano_valid, orchestra_valid, valid_index, \
+    #     piano_test, orchestra_test, test_index, generation_index \
+    #     = load_data(model_param['temporal_order'],
+    #                 model_param['batch_size'],
+    #                 generation_length=generation_length,
+    #                 binary_unit=binary_unit,
+    #                 skip_sample=1,
+    #                 logger_load=logger_load)
+    #
+    # weights_folder = '../debug/weights/'
+    # generated_folder = '../debug/generated/'
+    # max_iter = 0
+    # model, dico_res = train(piano_train, orchestra_train, train_index,
+    #                         piano_valid, orchestra_valid, valid_index,
+    #                         model_param, optim_param,
+    #                         max_iter, weights_folder)
+    #
+    # generate(model=model,
+    #          piano=piano_test, orchestra=orchestra_test, indices=generation_index,
+    #          generation_length=generation_length, seed_size=seed_size,
+    #          quantization_write=quantization_write,
+    #          generated_folder=generated_folder, logger_generate=logger_generate)
     ######################################

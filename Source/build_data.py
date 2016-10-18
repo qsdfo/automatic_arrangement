@@ -172,9 +172,9 @@ def cast_pr(pr0, instru0, pr1, instru1, start_time, duration, instru_mapping, pr
         print('The two midi files have the same number of instruments')
 
 
-def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, temporal_granularity='frame_level'):
+def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, temporal_granularity='frame_level', store_folder='../Data'):
     # Get dimensions
-    get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=quantization, temporal_granularity=temporal_granularity)
+    get_dim_matrix(index_files_dict, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity)
 
     temp = pickle.load(open(meta_info_path, 'rb'))
     instru_mapping = temp['instru_mapping']
@@ -230,11 +230,11 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
                     # Increment time counter
                     time += duration
 
-        with open('../Data/orchestra_' + set_identifier + '.csv', 'wb') as outfile:
+        with open(store_folder + '/orchestra_' + set_identifier + '.csv', 'wb') as outfile:
             np.save(outfile, pr_orchestra)
-        with open('../Data/piano_' + set_identifier + '.csv', 'wb') as outfile:
+        with open(store_folder + '/piano_' + set_identifier + '.csv', 'wb') as outfile:
             np.save(outfile, pr_piano)
-        pickle.dump(tracks_start_end, open('../Data/tracks_start_end_' + set_identifier + '.pkl', 'wb'))
+        pickle.dump(tracks_start_end, open(store_folder + '/tracks_start_end_' + set_identifier + '.pkl', 'wb'))
 
         ####################################################################
         ####################################################################
@@ -256,7 +256,7 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
     metadata = {}
     metadata['quantization'] = quantization
     metadata['instru_mapping'] = instru_mapping
-    with open('../Data/metadata.pkl', 'wb') as outfile:
+    with open(store_folder + '/metadata.pkl', 'wb') as outfile:
         pickle.dump(metadata, outfile)
 
 if __name__ == '__main__':

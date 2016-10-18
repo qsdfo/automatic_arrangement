@@ -7,6 +7,7 @@ import time
 import os
 import csv
 import logging
+import sys
 import numpy as np
 import cPickle as pickle
 # Hyperopt
@@ -27,16 +28,34 @@ from reconstruct_pr import reconstruct_pr
 ####################
 # Debugging compiler flags
 import theano
-theano.config.optimizer = 'fast_compile'
+# theano.config.optimizer = 'fast_compile'
 # theano.config.mode = 'FAST_COMPILE'
-theano.config.exception_verbosity = 'high'
+# theano.config.exception_verbosity = 'high'
 theano.config.compute_test_value = 'off'
 
 ####################
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the optimization method
-from acidano.models.lop.cRBM import cRBM as Model_class
-from acidano.utils.optim import gradient_descent as Optimization_method
+# Passed in command line
+if sys.argv[1] == "RBM":
+    from acidano.models.lop.RBM import RBM as Model_class
+elif sys.argv[1] == "cRBM":
+    from acidano.models.lop.cRBM import cRBM as Model_class
+elif sys.argv[1] == "FGcRBM":
+    from acidano.models.lop.FGcRBM import FGcRBM as Model_class
+elif sys.argv[1] == "LSTM":
+    from acidano.models.lop.LSTM import LSTM as Model_class
+elif sys.argv[1] == "RnnRbm":
+    from acidano.models.lop.RnnRbm import RnnRbm as Model_class
+else:
+    print "error"
+    return
+
+if sys.argv[2] == "gradient_descent":
+    from acidano.utils.optim import gradient_descent as Optimization_method
+else:
+    print "error"
+    return
 
 # Build data parameters :
 REBUILD_DATABASE = False
@@ -269,18 +288,6 @@ def train(piano_train, orchestra_train, train_index,
             _, _, accuracy_batch = validation_error(valid_index[batch_index])
             accuracy += [accuracy_batch]
 
-        # # Stop if validation error decreased over the last three validation
-        # # "FIFO" from the left
-        # val_tab[1:] = val_tab[0:-1]
-        # mean_accuracy = 100 * np.mean(accuracy)
-        # check_increase = np.sum(mean_accuracy >= val_tab[1:])
-        # if check_increase == 0:
-        #     OVERFITTING = True
-        # val_tab[0] = mean_accuracy
-        # if check_increase == 0:
-        #     OVERFITTING = True
-        # val_tab[0] = mean_accuracy
-
         # Early stopping criterion
         # Note that sum_{i=0}^{n} der = der(n) - der(0)
         # So mean over successive derivatives makes no sense
@@ -357,6 +364,7 @@ def generate(model,
 
 
 if __name__ == "__main__":
+
     # Check is the result folder exists
     if not os.path.isdir(result_folder):
         os.makedirs(result_folder)
@@ -397,30 +405,31 @@ if __name__ == "__main__":
     ###### Rebuild database
     if REBUILD_DATABASE:
         logging.info('# ** Database REBUILT **')
-        PREFIX_INDEX_FOLDER = "../Data/Index/"
+        PREFIX_INDEX_FOLDER = MAIN_DIR + "../Data/Index/"
         index_files_dict = {}
         index_files_dict['train'] = [
-            # PREFIX_INDEX_FOLDER + "debug_train.txt",
-            PREFIX_INDEX_FOLDER + "bouliane_train.txt",
-            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
-            PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
+            PREFIX_INDEX_FOLDER + "debug_train.txt",
+            # PREFIX_INDEX_FOLDER + "bouliane_train.txt",
+            # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
+            # PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
         ]
         index_files_dict['valid'] = [
-            # PREFIX_INDEX_FOLDER + "debug_valid.txt",
-            PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
-            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
-            PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
+            PREFIX_INDEX_FOLDER + "debug_valid.txt",
+            # PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
+            # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
+            # PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
         ]
         index_files_dict['test'] = [
-            # PREFIX_INDEX_FOLDER + "debug_test.txt",
-            PREFIX_INDEX_FOLDER + "bouliane_test.txt",
-            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
-            PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
+            PREFIX_INDEX_FOLDER + "debug_test.txt",
+            # PREFIX_INDEX_FOLDER + "bouliane_test.txt",
+            # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
+            # PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
         ]
         build_data(index_files_dict=index_files_dict,
-                   meta_info_path='temp.p',
+                   meta_info_path=MAIN_DIR + '../Data/temp.p',
                    quantization=quantization,
-                   temporal_granularity=temporal_granularity)
+                   temporal_granularity=temporal_granularity,
+                   store_folder=MAIN_DIR + '../Data')
     else:
         logging.info('# ** Database NOT rebuilt ** ')
     ######################################
@@ -430,6 +439,7 @@ if __name__ == "__main__":
     best = train_hopt(max_evals, result_file)
     logging.info(best)
     ######################################
+
 
     ######################################
     ###### Or directly call the train function for one set of HPARAMS

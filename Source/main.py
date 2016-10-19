@@ -45,6 +45,8 @@ elif sys.argv[1] == "FGcRBM":
     from acidano.models.lop.FGcRBM import FGcRBM as Model_class
 elif sys.argv[1] == "LSTM":
     from acidano.models.lop.LSTM import LSTM as Model_class
+elif sys.argv[1] == "LSTM_ml":
+    from acidano.models.lop.LSTM_ml import LSTM_ml as Model_class
 elif sys.argv[1] == "RnnRbm":
     from acidano.models.lop.RnnRbm import RnnRbm as Model_class
 else:
@@ -310,16 +312,19 @@ def train(piano_train, orchestra_train, train_index,
             derivative_mean = (val_tab[ind] - val_tab[ind-validation_order+1]).sum() / (validation_order * len(ind))
             # Mean derivative is less than 10% of increase reference
             if derivative_mean < 0.1 * increase_reference:
-                import pdb; pdb.set_trace()
                 OVERFITTING = True
 
         # Monitor learning
-        logger_train.info(("Epoch : {} , Monitor : {} , Cost : {} , Valid acc : {}"
+        logger_train.info(('Epoch : {} , Monitor : {} , Cost : {} , Valid acc : {}'
                           .format(epoch, np.mean(train_monitor_epoch), np.mean(train_cost_epoch), mean_accuracy))
                           .encode('utf8'))
+        if DIVERGING:
+            logger_train.info('DIVERGING !!')
+        elif OVERFITTING:
+            logger_train.info('OVERFITTING !!')
 
         # Plot weights every ?? epoch
-        if((epoch%20==0) or (epoch<5) or OVERFITTING):
+        if((epoch%20==0) or (epoch<5) or OVERFITTING or DIVERGING):
             weights_folder_epoch = weights_folder + '/' + str(epoch)
             if not os.path.isdir(weights_folder_epoch):
                 os.makedirs(weights_folder_epoch)

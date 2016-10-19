@@ -49,13 +49,11 @@ elif sys.argv[1] == "RnnRbm":
     from acidano.models.lop.RnnRbm import RnnRbm as Model_class
 else:
     print "error"
-    return
 
 if sys.argv[2] == "gradient_descent":
     from acidano.utils.optim import gradient_descent as Optimization_method
 else:
     print "error"
-    return
 
 # Build data parameters :
 REBUILD_DATABASE = False
@@ -73,13 +71,13 @@ result_file = result_folder + u'/hopt_results.csv'
 log_file_path = result_folder + '/' + Model_class.name() + u'.log'
 
 # Fixed hyper parameter
-max_evals = 3       # number of hyper-parameter configurations evaluated
-max_iter = 3      # nb max of iterations when training 1 configuration of hparams
+max_evals = 20       # number of hyper-parameter configurations evaluated
+max_iter = 200       # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 
 # Validation
 validation_order = 5
-initial_derivative_length = 10
+initial_derivative_length = 20
 check_derivative_length = 5
 
 # Generation
@@ -272,8 +270,11 @@ def train(piano_train, orchestra_train, train_index,
     logger_train.info("# Training")
     epoch = 0
     OVERFITTING = False
+    DIVERGING = False
     val_tab = np.zeros(max(1,max_iter))
-    while (not OVERFITTING and epoch!=max_iter):
+    while (not OVERFITTING
+           and not DIVERGING
+           and epoch!=max_iter):
         # go through the training set
         train_cost_epoch = []
         train_monitor_epoch = []
@@ -301,11 +302,15 @@ def train(piano_train, orchestra_train, train_index,
         if epoch == initial_derivative_length-1:
             ind = np.arange(validation_order-1, initial_derivative_length)
             increase_reference = (val_tab[ind] - val_tab[ind-validation_order+1]).sum() / (validation_order * len(ind))
+            if increase_reference <= 0:
+                # Early stop if the model didn't really improved over the first iteration
+                DIVERGING = True
         elif epoch >= initial_derivative_length:
             ind = np.arange(epoch - check_derivative_length + 1, epoch+1)
             derivative_mean = (val_tab[ind] - val_tab[ind-validation_order+1]).sum() / (validation_order * len(ind))
             # Mean derivative is less than 10% of increase reference
             if derivative_mean < 0.1 * increase_reference:
+                import pdb; pdb.set_trace()
                 OVERFITTING = True
 
         # Monitor learning

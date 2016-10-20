@@ -1,0 +1,63 @@
+#!/bin/bash
+#
+# The line above tells Torque which shell PBS should use to run the
+# script (if you do not specify it, you could have surprises).
+# We can use the bash, sh, ksh, csh, tcsh, zsh, perl or python interpreters
+# although it is probably best to limit yourself to the classic ones
+# (first five).
+#
+
+# **************************************************************
+#
+#            TYPICAL PBS OPTION EXAMPLES
+#
+# **************************************************************
+
+# https://wiki.calculquebec.ca/w/Exemple_de_script_avec_documentation_des_options_de_qsub/en
+# To submit this file, use
+#          qsub example.pbs
+
+# **************************************************************
+# Load modules
+module load python/2.7.9
+module load CUDA_Toolkit/7.5
+# **************************************************************
+
+
+# **************************************************************
+# Account
+#PBS -A dpz-653-01
+
+# Ressources
+#PBS -l nodes=1:ppn=12:gpus=1
+#PBS -l pmem=4000m
+#PBS -l walltime=0:30:00
+
+# Name of the job
+#PBS -N rbm
+
+# Log file
+#PBS -o ../Results/rbm_g_log.out
+#PBS -j oe
+
+# Queue
+#PBS -q debug
+
+# Sending of email:
+#PBS -M crestel.leopold@gmail.com
+#PBS -m bae
+
+# Interruption rules
+#PBS -r n
+# **************************************************************
+
+SRC=$HOME/lop/Source
+
+cd $SRC; python $SRC/main.py cRBM gradient_descent &
+cd $SRC; python $SRC/main.py cRnnRbm gradient_descent &
+cd $SRC; python $SRC/main.py FGcRBM gradient_descent &
+cd $SRC; python $SRC/main.py LSTM gradient_descent &
+cd $SRC; python $SRC/main.py RBM gradient_descent &
+cd $SRC; python $SRC/main.py RnnRbm gradient_descent &
+
+wait

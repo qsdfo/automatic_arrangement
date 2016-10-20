@@ -2,16 +2,19 @@
 **/.DS_Store
 Database
 Data
-Articles
 Results
 TRASH
 Source/Needlepote
 Source/test.py
+Articles/ICCC/Corrections/
+Articles/ICCC/Corrections2/
 
 # Image files
 **/*.pdf
 **/*.png
 **/*.plist
+# But not in the Figure directory
+!Articles/Figures/**/*.pdf
 
 # CSV, but not the config file and results files
 **/*.csv
@@ -32,6 +35,9 @@ Source/test.py
 **/*.bst
 **/*.doc
 **/*.log
+**/*.bbl
+**/*.out
+**/*.blg
 **/*.synctex.gz
 ICCC/ICCC-author-kit/
 ICCC/Corrections*

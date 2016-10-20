@@ -19,8 +19,8 @@
 
 # **************************************************************
 # Load modules
-module load python ??
-module load CUDA ??
+module load python/2.7.9
+module load CUDA_Toolkit/7.5
 # **************************************************************
 
 
@@ -31,7 +31,7 @@ module load CUDA ??
 # Ressources
 #PBS -l nodes=1:ppn=12:gpus=1
 #PBS -l pmem=4000m
-#PBS -l walltime=3:00:00
+#PBS -l walltime=0:30:00
 
 # Name of the job
 #PBS -N rbm
@@ -41,7 +41,7 @@ module load CUDA ??
 #PBS -j oe
 
 # Queue
-#PBS -q aw
+#PBS -q debug
 
 # Sending of email:
 #PBS -M crestel.leopold@gmail.com
@@ -51,13 +51,13 @@ module load CUDA ??
 #PBS -r n
 # **************************************************************
 
-SRC=$HOME/Source
+SRC=$HOME/lop/Source
 
-cd $SRC; python ./$SRC/main.py cRBM gradient_descent &
-cd $SRC; python ./$SRC/main.py cRnnRbm gradient_descent &
-cd $SRC; python ./$SRC/main.py FGcRBM gradient_descent &
-cd $SRC; python ./$SRC/main.py LSTM gradient_descent &
-cd $SRC; python ./$SRC/main.py RBM gradient_descent &
-cd $SRC; python ./$SRC/main.py RnnRbm gradient_descent &
+cd $SRC; python $SRC/main.py cRBM gradient_descent &
+cd $SRC; python $SRC/main.py cRnnRbm gradient_descent &
+cd $SRC; python $SRC/main.py FGcRBM gradient_descent &
+cd $SRC; python $SRC/main.py LSTM gradient_descent &
+cd $SRC; python $SRC/main.py RBM gradient_descent &
+cd $SRC; python $SRC/main.py RnnRbm gradient_descent &
 
 wait

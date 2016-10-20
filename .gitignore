@@ -13,8 +13,10 @@ Articles/ICCC/Corrections2/
 **/*.pdf
 **/*.png
 **/*.plist
+
 # But not in the Figure directory
 !Articles/Figures/**/*.pdf
+Articles/Figures/DRAFT_SOURCE
 
 # CSV, but not the config file and results files
 **/*.csv

@@ -34,9 +34,18 @@ import theano
 theano.config.compute_test_value = 'off'
 
 ####################
+# COMMAND LINE ARGUMENT
+# python main.py
+#    model : see list below
+#    optim_method : see list below
+#    temporal_granularity : event_level, frame_level
+#    binary_unit : boolean
+#    quantization : int
+####################
+
+####################
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the optimization method
-# Passed in command line
 if sys.argv[1] == "RBM":
     from acidano.models.lop.RBM import RBM as Model_class
 elif sys.argv[1] == "cRBM":
@@ -50,19 +59,43 @@ elif sys.argv[1] == "LSTM_ml":
 elif sys.argv[1] == "RnnRbm":
     from acidano.models.lop.RnnRbm import RnnRbm as Model_class
 else:
-    print "error"
+    raise ValueError(sys.argv[2] + " is not a model")
 
 if sys.argv[2] == "gradient_descent":
     from acidano.utils.optim import gradient_descent as Optimization_method
 else:
-    print "error"
+    raise ValueError(sys.argv[2] + " is not an optimization method")
 
 # Build data parameters :
 REBUILD_DATABASE = False
-# Temporal granularity and quantization
-temporal_granularity = u'event_level'
-binary_unit = True
-quantization = 4
+# Temporal granularity
+if len(sys.argv) < 4:
+    temporal_granularity = u'event_level'
+else:
+    temporal_granularity = sys.argv[3]
+    if temporal_granularity not in ['frame_level', 'event_level']:
+        raise ValueError(sys.argv[3] + " is not temporal_granularity")
+
+# Unit type
+if len(sys.argv) < 5:
+    binary_unit = True
+else:
+    if sys.argv[4] == 'True':
+        binary_unit = True
+    elif sys.argv[4] == 'False':
+        binary_unit = False
+    else:
+        raise ValueError("binary_unit must be a boolean")
+
+# Quantization
+if len(sys.argv) < 6:
+    quantization = 4
+else:
+    try:
+        quantization = int(sys.argv[5])
+    except ValueError:
+        print(sys.argv[5] + ' is not an integer')
+        raise
 
 # Get main dir
 MAIN_DIR = os.getcwd().decode('utf8') + u'/'
@@ -74,7 +107,7 @@ log_file_path = result_folder + '/' + Model_class.name() + u'.log'
 
 # Fixed hyper parameter
 max_evals = 20       # number of hyper-parameter configurations evaluated
-max_iter = 200       # nb max of iterations when training 1 configuration of hparams
+max_iter = 2         # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 
 # Validation
@@ -98,6 +131,11 @@ def train_hopt(max_evals, csv_file_path):
     logger_hopt.info((u'**** Model : ' + Model_class.name()).encode('utf8'))
     logger_hopt.info((u'**** Optimization technic : ' + Optimization_method.name()).encode('utf8'))
     logger_hopt.info((u'**** Temporal granularity : ' + temporal_granularity + '\n').encode('utf8'))
+    if binary_unit:
+        logger_hopt.info((u'**** Binary unit (intensity discarded)\n').encode('utf8'))
+    else:
+        logger_hopt.info((u'**** Real valued unit (intensity taken into consideration)\n').encode('utf8'))
+    logger_hopt.info((u'**** Quantization : ' + str(quantization) + '\n').encode('utf8'))
 
     # Define hyper-parameter search space for the model
     # Those are given by the static methods get_param_dico and get_hp_space
@@ -449,7 +487,6 @@ if __name__ == "__main__":
     best = train_hopt(max_evals, result_file)
     logging.info(best)
     ######################################
-
 
     ######################################
     ###### Or directly call the train function for one set of HPARAMS

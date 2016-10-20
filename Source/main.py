@@ -67,7 +67,7 @@ else:
     raise ValueError(sys.argv[2] + " is not an optimization method")
 
 # Build data parameters :
-REBUILD_DATABASE = False
+REBUILD_DATABASE = True
 # Temporal granularity
 if len(sys.argv) < 4:
     temporal_granularity = u'event_level'
@@ -456,22 +456,22 @@ if __name__ == "__main__":
         PREFIX_INDEX_FOLDER = MAIN_DIR + "../Data/Index/"
         index_files_dict = {}
         index_files_dict['train'] = [
-            PREFIX_INDEX_FOLDER + "debug_train.txt",
-            # PREFIX_INDEX_FOLDER + "bouliane_train.txt",
-            # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
-            # PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
+            # PREFIX_INDEX_FOLDER + "debug_train.txt",
+            PREFIX_INDEX_FOLDER + "bouliane_train.txt",
+            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
+            PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
         ]
         index_files_dict['valid'] = [
-            PREFIX_INDEX_FOLDER + "debug_valid.txt",
-            # PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
-            # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
-            # PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
+            # PREFIX_INDEX_FOLDER + "debug_valid.txt",
+            PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
+            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
+            PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
         ]
         index_files_dict['test'] = [
-            PREFIX_INDEX_FOLDER + "debug_test.txt",
-            # PREFIX_INDEX_FOLDER + "bouliane_test.txt",
-            # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
-            # PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
+            # PREFIX_INDEX_FOLDER + "debug_test.txt",
+            PREFIX_INDEX_FOLDER + "bouliane_test.txt",
+            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
+            PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
         ]
         build_data(index_files_dict=index_files_dict,
                    meta_info_path=MAIN_DIR + '../Data/temp.p',

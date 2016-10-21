@@ -9,7 +9,7 @@ import random
 import cPickle as pickle
 
 
-def load_data(temporal_order=20, batch_size=100, generation_length=100,
+def load_data(data_folder, temporal_order=20, batch_size=100, generation_length=100,
               binary_unit=True, skip_sample=1,logger_load=None):
     # If no logger, create one
     if logger_load is None:
@@ -20,12 +20,12 @@ def load_data(temporal_order=20, batch_size=100, generation_length=100,
                             filemode='w')
         logger_load=logging.getLogger('load')
 
-    piano_train = np.load('../Data/piano_train.csv')
-    orchestra_train = np.load('../Data/orchestra_train.csv')
-    piano_valid = np.load('../Data/piano_valid.csv')
-    orchestra_valid = np.load('../Data/orchestra_valid.csv')
-    piano_test = np.load('../Data/piano_test.csv')
-    orchestra_test = np.load('../Data/orchestra_test.csv')
+    piano_train = np.load(data_folder + '/piano_train.csv')
+    orchestra_train = np.load(data_folder + '/orchestra_train.csv')
+    piano_valid = np.load(data_folder + '/piano_valid.csv')
+    orchestra_valid = np.load(data_folder + '/orchestra_valid.csv')
+    piano_test = np.load(data_folder + '/piano_test.csv')
+    orchestra_test = np.load(data_folder + '/orchestra_test.csv')
 
     # Binary unit ?
     if binary_unit:
@@ -50,9 +50,9 @@ def load_data(temporal_order=20, batch_size=100, generation_length=100,
     piano_test_shared = theano.shared(piano_test, name='piano_test', borrow=True)
     orchestra_test_shared = theano.shared(orchestra_test, name='orchestra_test', borrow=True)
 
-    tracks_start_end_train = pickle.load(open('../Data/tracks_start_end_train.pkl', 'rb'))
-    tracks_start_end_valid = pickle.load(open('../Data/tracks_start_end_valid.pkl', 'rb'))
-    tracks_start_end_test = pickle.load(open('../Data/tracks_start_end_test.pkl', 'rb'))
+    tracks_start_end_train = pickle.load(open(data_folder + '/tracks_start_end_train.pkl', 'rb'))
+    tracks_start_end_valid = pickle.load(open(data_folder + '/tracks_start_end_valid.pkl', 'rb'))
+    tracks_start_end_test = pickle.load(open(data_folder + '/tracks_start_end_test.pkl', 'rb'))
 
     # Get valid indices given start_track and temporal_order
     def valid_indices(tracks_start_end, temporal_order):

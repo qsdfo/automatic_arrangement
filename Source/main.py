@@ -99,6 +99,11 @@ else:
 
 # Get main dir
 MAIN_DIR = os.getcwd().decode('utf8') + u'/'
+if 'LSCRATCH' in os.environ.keys():
+    # We are on Guillimin
+    LOCAL_SCRATCH = os.environ['LSCRATCH']
+else:
+    LOCAL_SCRATCH = '../'
 
 # Set hyperparameters (can be a grid)
 result_folder = MAIN_DIR + u'../Results/' + temporal_granularity + '/' + Optimization_method.name() + '/' + Model_class.name()
@@ -183,7 +188,8 @@ def train_hopt(max_evals, csv_file_path):
         piano_train, orchestra_train, train_index, \
             piano_valid, orchestra_valid, valid_index, \
             piano_test, orchestra_test, test_index, generation_index \
-            = load_data(model_param['temporal_order'],
+            = load_data(LOCAL_SCRATCH + '/Data',
+                        model_param['temporal_order'],
                         model_param['batch_size'],
                         binary_unit=binary_unit,
                         skip_sample=1,
@@ -473,11 +479,12 @@ if __name__ == "__main__":
             PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
             PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
         ]
+        os.mkdir()
         build_data(index_files_dict=index_files_dict,
-                   meta_info_path=MAIN_DIR + '../Data/temp.p',
+                   meta_info_path=LOCAL_SCRATCH + '/Data/temp.p',
                    quantization=quantization,
                    temporal_granularity=temporal_granularity,
-                   store_folder=MAIN_DIR + '../Data')
+                   store_folder=LOCAL_SCRATCH + '/Data')
     else:
         logging.info('# ** Database NOT rebuilt ** ')
     ######################################

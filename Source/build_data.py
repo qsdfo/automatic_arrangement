@@ -239,15 +239,15 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
         ####################################################################
         ####################################################################
         ####################################################################
-        aux(var=pr_piano,
-            name='piano_' + set_identifier + '_' + temporal_granularity,
-            csv_path='DEBUG/piano_' + set_identifier + '_' + temporal_granularity + '.csv',
-            html_path='DEBUG/piano_' + set_identifier + '_' + temporal_granularity + '.html')
-
-        aux(var=pr_orchestra,
-            name='orchestra_' + set_identifier + '_' + temporal_granularity,
-            csv_path='DEBUG/orchestra_' + set_identifier + '_' + temporal_granularity +'.csv',
-            html_path='DEBUG/orchestra_' + set_identifier + '_' + temporal_granularity + '.html')
+        # aux(var=pr_piano,
+        #     name='piano_' + set_identifier + '_' + temporal_granularity,
+        #     csv_path='DEBUG/piano_' + set_identifier + '_' + temporal_granularity + '.csv',
+        #     html_path='DEBUG/piano_' + set_identifier + '_' + temporal_granularity + '.html')
+        #
+        # aux(var=pr_orchestra,
+        #     name='orchestra_' + set_identifier + '_' + temporal_granularity,
+        #     csv_path='DEBUG/orchestra_' + set_identifier + '_' + temporal_granularity +'.csv',
+        #     html_path='DEBUG/orchestra_' + set_identifier + '_' + temporal_granularity + '.html')
         ####################################################################
         ####################################################################
         ####################################################################

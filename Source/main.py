@@ -59,7 +59,7 @@ elif sys.argv[1] == "LSTM_ml":
 elif sys.argv[1] == "RnnRbm":
     from acidano.models.lop.RnnRbm import RnnRbm as Model_class
 else:
-    raise ValueError(sys.argv[2] + " is not a model")
+    raise ValueError(sys.argv[1] + " is not a model")
 
 if sys.argv[2] == "gradient_descent":
     from acidano.utils.optim import gradient_descent as Optimization_method

@@ -460,26 +460,29 @@ if __name__ == "__main__":
     if REBUILD_DATABASE:
         logging.info('# ** Database REBUILT **')
         PREFIX_INDEX_FOLDER = MAIN_DIR + "../Data/Index/"
+        logging.info('#1')
         index_files_dict = {}
+        logging.info('#2')
         index_files_dict['train'] = [
-            # PREFIX_INDEX_FOLDER + "debug_train.txt",
-            PREFIX_INDEX_FOLDER + "bouliane_train.txt",
-            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
-            PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
+            PREFIX_INDEX_FOLDER + "debug_train.txt",
+            #PREFIX_INDEX_FOLDER + "bouliane_train.txt",
+            #PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
+            #PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
         ]
         index_files_dict['valid'] = [
-            # PREFIX_INDEX_FOLDER + "debug_valid.txt",
-            PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
-            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
-            PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
+            PREFIX_INDEX_FOLDER + "debug_valid.txt",
+            #PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
+            #PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
+            #PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
         ]
         index_files_dict['test'] = [
-            # PREFIX_INDEX_FOLDER + "debug_test.txt",
-            PREFIX_INDEX_FOLDER + "bouliane_test.txt",
-            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
-            PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
+            PREFIX_INDEX_FOLDER + "debug_test.txt",
+            #PREFIX_INDEX_FOLDER + "bouliane_test.txt",
+            #PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
+            #PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
         ]
-        os.mkdir()
+        os.mkdir(LOCAL_SCRATCH + '/Data')
+	logging.info('#3')
         build_data(index_files_dict=index_files_dict,
                    meta_info_path=LOCAL_SCRATCH + '/Data/temp.p',
                    quantization=quantization,

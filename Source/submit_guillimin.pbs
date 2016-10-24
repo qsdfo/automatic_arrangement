@@ -33,11 +33,7 @@ module load CUDA_Toolkit/7.5
 #PBS -l pmem=4000m
 #PBS -l walltime=0:30:00
 
-# Name of the job
-#PBS -N rbm
-
 # Log file
-#PBS -o ../Results/rbm_g_log.out
 #PBS -j oe
 
 # Queue
@@ -60,5 +56,6 @@ cd $SRC; python $SRC/main.py LSTM gradient_descent &
 cd $SRC; python $SRC/main.py LSTM_ml gradient_descent &
 cd $SRC; python $SRC/main.py RBM gradient_descent &
 cd $SRC; python $SRC/main.py RnnRbm gradient_descent &
+# cd $SRC; python $SRC/main_test.py &
 
 wait

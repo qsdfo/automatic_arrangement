@@ -330,6 +330,8 @@ def train(piano_train, orchestra_train, train_index,
             train_cost_epoch.append(this_cost)
             train_monitor_epoch.append(this_monitor)
         # Validation
+        # For binary unit, it's an accuracy measure.
+        # For real valued units its a gaussian centered value with variance 1
         accuracy = []
         for batch_index in xrange(n_val_batches):
             _, _, accuracy_batch = validation_error(valid_index[batch_index])
@@ -410,7 +412,7 @@ def generate(model,
     if generated_folder is not None:
         for write_counter in xrange(generated_sequence.shape[0]):
             # Write midi
-            pr_orchestra = reconstruct_pr(generated_sequence[write_counter], instru_mapping, binary_unit)
+            pr_orchestra = reconstruct_pr(generated_sequence[write_counter], instru_mapping)
             write_path = generated_folder + '/' + str(write_counter) + '.mid'
             write_midi(pr_orchestra, quantization_write, write_path, tempo=80)
 

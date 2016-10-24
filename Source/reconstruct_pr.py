@@ -2,12 +2,11 @@
 # -*- coding: utf8 -*-
 
 import numpy as np
-from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
 from acidano.visualization.numpy_array.write_numpy_array_html import write_numpy_array_html
 from acidano.visualization.numpy_array.dumped_numpy_to_csv import dump_to_csv
 
 
-def reconstruct_pr(matrix, mapping, binary_unit):
+def reconstruct_pr(matrix, mapping):
     # Reconstruct an orchestral dictionnary pianoroll from
     #   - matrix : (time * pitch)
     #   - mapping : a dictionnary mapping index space of the matrix
@@ -27,8 +26,7 @@ def reconstruct_pr(matrix, mapping, binary_unit):
 
         this_pr = np.zeros((T,N), dtype=np.int16)
         this_pr[:,pitch_min:pitch_max] = matrix[:,index_min:index_max]
-        if binary_unit:
-            this_pr = this_pr * 127
+        this_pr = this_pr * 128
         pr_instru[instrument_name] = this_pr
 
     return pr_instru

@@ -97,15 +97,15 @@ else:
         print(sys.argv[5] + ' is not an integer')
         raise
 
-# Get main dir
+# System paths
 MAIN_DIR = os.getcwd().decode('utf8') + u'/'
 if 'LSCRATCH' in os.environ.keys():
     # We are on Guillimin
     LOCAL_SCRATCH = os.environ['LSCRATCH']
 else:
-    LOCAL_SCRATCH = '../'
+    LOCAL_SCRATCH = '..'
 
-# Set hyperparameters (can be a grid)
+data_folder = LOCAL_SCRATCH + u'/Data'
 result_folder = MAIN_DIR + u'../Results/' + temporal_granularity + '/' + Optimization_method.name() + '/' + Model_class.name()
 result_file = result_folder + u'/hopt_results.csv'
 log_file_path = result_folder + '/' + Model_class.name() + u'.log'
@@ -420,7 +420,6 @@ def generate(model,
 
 
 if __name__ == "__main__":
-
     # Check is the result folder exists
     if not os.path.isdir(result_folder):
         os.makedirs(result_folder)
@@ -483,8 +482,11 @@ if __name__ == "__main__":
             #PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
             #PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
         ]
-        os.mkdir(LOCAL_SCRATCH + '/Data')
-	logging.info('#3')
+
+        if not os.path.isdir(data_folder):
+            os.mkdir(data_folder)
+
+        logging.info('#3')
         build_data(index_files_dict=index_files_dict,
                    meta_info_path=LOCAL_SCRATCH + '/Data/temp.p',
                    quantization=quantization,

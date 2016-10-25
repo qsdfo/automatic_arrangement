@@ -14,6 +14,7 @@ def reconstruct_pr(matrix, mapping):
 
     pr_instru = {}
 
+    max_velocity = 127
     # Dimensions of each instrument pianoroll
     T = matrix.shape[0]
     N = 128
@@ -26,7 +27,7 @@ def reconstruct_pr(matrix, mapping):
 
         this_pr = np.zeros((T,N), dtype=np.int16)
         this_pr[:,pitch_min:pitch_max] = matrix[:,index_min:index_max]
-        this_pr = this_pr * 128
+        this_pr = this_pr * max_velocity
         pr_instru[instrument_name] = this_pr
 
     return pr_instru

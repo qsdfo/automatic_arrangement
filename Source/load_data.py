@@ -39,13 +39,12 @@ def load_data(data_folder, temporal_order=20, batch_size=100, generation_length=
         # Much easier to work with unit between 0 and 1, for several reason :
         #       - 'normalized' values
         #       - same reconstruction as for binary units when building midi files
-        import pdb; pdb.set_trace()
-        piano_train = piano_train / 128
-        orchestra_train = orchestra_train / 128
-        piano_valid = piano_valid / 128
-        orchestra_valid = orchestra_valid / 128
-        piano_test = piano_test / 128
-        orchestra_test = orchestra_test / 128
+        piano_train = piano_train / 127
+        orchestra_train = orchestra_train / 127
+        piano_valid = piano_valid / 127
+        orchestra_valid = orchestra_valid / 127
+        piano_test = piano_test / 127
+        orchestra_test = orchestra_test / 127
 
     # Shared variables : push data on GPU, memory problem for this dataset ??
     # First check type

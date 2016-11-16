@@ -19,6 +19,7 @@
 
 # **************************************************************
 # Load modules
+module load foss/2015b
 module load python/2.7.9
 module load CUDA_Toolkit/7.5
 # **************************************************************
@@ -49,11 +50,11 @@ module load CUDA_Toolkit/7.5
 
 SRC=$HOME/lop/Source
 
-cd $SRC; python main.py cRBM gradient_descent event_level discrete_units 4&
-cd $SRC; python main.py cRnnRbm gradient_descent event_level discrete_units 4&
-cd $SRC; python main.py FGcRBM gradient_descent event_level discrete_units 4&
-cd $SRC; python main.py LSTM gradient_descent event_level discrete_units 4&
-cd $SRC; python main.py RBM gradient_descent event_level discrete_units 4&
-cd $SRC; python main.py RnnRbm gradient_descent event_level discrete_units 4&
+cd $SRC; THEANO_FLAGS='floatX=float32, device=cpu' python main.py cRBM gradient_descent event_level discrete_units 4&
+#cd $SRC; python main.py cRnnRbm gradient_descent event_level discrete_units 4&
+#cd $SRC; python main.py FGcRBM gradient_descent event_level discrete_units 4&
+#cd $SRC; python main.py LSTM gradient_descent event_level discrete_units 4&
+#cd $SRC; python main.py RBM gradient_descent event_level discrete_units 4&
+#cd $SRC; python main.py RnnRbm gradient_descent event_level discrete_units 4&
 
 wait

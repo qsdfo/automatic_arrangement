@@ -14,6 +14,7 @@ import cPickle as pickle
 from hyperopt import fmin, tpe
 # Perso
 from acidano.data_processing.midi.write_midi import write_midi
+from acidano.visualization.numpy_array.visualize_numpy_wrapper import visualize_mat
 from load_data import load_data
 from build_data import build_data
 from reconstruct_pr import reconstruct_pr
@@ -39,7 +40,7 @@ theano.config.compute_test_value = 'off'
 #    model : see list below
 #    optim_method : see list below
 #    temporal_granularity : event_level, frame_level
-#    binary_unit : boolean
+#    intensity : boolean
 #    quantization : int
 ####################
 
@@ -54,20 +55,30 @@ elif sys.argv[1] == "FGcRBM":
     from acidano.models.lop.FGcRBM import FGcRBM as Model_class
 elif sys.argv[1] == "LSTM":
     from acidano.models.lop.LSTM import LSTM as Model_class
-elif sys.argv[1] == "LSTM_ml":
-    from acidano.models.lop.LSTM_ml import LSTM_ml as Model_class
+elif sys.argv[1] == "LSTM_gaussian_mixture":
+    from acidano.models.lop.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
+elif sys.argv[1] == "LSTM_gaussian_mixture_2":
+    from acidano.models.lop.LSTM_gaussian_mixture_2 import LSTM_gaussian_mixture_2 as Model_class
 elif sys.argv[1] == "RnnRbm":
     from acidano.models.lop.RnnRbm import RnnRbm as Model_class
+elif sys.argv[1] == "cRnnRbm":
+    from acidano.models.lop.cRnnRbm import cRnnRbm as Model_class
 else:
     raise ValueError(sys.argv[1] + " is not a model")
 
 if sys.argv[2] == "gradient_descent":
     from acidano.utils.optim import gradient_descent as Optimization_method
+elif sys.argv[2] == 'adam_L2':
+    from acidano.utils.optim import adam_L2 as Optimization_method
+elif sys.argv[2] == 'rmsprop':
+    from acidano.utils.optim import rmsprop as Optimization_method
+elif sys.argv[2] == 'sgd_nesterov':
+    from acidano.utils.optim import sgd_nesterov as Optimization_method
 else:
     raise ValueError(sys.argv[2] + " is not an optimization method")
 
 # Build data parameters :
-REBUILD_DATABASE = True
+REBUILD_DATABASE = False
 # Temporal granularity
 if len(sys.argv) < 4:
     temporal_granularity = u'event_level'
@@ -80,10 +91,10 @@ else:
 if len(sys.argv) < 5:
     binary_unit = True
 else:
-    if sys.argv[4] == 'True':
-        binary_unit = True
-    elif sys.argv[4] == 'False':
+    if sys.argv[4] == 'real_units':
         binary_unit = False
+    elif sys.argv[4] == 'discrete_units':
+        binary_unit = True
     else:
         raise ValueError("binary_unit must be a boolean")
 
@@ -111,8 +122,8 @@ result_file = result_folder + u'/hopt_results.csv'
 log_file_path = result_folder + '/' + Model_class.name() + u'.log'
 
 # Fixed hyper parameter
-max_evals = 20       # number of hyper-parameter configurations evaluated
-max_iter = 2         # nb max of iterations when training 1 configuration of hparams
+max_evals = 50        # number of hyper-parameter configurations evaluated
+max_iter = 100        # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 
 # Validation
@@ -135,12 +146,12 @@ def train_hopt(max_evals, csv_file_path):
     logger_hopt.info((u'WITH HYPERPARAMETER OPTIMIZATION').encode('utf8'))
     logger_hopt.info((u'**** Model : ' + Model_class.name()).encode('utf8'))
     logger_hopt.info((u'**** Optimization technic : ' + Optimization_method.name()).encode('utf8'))
-    logger_hopt.info((u'**** Temporal granularity : ' + temporal_granularity + '\n').encode('utf8'))
+    logger_hopt.info((u'**** Temporal granularity : ' + temporal_granularity).encode('utf8'))
     if binary_unit:
-        logger_hopt.info((u'**** Binary unit (intensity discarded)\n').encode('utf8'))
+        logger_hopt.info((u'**** Binary unit (intensity discarded)').encode('utf8'))
     else:
-        logger_hopt.info((u'**** Real valued unit (intensity taken into consideration)\n').encode('utf8'))
-    logger_hopt.info((u'**** Quantization : ' + str(quantization) + '\n').encode('utf8'))
+        logger_hopt.info((u'**** Real valued unit (intensity taken into consideration)').encode('utf8'))
+    logger_hopt.info((u'**** Quantization : ' + str(quantization)).encode('utf8'))
 
     # Define hyper-parameter search space for the model
     # Those are given by the static methods get_param_dico and get_hp_space
@@ -196,6 +207,14 @@ def train_hopt(max_evals, csv_file_path):
                         logger_load=logger_load)
         time_load_1 = time.time()
         logger_load.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
+        ##############
+        # visualize_mat(piano_train.get_value(), 'DEBUG', 'piano_train')
+        # visualize_mat(orchestra_train.get_value(), 'DEBUG', 'orchestra_train')
+        # visualize_mat(piano_test.get_value(), 'DEBUG', 'piano_test')
+        # visualize_mat(orchestra_test.get_value(), 'DEBUG', 'orchestra_test')
+        # visualize_mat(piano_valid.get_value(), 'DEBUG', 'piano_valid')
+        # visualize_mat(orchestra_valid.get_value(), 'DEBUG', 'orchestra_valid')
+        ##############
         # For large datasets
         #   http://deeplearning.net/software/theano/tutorial/aliasing.html
         #   use borrow=True (avoid copying the whole matrix) ?
@@ -461,32 +480,29 @@ if __name__ == "__main__":
     if REBUILD_DATABASE:
         logging.info('# ** Database REBUILT **')
         PREFIX_INDEX_FOLDER = MAIN_DIR + "../Data/Index/"
-        logging.info('#1')
         index_files_dict = {}
-        logging.info('#2')
         index_files_dict['train'] = [
-            PREFIX_INDEX_FOLDER + "debug_train.txt",
-            #PREFIX_INDEX_FOLDER + "bouliane_train.txt",
-            #PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
-            #PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
+            # PREFIX_INDEX_FOLDER + "debug_train.txt",
+            PREFIX_INDEX_FOLDER + "bouliane_train.txt",
+            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
+            PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
         ]
         index_files_dict['valid'] = [
-            PREFIX_INDEX_FOLDER + "debug_valid.txt",
-            #PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
-            #PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
-            #PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
+            # PREFIX_INDEX_FOLDER + "debug_valid.txt",
+            PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
+            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
+            PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
         ]
         index_files_dict['test'] = [
-            PREFIX_INDEX_FOLDER + "debug_test.txt",
-            #PREFIX_INDEX_FOLDER + "bouliane_test.txt",
-            #PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
-            #PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
+            # PREFIX_INDEX_FOLDER + "debug_test.txt",
+            PREFIX_INDEX_FOLDER + "bouliane_test.txt",
+            PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
+            PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
         ]
 
         if not os.path.isdir(data_folder):
             os.mkdir(data_folder)
 
-        logging.info('#3')
         build_data(index_files_dict=index_files_dict,
                    meta_info_path=LOCAL_SCRATCH + '/Data/temp.p',
                    quantization=quantization,

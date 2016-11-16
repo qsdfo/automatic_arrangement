@@ -49,13 +49,11 @@ module load CUDA_Toolkit/7.5
 
 SRC=$HOME/lop/Source
 
-cd $SRC; python $SRC/main.py cRBM gradient_descent &
-cd $SRC; python $SRC/main.py cRnnRbm gradient_descent &
-cd $SRC; python $SRC/main.py FGcRBM gradient_descent &
-cd $SRC; python $SRC/main.py LSTM gradient_descent &
-cd $SRC; python $SRC/main.py LSTM_ml gradient_descent &
-cd $SRC; python $SRC/main.py RBM gradient_descent &
-cd $SRC; python $SRC/main.py RnnRbm gradient_descent &
-# cd $SRC; python $SRC/main_test.py &
+cd $SRC; python main.py cRBM gradient_descent event_level discrete_units 4&
+cd $SRC; python main.py cRnnRbm gradient_descent event_level discrete_units 4&
+cd $SRC; python main.py FGcRBM gradient_descent event_level discrete_units 4&
+cd $SRC; python main.py LSTM gradient_descent event_level discrete_units 4&
+cd $SRC; python main.py RBM gradient_descent event_level discrete_units 4&
+cd $SRC; python main.py RnnRbm gradient_descent event_level discrete_units 4&
 
 wait

@@ -40,6 +40,7 @@ Articles/Figures/DRAFT_SOURCE
 **/*.bbl
 **/*.out
 **/*.blg
+**/*.bak
 **/*.synctex.gz
 ICCC/ICCC-author-kit/
 ICCC/Corrections*

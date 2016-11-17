@@ -19,9 +19,10 @@
 
 # **************************************************************
 # Load modules
-module load foss/2015b
-module load python/2.7.9
-module load CUDA_Toolkit/7.5
+module load iomkl/2015b
+module load Python/2.7.10
+module load CUDA
+export OMPI_MCA_mtl=^psm
 # **************************************************************
 
 

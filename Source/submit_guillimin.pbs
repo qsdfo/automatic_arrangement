@@ -20,7 +20,7 @@
 # **************************************************************
 # Load modules
 module load iomkl/2015b
-module load Python/2.7.10
+module load matplotlib/1.4.3-Python-2.7.10 
 module load CUDA
 export OMPI_MCA_mtl=^psm
 # **************************************************************
@@ -31,15 +31,15 @@ export OMPI_MCA_mtl=^psm
 #PBS -A dpz-653-01
 
 # Ressources
-#PBS -l nodes=1:ppn=12:gpus=1
+#PBS -l nodes=1:ppn=1:gpus=1
 #PBS -l pmem=4000m
-#PBS -l walltime=0:30:00
+#PBS -l walltime=72:00:00
 
 # Log file
 #PBS -j oe
 
 # Queue
-#PBS -q debug
+#PBS -q aw 
 
 # Sending of email:
 #PBS -M crestel.leopold@gmail.com
@@ -51,11 +51,11 @@ export OMPI_MCA_mtl=^psm
 
 SRC=$HOME/lop/Source
 
-cd $SRC; THEANO_FLAGS='floatX=float32, device=cpu' python main.py cRBM gradient_descent event_level discrete_units 4&
-#cd $SRC; python main.py cRnnRbm gradient_descent event_level discrete_units 4&
-#cd $SRC; python main.py FGcRBM gradient_descent event_level discrete_units 4&
-#cd $SRC; python main.py LSTM gradient_descent event_level discrete_units 4&
-#cd $SRC; python main.py RBM gradient_descent event_level discrete_units 4&
-#cd $SRC; python main.py RnnRbm gradient_descent event_level discrete_units 4&
+cd $SRC; python main.py cRBM gradient_descent event_level discrete_units 4&
+cd $SRC; python main.py cRnnRbm gradient_descent event_level discrete_units 4&
+cd $SRC; python main.py FGcRBM gradient_descent event_level discrete_units 4&
+cd $SRC; python main.py LSTM gradient_descent event_level discrete_units 4&
+cd $SRC; python main.py RBM gradient_descent event_level discrete_units 4&
+cd $SRC; python main.py RnnRbm gradient_descent event_level discrete_units 4&
 
 wait

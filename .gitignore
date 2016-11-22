@@ -44,3 +44,7 @@ Articles/Figures/DRAFT_SOURCE
 **/*.synctex.gz
 ICCC/ICCC-author-kit/
 ICCC/Corrections*
+
+# Submission files
+**/*.pbs
+Source/submission.sh

@@ -78,7 +78,7 @@ else:
     raise ValueError(sys.argv[2] + " is not an optimization method")
 
 # Build data parameters :
-REBUILD_DATABASE = False
+REBUILD_DATABASE = True
 # Temporal granularity
 if len(sys.argv) < 4:
     temporal_granularity = u'event_level'
@@ -393,7 +393,7 @@ def train(piano_train, orchestra_train, train_index,
             weights_folder_epoch = weights_folder + '/' + str(epoch)
             if not os.path.isdir(weights_folder_epoch):
                 os.makedirs(weights_folder_epoch)
-            model.weights_visualization(weights_folder_epoch)
+            model.save_weights(weights_folder_epoch)
 
         epoch += 1
 
@@ -475,6 +475,9 @@ if __name__ == "__main__":
     logger_load = logging.getLogger('load')
     logger_generate = logging.getLogger('generate')
 
+    logging.info(theano.config.floatX)
+    logging.info(theano.__version__)
+
     ######################################
     ###### Rebuild database
     if REBUILD_DATABASE:
@@ -507,7 +510,8 @@ if __name__ == "__main__":
                    meta_info_path=LOCAL_SCRATCH + '/Data/temp.p',
                    quantization=quantization,
                    temporal_granularity=temporal_granularity,
-                   store_folder=LOCAL_SCRATCH + '/Data')
+                   store_folder=LOCAL_SCRATCH + '/Data',
+                   logging=logging)
     else:
         logging.info('# ** Database NOT rebuilt ** ')
     ######################################

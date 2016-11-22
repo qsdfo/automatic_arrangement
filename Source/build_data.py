@@ -34,7 +34,7 @@ def aux(var, name, csv_path, html_path):
     return
 
 
-def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, temporal_granularity='frame_level'):
+def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, temporal_granularity='frame_level', logging=None):
     # Determine the temporal size of the matrices
     # If the two files have different sizes, we use the shortest (to limit the use of memory,
     # we better contract files instead of expanding them).
@@ -46,8 +46,8 @@ def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, t
     T_dict = {}      # indexed by set_identifier
     for set_identifier, index_files in index_files_dict.iteritems():
 
-        print("##########")
-        print(set_identifier)
+        logging.info("##########")
+        logging.info(set_identifier)
         # Get the full size of the tracks and instrument present
         T = 0
         for index_file in index_files:
@@ -55,7 +55,7 @@ def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, t
             with open(index_file, 'rb') as f:
                 for folder_path in f:
                     folder_path = folder_path.rstrip()
-                    print folder_path
+                    logging.info(folder_path)
                     if not os.path.isdir(folder_path):
                         continue
 
@@ -157,7 +157,7 @@ def process_folder(folder_path, quantization, temporal_granularity):
     return pr0_aligned, instru0, name0, pr1_aligned, instru1, name1, duration
 
 
-def cast_pr(pr0, instru0, pr1, instru1, start_time, duration, instru_mapping, pr_orchestra, pr_piano):
+def cast_pr(pr0, instru0, pr1, instru1, start_time, duration, instru_mapping, pr_orchestra, pr_piano, logging=None):
     # Find which pr is orchestra, which one is piano
     if len(set(instru0.keys())) > len(set(instru1.keys())):
         # Add the small pr to the general structure
@@ -169,12 +169,12 @@ def cast_pr(pr0, instru0, pr1, instru1, start_time, duration, instru_mapping, pr
         pr_piano = build_data_aux.cast_small_pr_into_big_pr(pr0, {}, start_time, duration, instru_mapping, pr_piano)
         pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(pr1, instru1, start_time, duration, instru_mapping, pr_orchestra)
     else:
-        print('The two midi files have the same number of instruments')
+        logging.info('The two midi files have the same number of instruments')
 
 
-def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, temporal_granularity='frame_level', store_folder='../Data'):
+def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, temporal_granularity='frame_level', store_folder='../Data', logging=None):
     # Get dimensions
-    get_dim_matrix(index_files_dict, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity)
+    get_dim_matrix(index_files_dict, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
 
     temp = pickle.load(open(meta_info_path, 'rb'))
     instru_mapping = temp['instru_mapping']
@@ -185,9 +185,9 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
 
     for set_identifier, index_files in index_files_dict.iteritems():
         T = T_dict[set_identifier]
-        print 'T = ' + str(T)
-        print 'N_orchestra = ' + str(N_orchestra)
-        print 'N_piano = ' + str(N_piano)
+        logging.info('T = ' + str(T))
+        logging.info('N_orchestra = ' + str(N_orchestra))
+        logging.info('N_piano = ' + str(N_piano))
 
         ########################################
         ########################################
@@ -205,7 +205,7 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
             with open(index_file, 'rb') as f:
                 for folder_path in f:
                     folder_path = folder_path.rstrip()
-                    print folder_path
+                    logging.info(folder_path)
                     if not os.path.isdir(folder_path):
                         continue
 
@@ -222,7 +222,7 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
 
                     # Find which pr is orchestra, which one is piano
                     # and cast them in the appropriate bigger structure
-                    cast_pr(pr0, instru0, pr1, instru1, time, duration, instru_mapping, pr_orchestra, pr_piano)
+                    cast_pr(pr0, instru0, pr1, instru1, time, duration, instru_mapping, pr_orchestra, pr_piano, logging)
 
                     # Store beginning and end of this track
                     tracks_start_end[folder_path] = (time, time+duration)

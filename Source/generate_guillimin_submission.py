@@ -10,52 +10,43 @@ f.close()
 
 def aux(algo, optim, gran, unit, quanti):
     pbs_content = """#!/bin/bash
-    #
-    # The line above tells Torque which shell PBS should use to run the
-    # script (if you do not specify it, you could have surprises).
-    # We can use the bash, sh, ksh, csh, tcsh, zsh, perl or python interpreters
-    # although it is probably best to limit yourself to the classic ones
-    # (first five).
-    #
-
-    # **************************************************************
-    #
-    #            TYPICAL PBS OPTION EXAMPLES
-    #
-    # **************************************************************
-
-    # https://wiki.calculquebec.ca/w/Exemple_de_script_avec_documentation_des_options_de_qsub/en
-    # To submit this file, use
-    #          qsub example.pbs
-
-    # **************************************************************
-    # Load modules
-    module load iomkl/2015b Python/2.7.10 CUDA
-    # **************************************************************
-
-    # **************************************************************
-    # Account
-    #PBS -A dpz-653-01
-
-    # Ressources
-    #PBS -l nodes=1:ppn=1:gpu=1
-    #PBS -l pmem=4000m
-    #PBS -l walltime=36:00:00
-
-    # Log file
-    #PBS -j oe
-
-    # Queue
-    #PBS -q metaq
-
-    # Sending of email:
-    #PBS -M crestel.leopold@gmail.com
-    #PBS -m bae
-    # **************************************************************
-
-    SRC=$HOME/lop/Source
-    cd $SRC
-    mpiexec -n 1 python main.py """ +\
+#
+# The line above tells Torque which shell PBS should use to run the
+# script (if you do not specify it, you could have surprises).
+# We can use the bash, sh, ksh, csh, tcsh, zsh, perl or python interpreters
+# although it is probably best to limit yourself to the classic ones
+# (first five).
+#
+# **************************************************************
+#
+#            TYPICAL PBS OPTION EXAMPLES
+#
+# **************************************************************
+# https://wiki.calculquebec.ca/w/Exemple_de_script_avec_documentation_des_options_de_qsub/en
+# To submit this file, use
+#          qsub example.pbs
+# **************************************************************
+# Load modules
+module load iomkl/2015b Python/2.7.10 CUDA
+# **************************************************************
+# **************************************************************
+# Account
+#PBS -A dpz-653-01
+# Ressources
+#PBS -l nodes=1:ppn=1:gpu=1
+#PBS -l pmem=4000m
+#PBS -l walltime=36:00:00
+# Log file
+#PBS -j oe
+# Queue
+#PBS -q metaq
+# Sending of email:
+#PBS -M crestel.leopold@gmail.com
+#PBS -m bae
+# **************************************************************
+SRC=$HOME/lop/Source
+cd $SRC
+mpiexec -n 1 python main.py """ +\
         algo + " " +\
         optim + " " +\
         gran + " " +\

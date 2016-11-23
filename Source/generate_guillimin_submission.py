@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
+import os
+
+
 meta_script = 'submission.sh'
 f = open(meta_script, 'wb')
 f.close()
@@ -37,7 +40,7 @@ def aux(algo, optim, gran, unit, quanti):
     # Ressources
     #PBS -l nodes=1:ppn=1:gpu=1
     #PBS -l pmem=4000m
-    #PBS -l walltime=72:00:00
+    #PBS -l walltime=36:00:00
 
     # Log file
     #PBS -j oe
@@ -82,3 +85,5 @@ aux("FGcRBM", "gradient_descent", "event_level", "discrete_units", "4")
 aux("LSTM", "gradient_descent", "event_level", "discrete_units", "4")
 aux("RBM", "gradient_descent", "event_level", "discrete_units", "4")
 aux("RnnRbm", "gradient_descent", "event_level", "discrete_units", "4")
+
+os.chmod(meta_script, 0755)

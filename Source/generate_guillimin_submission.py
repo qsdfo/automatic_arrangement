@@ -46,14 +46,11 @@ def aux(algo, optim, gran, unit, quanti):
     #PBS -j oe
 
     # Queue
-    #PBS -q aw
+    #PBS -q metaq
 
     # Sending of email:
     #PBS -M crestel.leopold@gmail.com
     #PBS -m bae
-
-    # Interruption rules
-    #PBS -r n
     # **************************************************************
 
     SRC=$HOME/lop/Source

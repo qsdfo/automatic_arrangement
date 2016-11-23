@@ -48,3 +48,7 @@ ICCC/Corrections*
 # Submission files
 **/*.pbs
 Source/submission.sh
+
+# Dumped files
+Source/core.*
+Source/*.pbs.*

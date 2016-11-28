@@ -50,5 +50,6 @@ ICCC/Corrections*
 Source/submission.sh
 
 # Dumped files
+Source/script_folder/
 Source/core.*
 Source/*.pbs.*

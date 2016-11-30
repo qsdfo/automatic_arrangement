@@ -15,6 +15,8 @@
 
 import os
 import numpy as np
+import csv
+
 from acidano.data_processing.utils.build_dico import build_dico
 from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
@@ -157,24 +159,16 @@ def process_folder(folder_path, quantization, temporal_granularity):
     return pr0_aligned, instru0, name0, pr1_aligned, instru1, name1, duration
 
 
-def cast_pr(pr0, instru0, pr1, instru1, start_time, duration, instru_mapping, pr_orchestra, pr_piano, logging=None):
-    # Find which pr is orchestra, which one is piano
-    if len(set(instru0.keys())) > len(set(instru1.keys())):
-        # Add the small pr to the general structure
-        # pr0 is orchestra
-        pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(pr0, instru0, start_time, duration, instru_mapping, pr_orchestra)
-        pr_piano = build_data_aux.cast_small_pr_into_big_pr(pr1, {}, start_time, duration, instru_mapping, pr_piano)
-    elif len(set(instru0.keys())) < len(set(instru1.keys())):
-        # pr1 is orchestra
-        pr_piano = build_data_aux.cast_small_pr_into_big_pr(pr0, {}, start_time, duration, instru_mapping, pr_piano)
-        pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(pr1, instru1, start_time, duration, instru_mapping, pr_orchestra)
-    else:
-        logging.info('The two midi files have the same number of instruments')
+def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, duration, instru_mapping, pr_orchestra, pr_piano, logging=None):
+    pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(new_pr_orchestra, new_instru_orchestra, start_time, duration, instru_mapping, pr_orchestra)
+    pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, start_time, duration, instru_mapping, pr_piano)
 
 
 def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, temporal_granularity='frame_level', store_folder='../Data', logging=None):
     # Get dimensions
     get_dim_matrix(index_files_dict, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
+
+    statistics = {}
 
     temp = pickle.load(open(meta_info_path, 'rb'))
     instru_mapping = temp['instru_mapping']
@@ -221,14 +215,41 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
                         continue
 
                     # Find which pr is orchestra, which one is piano
+                    if len(set(instru0.keys())) > len(set(instru1.keys())):
+                        new_pr_orchestra = pr0
+                        new_instru_orchestra = instru0
+                        new_pr_piano = pr1
+                    elif len(set(instru0.keys())) < len(set(instru1.keys())):
+                        new_pr_orchestra = pr1
+                        new_instru_orchestra = instru1
+                        new_pr_piano = pr0
+                    else:
+                        logging.info('The two midi files have the same number of instruments')
+
                     # and cast them in the appropriate bigger structure
-                    cast_pr(pr0, instru0, pr1, instru1, time, duration, instru_mapping, pr_orchestra, pr_piano, logging)
+                    cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, time,
+                            duration, instru_mapping, pr_orchestra, pr_piano, logging)
 
                     # Store beginning and end of this track
                     tracks_start_end[folder_path] = (time, time+duration)
 
                     # Increment time counter
                     time += duration
+
+                    # Compute statistics
+                    for track_name, instrument_name in new_instru_orchestra.iteritems():
+                        # Number of note played by this instru
+                        if track_name == u'Kboard 3 (Celesta)':
+                            import pdb; pdb.set_trace()
+                        n_note_played = (new_pr_orchestra[track_name] > 0).sum()
+                        if instrument_name in statistics:
+                            # Track appearance
+                            statistics[instrument_name]['n_track_present'] = statistics[instrument_name]['n_track_present'] + 1
+                            statistics[instrument_name]['n_note_played'] = statistics[instrument_name]['n_note_played'] + n_note_played
+                        else:
+                            statistics[instrument_name] = {}
+                            statistics[instrument_name]['n_track_present'] = 1
+                            statistics[instrument_name]['n_note_played'] = n_note_played
 
         with open(store_folder + '/orchestra_' + set_identifier + '.csv', 'wb') as outfile:
             np.save(outfile, pr_orchestra)
@@ -255,9 +276,20 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
     # Save pr_orchestra, pr_piano, instru_mapping
     metadata = {}
     metadata['quantization'] = quantization
+    metadata['N_orchestra'] = N_orchestra
     metadata['instru_mapping'] = instru_mapping
     with open(store_folder + '/metadata.pkl', 'wb') as outfile:
         pickle.dump(metadata, outfile)
+
+    # Write statistics in a csv
+    header = "instrument_name;n_track_present;n_note_played"
+    with open(store_folder + '/statistics.csv', 'wb') as csvfile:
+        csvfile.write(header+'\n')
+        for instru_name, dico_stat in statistics.iteritems():
+            csvfile.write(instru_name + u';' +
+                          str(statistics[instru_name]['n_track_present']) + u';' +
+                          str(statistics[instru_name]['n_note_played']) + '\n')
+
 
 if __name__ == '__main__':
     # subfolder_names = ['test']

@@ -44,41 +44,10 @@ theano.config.compute_test_value = 'off'
 #    quantization : int
 ####################
 
+REBUILD_DATABASE = False
+
 ####################
-# Select a model (path to the .py file)
-# Two things define a model : it's architecture and the optimization method
-if sys.argv[1] == "RBM":
-    from acidano.models.lop.RBM import RBM as Model_class
-elif sys.argv[1] == "cRBM":
-    from acidano.models.lop.cRBM import cRBM as Model_class
-elif sys.argv[1] == "FGcRBM":
-    from acidano.models.lop.FGcRBM import FGcRBM as Model_class
-elif sys.argv[1] == "LSTM":
-    from acidano.models.lop.LSTM import LSTM as Model_class
-elif sys.argv[1] == "LSTM_gaussian_mixture":
-    from acidano.models.lop.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
-elif sys.argv[1] == "LSTM_gaussian_mixture_2":
-    from acidano.models.lop.LSTM_gaussian_mixture_2 import LSTM_gaussian_mixture_2 as Model_class
-elif sys.argv[1] == "RnnRbm":
-    from acidano.models.lop.RnnRbm import RnnRbm as Model_class
-elif sys.argv[1] == "cRnnRbm":
-    from acidano.models.lop.cRnnRbm import cRnnRbm as Model_class
-else:
-    raise ValueError(sys.argv[1] + " is not a model")
-
-if sys.argv[2] == "gradient_descent":
-    from acidano.utils.optim import gradient_descent as Optimization_method
-elif sys.argv[2] == 'adam_L2':
-    from acidano.utils.optim import adam_L2 as Optimization_method
-elif sys.argv[2] == 'rmsprop':
-    from acidano.utils.optim import rmsprop as Optimization_method
-elif sys.argv[2] == 'sgd_nesterov':
-    from acidano.utils.optim import sgd_nesterov as Optimization_method
-else:
-    raise ValueError(sys.argv[2] + " is not an optimization method")
-
 # Build data parameters :
-REBUILD_DATABASE = True
 # Temporal granularity
 if len(sys.argv) < 4:
     temporal_granularity = u'event_level'
@@ -96,7 +65,7 @@ else:
     elif sys.argv[4] == 'discrete_units':
         binary_unit = True
     else:
-        raise ValueError("binary_unit must be a boolean")
+        raise ValueError("Wrong units type")
 
 # Quantization
 if len(sys.argv) < 6:
@@ -108,6 +77,61 @@ else:
         print(sys.argv[5] + ' is not an integer')
         raise
 
+# Select a model (path to the .py file)
+# Two things define a model : it's architecture and the optimization method
+ONLY_BUILD_DB = False
+if len(sys.argv) < 2:
+    ONLY_BUILD_DB = True
+else:
+    ################### DISCRETE
+    if sys.argv[1] == "RBM":
+        from acidano.models.lop.discrete.RBM import RBM as Model_class
+        if not binary_unit:
+            logging.warning("You're using a model defined for binary units with real valued units")
+    elif sys.argv[1] == "cRBM":
+        from acidano.models.lop.discrete.cRBM import cRBM as Model_class
+        if not binary_unit:
+            logging.warning("You're using a model defined for binary units with real valued units")
+    elif sys.argv[1] == "FGcRBM":
+        from acidano.models.lop.discrete.FGcRBM import FGcRBM as Model_class
+        if not binary_unit:
+            logging.warning("You're using a model defined for binary units with real valued units")
+    elif sys.argv[1] == "LSTM":
+        from acidano.models.lop.discrete.LSTM import LSTM as Model_class
+        if not binary_unit:
+            logging.warning("You're using a model defined for binary units with real valued units")
+    elif sys.argv[1] == "RnnRbm":
+        from acidano.models.lop.discrete.RnnRbm import RnnRbm as Model_class
+        if not binary_unit:
+            logging.warning("You're using a model defined for binary units with real valued units")
+    elif sys.argv[1] == "cRnnRbm":
+        from acidano.models.lop.discrete.cRnnRbm import cRnnRbm as Model_class
+        if not binary_unit:
+            logging.warning("You're using a model defined for binary units with real valued units")
+    ###################  REAL
+    elif sys.argv[1] == "LSTM_gaussian_mixture":
+        from acidano.models.lop.real.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
+        if binary_unit:
+            logging.warning("You're using a model defined for real valued units with binary units")
+    elif sys.argv[1] == "LSTM_gaussian_mixture_2":
+        from acidano.models.lop.real.LSTM_gaussian_mixture_2 import LSTM_gaussian_mixture_2 as Model_class
+        if binary_unit:
+            logging.warning("You're using a model defined for real valued units with binary units")
+    ###################
+    else:
+        raise ValueError(sys.argv[1] + " is not a model")
+
+    if sys.argv[2] == "gradient_descent":
+        from acidano.utils.optim import gradient_descent as Optimization_method
+    elif sys.argv[2] == 'adam_L2':
+        from acidano.utils.optim import adam_L2 as Optimization_method
+    elif sys.argv[2] == 'rmsprop':
+        from acidano.utils.optim import rmsprop as Optimization_method
+    elif sys.argv[2] == 'sgd_nesterov':
+        from acidano.utils.optim import sgd_nesterov as Optimization_method
+    else:
+        raise ValueError(sys.argv[2] + " is not an optimization method")
+
 # System paths
 MAIN_DIR = os.getcwd().decode('utf8') + u'/'
 if 'LSCRATCH' in os.environ.keys():
@@ -117,9 +141,15 @@ else:
     LOCAL_SCRATCH = '..'
 
 data_folder = LOCAL_SCRATCH + u'/Data'
-result_folder = MAIN_DIR + u'../Results/' + temporal_granularity + '/' + Optimization_method.name() + '/' + Model_class.name()
+if ONLY_BUILD_DB:
+    result_folder = MAIN_DIR + u'../Results/' + 'Only_build_db'
+else:
+    result_folder = MAIN_DIR + u'../Results/' + temporal_granularity + '/' + Optimization_method.name() + '/' + Model_class.name()
 result_file = result_folder + u'/hopt_results.csv'
-log_file_path = result_folder + '/' + Model_class.name() + u'.log'
+if ONLY_BUILD_DB:
+    log_file_path = result_folder + '/build_db.log'
+else:
+    log_file_path = result_folder + '/' + Model_class.name() + u'.log'
 
 # Fixed hyper parameter
 max_evals = 50        # number of hyper-parameter configurations evaluated
@@ -439,7 +469,7 @@ def generate(model,
 
 
 if __name__ == "__main__":
-    # Check is the result folder exists
+    # Check if the result folder exists
     if not os.path.isdir(result_folder):
         os.makedirs(result_folder)
 
@@ -480,7 +510,7 @@ if __name__ == "__main__":
 
     ######################################
     ###### Rebuild database
-    if REBUILD_DATABASE:
+    if REBUILD_DATABASE or ONLY_BUILD_DB:
         logging.info('# ** Database REBUILT **')
         PREFIX_INDEX_FOLDER = MAIN_DIR + "../Data/Index/"
         index_files_dict = {}
@@ -515,11 +545,12 @@ if __name__ == "__main__":
     else:
         logging.info('# ** Database NOT rebuilt ** ')
     ######################################
-
     ######################################
+
     ###### HOPT function
-    best = train_hopt(max_evals, result_file)
-    logging.info(best)
+    if not ONLY_BUILD_DB:
+        best = train_hopt(max_evals, result_file)
+        logging.info(best)
     ######################################
 
     ######################################

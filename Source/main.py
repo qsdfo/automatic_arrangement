@@ -185,15 +185,13 @@ def train_hopt(max_evals, csv_file_path):
 
     # Define hyper-parameter search space for the model
     # Those are given by the static methods get_param_dico and get_hp_space
-    param_space = Model_class.get_hp_space()
+    model_space = Model_class.get_hp_space()
     optim_space = Optimization_method.get_hp_space()
-    space = param_space + optim_space
+    space = {'model': model_space, 'optim': optim_space}
 
     # Get the headers (i.e. list of hyperparameters tuned for printing and
     # save purposes)
-    param_header = (Model_class.get_param_dico(None)).keys()
-    optim_header = (Optimization_method.get_param_dico(None)).keys()
-    header = param_header + optim_header + ['accuracy']
+    header = ['sdfjoi'] + ['accuracy']
 
     global run_counter
     run_counter = 0
@@ -205,10 +203,9 @@ def train_hopt(max_evals, csv_file_path):
         logger_hopt.info((u'#'*40).encode('utf8'))
         logger_hopt.info((u'# Config :  {}'.format(run_counter)).encode('utf8'))
 
-        # Map hparam into a dictionary ##############
-        num_model_param = len(param_header)
-        model_param = Model_class.get_param_dico(params[:num_model_param])
-        optim_param = Optimization_method.get_param_dico(params[num_model_param:])
+        # Build model and optim dico ################
+        model_param = params['model']
+        optim_param = params['optim']
         #############################################
 
         # Weights plotted and stored in a folder ####

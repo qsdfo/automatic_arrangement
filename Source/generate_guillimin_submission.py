@@ -16,7 +16,7 @@ def aux(algo, optim, gran, unit, quanti):
 
 #PBS -l nodes=1:ppn=1:gpus=1
 #PBS -l pmem=4000m
-#PBS -l walltime=36:00:00
+#PBS -l walltime=12:00:00
 #PBS -j oe
 #PBS -q metaq
 #PBS -M crestel.leopold@gmail.com

@@ -66,7 +66,7 @@ else:
         binary_unit = True
     else:
         raise ValueError("Wrong units type")
-        
+
 # Quantization
 if len(sys.argv) < 6:
     quantization = 4

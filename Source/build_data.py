@@ -15,7 +15,7 @@
 
 import os
 import numpy as np
-import csv
+import logging
 
 from acidano.data_processing.utils.build_dico import build_dico
 from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
@@ -289,19 +289,3 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
             csvfile.write(instru_name + u';' +
                           str(statistics[instru_name]['n_track_present']) + u';' +
                           str(statistics[instru_name]['n_note_played']) + '\n')
-
-
-if __name__ == '__main__':
-    # subfolder_names = ['test']
-    PREFIX_INDEX_FOLDER = "../Data/Index/"
-    index_files_dict = {}
-    index_files_dict['train'] = [
-        PREFIX_INDEX_FOLDER + "debug_train.txt",
-    ]
-    index_files_dict['valid'] = [
-        PREFIX_INDEX_FOLDER + "debug_valid.txt",
-    ]
-    index_files_dict['test'] = [
-        PREFIX_INDEX_FOLDER + "debug_test.txt",
-    ]
-    build_data(index_files_dict=index_files_dict, meta_info_path='temp.p', quantization=12, temporal_granularity='event_level')

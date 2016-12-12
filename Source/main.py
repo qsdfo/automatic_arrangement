@@ -60,13 +60,13 @@ else:
 if len(sys.argv) < 5:
     binary_unit = True
 else:
-    if sys.argv[4] == 'real_units':
+    if sys.argv[4] == 'continuous_units':
         binary_unit = False
     elif sys.argv[4] == 'discrete_units':
         binary_unit = True
     else:
         raise ValueError("Wrong units type")
-
+        
 # Quantization
 if len(sys.argv) < 6:
     quantization = 4
@@ -191,7 +191,7 @@ def train_hopt(max_evals, csv_file_path):
 
     # Get the headers (i.e. list of hyperparameters tuned for printing and
     # save purposes)
-    header = ['sdfjoi'] + ['accuracy']
+    header = model_space.keys() + optim_space.keys() + ['accuracy']
 
     global run_counter
     run_counter = 0

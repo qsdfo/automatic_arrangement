@@ -24,11 +24,33 @@ from run import run_wrapper
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
+############################################################
+# Logging
+############################################################
+# log file
+log_file_path = 'main_log'
+# set up logging to file - see previous section for more details
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    datefmt='%m-%d %H:%M',
+                    filename=log_file_path,
+                    filemode='w')
+# define a Handler which writes INFO messages or higher to the sys.stderr
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+# set a format which is simpler for console use
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+# tell the handler to use this format
+console.setFormatter(formatter)
+# add the handler to the root logger
+logging.getLogger('').addHandler(console)
+
 REBUILD_DATABASE = False
 
 ############################################################
 # Script parameters
 ############################################################
+logging.info('Script paramaters')
 script_param = {}
 # Build data parameters :
 # Temporal granularity
@@ -117,6 +139,7 @@ else:
 ############################################################
 # System paths
 ############################################################
+logging.info('System paths')
 SOURCE_DIR = os.getcwd()
 result_folder = SOURCE_DIR + u'/../Results/' + unit_type + '/' + script_param['temporal_granularity'] + '/' +\
     'quantization_' + str(script_param['quantization']) + '/' + Optimization_method.name() + '/' + Model_class.name()
@@ -132,9 +155,6 @@ while(os.path.isdir(result_folder + '/hrun_' + str(hparam_run_counter))):
 result_folder = result_folder + '/hrun_' + str(hparam_run_counter)
 os.mkdir(result_folder)
 script_param['result_folder'] = result_folder
-
-# log file
-log_file_path = result_folder + '/log'
 
 # Data : .pkl files
 data_folder = SOURCE_DIR + '/../Data'
@@ -160,25 +180,6 @@ train_param['check_derivative_length'] = 5
 train_param['generation_length'] = 50
 train_param['seed_size'] = 10
 train_param['quantization_write'] = script_param['quantization']
-
-############################################################
-# Logging
-############################################################
-# set up logging to file - see previous section for more details
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                    datefmt='%m-%d %H:%M',
-                    filename=log_file_path,
-                    filemode='w')
-# define a Handler which writes INFO messages or higher to the sys.stderr
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-# set a format which is simpler for console use
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-# tell the handler to use this format
-console.setFormatter(formatter)
-# add the handler to the root logger
-logging.getLogger('').addHandler(console)
 
 # Now, we can log to the root logger, or any other logger. First the root...
 logging.info('#'*40)

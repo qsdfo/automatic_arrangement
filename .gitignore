@@ -25,6 +25,7 @@ Articles/Figures/DRAFT_SOURCE
 
 # Text and log files
 **/log
+**/log.*
 **/*.p
 **/*.pkl
 **/*.txt

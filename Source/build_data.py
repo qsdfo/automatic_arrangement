@@ -15,7 +15,6 @@
 
 import os
 import numpy as np
-import logging
 
 from acidano.data_processing.utils.build_dico import build_dico
 from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
@@ -23,7 +22,6 @@ from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_
 from acidano.data_processing.utils.event_level import get_event_ind_dict
 import build_data_aux
 import cPickle as pickle
-import theano
 
 from acidano.visualization.numpy_array.write_numpy_array_html import write_numpy_array_html
 from acidano.visualization.numpy_array.dumped_numpy_to_csv import dump_to_csv
@@ -186,8 +184,8 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
         ########################################
         ########################################
         ########################################
-        pr_orchestra = np.zeros((T, N_orchestra), dtype=theano.config.floatX)
-        pr_piano = np.zeros((T, N_piano), dtype=theano.config.floatX)
+        pr_orchestra = np.zeros((T, N_orchestra), dtype=np.float32)
+        pr_piano = np.zeros((T, N_piano), dtype=np.float32)
 
         # Write the prs in the matrix
         time = 0

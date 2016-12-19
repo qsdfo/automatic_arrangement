@@ -12,8 +12,8 @@ import cPickle as pkl
 import subprocess
 # Build data
 from build_data import build_data
-# Run wrapper
-from run_grid import run_wrapper
+# Clean Script
+from clean_result_dir import clean
 
 ####################
 # Reminder for plotting tools
@@ -235,14 +235,19 @@ optim_space = Optimization_method.get_hp_space()
 ############################################################
 # Grid search loop
 ############################################################
-import pdb; pdb.set_trace()
+# Start by removing empty directories in the result folder
+grid_search_folder = script_param['result_folder'] + '/' + 'configurations'
+if not os.path.isdir(grid_search_folder):
+    os.mkdir(grid_search_folder)
+clean(grid_search_folder)
+
 number_hp_config = 50
 for hp_config in range(number_hp_config):
     # Give a random ID and create folder
     ID_SET = False
     while not ID_SET:
         ID_config = random.randint(0, 2**25)
-        config_folder = script_param['result_folder'] + '/' + 'Grid_search' + '/' + str(ID_config)
+        config_folder = '/' + str(ID_config)
         if not os.path.isdir(config_folder):
             ID_SET = True
     os.makedirs(config_folder)

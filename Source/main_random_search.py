@@ -10,6 +10,7 @@ import logging
 import sys
 import cPickle as pkl
 import subprocess
+import glob
 # Build data
 from build_data import build_data
 # Clean Script
@@ -21,6 +22,8 @@ from clean_result_dir import clean
 # Histogram
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
+
+N_HP_CONFIG = 50
 
 ############################################################
 # Logging
@@ -146,6 +149,8 @@ result_folder = SOURCE_DIR + u'/../Results/' + script_param['temporal_granularit
 if not os.path.isdir(result_folder):
     os.makedirs(result_folder)
 script_param['result_folder'] = result_folder
+# Clean result folder
+clean(result_folder)
 
 # Data : .pkl files
 data_folder = SOURCE_DIR + '/../Data'
@@ -158,7 +163,6 @@ script_param['data_folder'] = data_folder
 ############################################################
 train_param = {}
 # Fixed hyper parameter
-max_evals = 10000                    # number of hyper-parameter configurations evaluated
 train_param['max_iter'] = 100        # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 
@@ -235,29 +239,42 @@ optim_space = Optimization_method.get_hp_space()
 ############################################################
 # Grid search loop
 ############################################################
-# Start by removing empty directories in the result folder
-grid_search_folder = script_param['result_folder'] + '/' + 'configurations'
-if not os.path.isdir(grid_search_folder):
-    os.mkdir(grid_search_folder)
-clean(grid_search_folder)
+# Organisation :
+# Each config is a folder with a random ID
+# In eahc of this folder there is :
+#    - a config.pkl file with the hyper-parameter space
+#    - a result.txt file with the result
+# The result.csv file containing id;result is created from the directory, rebuilt from time to time
 
-number_hp_config = 50
+# Already tested configs
+list_config_folders = glob.glob(result_folder + '/*')
+
+number_hp_config = max(0, N_HP_CONFIG - len(list_config_folders))
 for hp_config in range(number_hp_config):
     # Give a random ID and create folder
     ID_SET = False
     while not ID_SET:
-        ID_config = random.randint(0, 2**25)
-        config_folder = '/' + str(ID_config)
-        if not os.path.isdir(config_folder):
+        ID_config = str(random.randint(0, 2**25))
+        config_folder = script_param['result_folder'] + '/' + ID_config
+        if not config_folder in list_config_folders:
             ID_SET = True
-    os.makedirs(config_folder)
+    os.mkdir(config_folder)
 
-    # Build space
-    model_space_config = hyperopt.pyll.stochastic.sample(model_space)
-    optim_space_config = hyperopt.pyll.stochastic.sample(optim_space)
-    space = {'model': model_space, 'optim': optim_space, 'train': train_param, 'script': script_param}
-
-    # Pickle
+    # Find a point in space that has never been tested
+    UNTESTED_POINT_FOUND = False
+    while not UNTESTED_POINT_FOUND:
+        model_space_config = hyperopt.pyll.stochastic.sample(model_space)
+        optim_space_config = hyperopt.pyll.stochastic.sample(optim_space)
+        space = {'model': model_space_config, 'optim': optim_space_config, 'train': train_param, 'script': script_param}
+        # Check that this point in space has never been tested
+        # By looking in all directories and reading the config.pkl file
+        UNTESTED_POINT_FOUND = True
+        for dirname in list_config_folders:
+            this_config = pkl.load(open(dirname + '/config.pkl', 'rb'))
+            if space == this_config:
+                UNTESTED_POINT_FOUND = False
+                break
+    # Pickle the space in the config folder
     pkl.dump(space, open(config_folder + '/config.pkl', 'wb'))
 
     # Write pbs script
@@ -267,7 +284,7 @@ for hp_config in range(number_hp_config):
         text_pbs = """#!/bin/bash
         SRC=$HOME/lop/Source
         cd $SRC
-        python run_grid.py """ + str(ID_config)
+        python run_grid.py '""" + config_folder + "'"
     else:
         text_pbs = """#!/bin/bash
 
@@ -280,15 +297,18 @@ for hp_config in range(number_hp_config):
 
         SRC=$HOME/lop/Source
         cd $SRC
-        python run_grid.py """ + str(ID_config)
+        THEANO_FLAGS='device=gpu' python run_grid.py '""" + config_folder + "'"
 
     with open(file_pbs, 'wb') as f:
         f.write(text_pbs)
 
-    import pdb; pdb.set_trace()
     # Launch script
     if not LOCAL_TEST:
         subprocess.call('qsub ' + file_pbs,shell=True)
+    else:
+        import pdb; pdb.set_trace()
 
+    # Update folder list
+    list_config_folders.append(config_folder)
 # We done
-# Processing results come afterward, locally
+# Processing results come afterward

@@ -3,12 +3,16 @@
 
 import glob
 import os
+import shutil
 
 def clean(path):
     list_dir = glob.glob(path + '/*')
     for dirname in list_dir:
-        if os.listdir(dirname) == []:
-            os.rmdir(dirname)
+        list_file = os.listdir(dirname)
+        NO_RESULT_FILE = 'result.csv' not in list_file
+        NO_CONFIG_FILE = 'config.pkl' not in list_file
+        if NO_CONFIG_FILE or NO_RESULT_FILE:
+            shutil.rmtree(dirname)
 
 if __name__ == '__main__':
-    clean('/home/aciditeam-leo/Aciditeam/lop/Results/event_level/discrete_units/quantization_4/gradient_descent/LSTM/Grid_search')
+    clean('/home/aciditeam-leo/Aciditeam/lop/Results/event_level/discrete_units/quantization_4/gradient_descent/LSTM')

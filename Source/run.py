@@ -10,6 +10,7 @@ import cPickle as pkl
 # Perso
 from load_data import load_data
 # hopt
+import hyperopt
 from hyperopt import STATUS_OK
 
 ####################
@@ -20,7 +21,8 @@ import theano
 # theano.config.exception_verbosity = 'high'
 theano.config.compute_test_value = 'off'
 
-# @hyperopt.fmin.fmin_pass_expr_memo_ctrl
+
+@hyperopt.fmin.fmin_pass_expr_memo_ctrl
 def run_wrapper(params):
     ############################################################
     # Unpack parameters

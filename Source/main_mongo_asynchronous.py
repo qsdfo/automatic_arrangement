@@ -266,7 +266,10 @@ if number_mongodb_runnning > 0:
 logging.info("Start a mongo db process at " + mongo_adress)
 if not os.path.isdir(db_name):
     os.mkdir(db_name)
-mongo_str = "numactl --interleave=all mongod --dbpath " + db_name + " --port " + str(port) + " --directoryperdb --fork --journal --logpath log.log --nohttpinterface"
+
+mongo_str = "mongod --dbpath " + db_name + " --port " + str(port) + " --directoryperdb --fork --journal --logpath log.log --nohttpinterface"
+# mongo_str = "numactl --interleave=all mongod --dbpath " + db_name + " --port " + str(port) + " --directoryperdb --fork --journal --logpath log.log --nohttpinterface"
+
 subprocess.call(mongo_str, shell=True)
 
 # Produce submission file (called N_worker time with qsub)
@@ -282,10 +285,10 @@ module load iomkl/2015b Python/2.7.10 CUDA
 
 SRC=$HOME/lop/Source
 cd $SRC
-python hyperopt-mongo-worker.py --mongo=localhost:""" + mongo_adress +\
+python hyperopt-mongo-worker.py --mongo=""" + host + ':' + str(port) + '/' + db_name +\
     """ --poll-interval=5""" + \
-    """ --max_jobs=1""" + \
-    """ --work_dir=$SRC/""" + db_name
+    """ --max-jobs=1""" + \
+    """ --workdir=$SRC/""" + db_name
 
 with open(qsub_fname, 'wb') as f:
     f.write(qsub_content)

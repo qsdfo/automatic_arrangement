@@ -46,7 +46,7 @@ console.setFormatter(formatter)
 # add the handler to the root logger
 logging.getLogger('').addHandler(console)
 
-REBUILD_DATABASE = False
+REBUILD_DATABASE = True
 
 ############################################################
 # Script parameters
@@ -205,22 +205,22 @@ if REBUILD_DATABASE:
     PREFIX_INDEX_FOLDER = SOURCE_DIR + "/../Data/Index/"
     index_files_dict = {}
     index_files_dict['train'] = [
-        PREFIX_INDEX_FOLDER + "debug_train.txt",
-        # PREFIX_INDEX_FOLDER + "bouliane_train.txt",
-        # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
-        # PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
+        # PREFIX_INDEX_FOLDER + "debug_train.txt",
+        PREFIX_INDEX_FOLDER + "bouliane_train.txt",
+        PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
+        PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
     ]
     index_files_dict['valid'] = [
-        PREFIX_INDEX_FOLDER + "debug_valid.txt",
-        # PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
-        # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
-        # PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
+        # PREFIX_INDEX_FOLDER + "debug_valid.txt",
+        PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
+        PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
+        PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
     ]
     index_files_dict['test'] = [
-        PREFIX_INDEX_FOLDER + "debug_test.txt",
-        # PREFIX_INDEX_FOLDER + "bouliane_test.txt",
-        # PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
-        # PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
+        # PREFIX_INDEX_FOLDER + "debug_test.txt",
+        PREFIX_INDEX_FOLDER + "bouliane_test.txt",
+        PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
+        PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
     ]
 
     build_data(index_files_dict=index_files_dict,
@@ -229,6 +229,8 @@ if REBUILD_DATABASE:
                temporal_granularity=script_param['temporal_granularity'],
                store_folder=data_folder,
                logging=logging)
+
+import pdb; pdb.set_trace()
 
 ############################################################
 # Hyper parameter space
@@ -279,34 +281,24 @@ for hp_config in range(number_hp_config):
 
     # Write pbs script
     file_pbs = config_folder + '/submit.pbs'
-    LOCAL_TEST = True
-    if LOCAL_TEST:
-        text_pbs = """#!/bin/bash
-        SRC=$HOME/lop/Source
-        cd $SRC
-        python run_grid.py '""" + config_folder + "'"
-    else:
-        text_pbs = """#!/bin/bash
+    text_pbs = """#!/bin/bash
 
-        #PBS -l nodes=1:ppn=1:gpus=1
-        #PBS -l pmem=4000m
-        #PBS -l walltime=10:00:00
-        #PBS -q metaq
+    #PBS -l nodes=1:ppn=1:gpus=1
+    #PBS -l pmem=4000m
+    #PBS -l walltime=10:00:00
+    #PBS -q metaq
 
-        module load python/2.7.9 CUDA_Toolkit
+    module load python/2.7.9 CUDA_Toolkit
 
-        SRC=$HOME/lop/Source
-        cd $SRC
-        THEANO_FLAGS='device=gpu' python run_grid.py '""" + config_folder + "'"
+    SRC=$HOME/lop/Source
+    cd $SRC
+    THEANO_FLAGS='device=gpu' python run_grid.py '""" + config_folder + "'"
 
     with open(file_pbs, 'wb') as f:
         f.write(text_pbs)
 
     # Launch script
-    if not LOCAL_TEST:
-        subprocess.call('qsub ' + file_pbs,shell=True)
-    else:
-        import pdb; pdb.set_trace()
+    subprocess.call('qsub ' + file_pbs,shell=True)
 
     # Update folder list
     list_config_folders.append(config_folder)

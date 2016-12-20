@@ -10,8 +10,7 @@ import itertools
 
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
 from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace
-from acidano.visualization.numpy_array.write_numpy_array_html import write_numpy_array_html
-from acidano.visualization.numpy_array.dumped_numpy_to_csv import dump_to_csv
+from acidano.visualization.numpy_array.visualize_numpy import visualize_mat
 from acidano.data_processing.midi.write_midi import write_midi
 # from acidano.data_processing.midi.read_midi import Read_midi
 
@@ -34,20 +33,12 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
     nbId = 0
     nbDiffs = 0
 
-    # num_track_browsed = 30
     for sub_db in subfolder_names:
         print '#' * 30
         print sub_db
         sub_db_path = path_db + '/' + sub_db
         if not os.path.isdir(sub_db_path):
             continue
-
-        # list_tracks_dir = os.listdir(sub_db_path)
-        # ind_folder = np.random.permutation(len(list_tracks_dir))
-        # for ind in ind_folder[:num_track_browsed]:
-        # for ind in list_tracks_dir:
-
-            # folder_name = list_tracks_dir[ind]
 
         for folder_name in os.listdir(sub_db_path):
 
@@ -59,21 +50,6 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
 
             # Get instrus and prs from a folder name name
             pr0, instru0, T0, path_0, pr1, instru1, T1, path_1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization=quantization, clip=True)
-            # name_0 = re.split('/', path_0)[-1]
-            # name_1 = re.split('/', path_1)[-1]
-
-            ################################################
-            ################################################
-            # def auxiaux(pr, limit):
-            #     pr_bis = pr
-            #     pr = {}
-            #     for k,v in pr_bis.iteritems():
-            #         pr[k] = v[:limit,:]
-            #     return pr
-            # pr0 = auxiaux(pr0, 26)
-            # pr1 = auxiaux(pr1, 48)
-            ################################################
-            ################################################
 
             # Get trace from needleman_wunsch algorithm
             # Traces are binary lists, 0 meaning a gap is inserted
@@ -114,26 +90,21 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
             counter = counter + 1
 
             # Save every 100 example
-            if not counter % 10 == 0:
-                continue
+            # if counter % 10 == 0:
+            #     import pdb; pdb.set_trace()
 
             save_folder_name = output_dir +\
                 '/' + sub_db + '_' + folder_name
 
             if not os.path.exists(save_folder_name):
                 os.makedirs(save_folder_name)
-            temp_csv = save_folder_name + '/warp.csv'
-            np.savetxt(temp_csv, CCC_warp, delimiter=',')
-            dump_to_csv(temp_csv, temp_csv)
-            write_numpy_array_html(save_folder_name + "/pr_warp.html", "warp")
 
-            temp_csv = save_folder_name + '/aligned.csv'
-            np.savetxt(temp_csv, CCC_aligned, delimiter=',')
-            dump_to_csv(temp_csv, temp_csv)
-            write_numpy_array_html(save_folder_name + "/pr_aligned.html", "aligned")
-
-            write_midi(pr={'piano1': sum_along_instru_dim(pr0)}, quantization=quantization, write_path=save_folder_name + '/0.mid', tempo=80)
-            write_midi(pr={'piano1': sum_along_instru_dim(pr1)}, quantization=quantization, write_path=save_folder_name + '/1.mid', tempo=80)
+            visualize_mat(CCC_warp, save_folder_name, 'warp')
+            visualize_mat(CCC_aligned, save_folder_name, 'aligned')
+            # write_midi(pr={'piano1': sum_along_instru_dim(pr0)}, quantization=quantization, write_path=save_folder_name + '/0.mid', tempo=80)
+            # write_midi(pr={'piano1': sum_along_instru_dim(pr1)}, quantization=quantization, write_path=save_folder_name + '/1.mid', tempo=80)
+            write_midi(pr=pr0, quantization=quantization, write_path=save_folder_name + '/0.mid', tempo=80)
+            write_midi(pr=pr1, quantization=quantization, write_path=save_folder_name + '/1.mid', tempo=80)
             write_midi(pr={'piano1': AAA_warp, 'piano2': BBB_warp}, quantization=quantization, write_path=save_folder_name + '/both__warp.mid', tempo=80)
             write_midi(pr={'piano1': AAA_aligned, 'piano2': BBB_aligned}, quantization=quantization, write_path=save_folder_name + '/both__aligned.mid', tempo=80)
 

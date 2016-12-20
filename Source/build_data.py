@@ -118,13 +118,13 @@ def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, t
     ########################################
     ########################################
     ########################################
-    temp = {}
-    temp['instru_mapping'] = instru_mapping
-    temp['quantization'] = quantization
-    temp['T'] = T_dict
-    temp['N_orchestra'] = counter
-    pickle.dump(temp, open(meta_info_path, 'wb'))
-    return
+    # temp = {}
+    # temp['instru_mapping'] = instru_mapping
+    # temp['quantization'] = quantization
+    # temp['T'] = T_dict
+    # temp['N_orchestra'] = counter
+    # pickle.dump(temp, open(meta_info_path, 'wb'))
+    return instru_mapping, quantization, T_dict, counter
 
 
 def process_folder(folder_path, quantization, temporal_granularity):
@@ -164,15 +164,14 @@ def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, du
 
 def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, temporal_granularity='frame_level', store_folder='../Data', logging=None):
     # Get dimensions
-    get_dim_matrix(index_files_dict, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
+    instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(index_files_dict, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
 
     statistics = {}
-
-    temp = pickle.load(open(meta_info_path, 'rb'))
-    instru_mapping = temp['instru_mapping']
-    quantization = temp['quantization']
-    T_dict = temp['T']
-    N_orchestra = temp['N_orchestra']
+    # temp = pickle.load(open(meta_info_path, 'rb'))
+    # instru_mapping = temp['instru_mapping']
+    # quantization = temp['quantization']
+    # T_dict = temp['T']
+    # N_orchestra = temp['N_orchestra']
     N_piano = instru_mapping['piano']['index_max']
 
     for set_identifier, index_files in index_files_dict.iteritems():
@@ -237,8 +236,6 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
                     # Compute statistics
                     for track_name, instrument_name in new_instru_orchestra.iteritems():
                         # Number of note played by this instru
-                        if track_name == u'Kboard 3 (Celesta)':
-                            import pdb; pdb.set_trace()
                         n_note_played = (new_pr_orchestra[track_name] > 0).sum()
                         if instrument_name in statistics:
                             # Track appearance
@@ -287,3 +284,10 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
             csvfile.write(instru_name + u';' +
                           str(statistics[instru_name]['n_track_present']) + u';' +
                           str(statistics[instru_name]['n_note_played']) + '\n')
+
+
+if __name__ == '__main__':
+    quantization = 4
+    path = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/bouliane/21'
+    pr0, instru0, T0, name0, pr1, instru1, T1, name1 = build_data_aux.get_instru_and_pr_from_folder_path(path, quantization)
+    import pdb; pdb.set_trace()

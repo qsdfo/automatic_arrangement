@@ -51,7 +51,7 @@ def generate_midi(path, config=None, generation_length=50, seed_size=10, quantiz
         ############################################################
         model_path = config_folder + '/model.pkl'
         model = pkl.load(open(model_path, 'rb'))
-        param_path = config_folder + 'config.pkl'
+        param_path = config_folder + '/config.pkl'
         space = pkl.load(open(param_path, 'rb'))
         model_param = space['model']
         script_param = space['script']

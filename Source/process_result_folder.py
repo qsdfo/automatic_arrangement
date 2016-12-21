@@ -93,9 +93,9 @@ def generate_midi(path, config=None, generation_length=50, seed_size=10, quantiz
         time_generate_1 = time.time()
         logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 
-#
-# def plot_weights(path, config=None):
-#
+def plot_weights(path, config=None):
+    
+
 # def process_result_csv(path):
 #
 # def statistics():

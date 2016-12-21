@@ -14,7 +14,7 @@ import glob
 # Build data
 from build_data import build_data
 # Clean Script
-from process_result_folder import clean
+from clean_result_folder import clean
 
 ####################
 # Reminder for plotting tools
@@ -24,7 +24,7 @@ from process_result_folder import clean
 # plt.show()
 
 N_HP_CONFIG = 2
-REBUILD_DATABASE = True
+REBUILD_DATABASE = False
 
 ############################################################
 # Logging
@@ -147,7 +147,7 @@ script_param['skip_sample'] = 1
 ############################################################
 train_param = {}
 # Fixed hyper parameter
-train_param['max_iter'] = 100        # nb max of iterations when training 1 configuration of hparams
+train_param['max_iter'] = 3        # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 
 # Validation
@@ -275,9 +275,10 @@ THEANO_FLAGS='device=gpu' python train.py '""" + config_folder + "'"
         f.write(text_pbs)
 
     # Launch script
-    subprocess.call('qsub ' + file_pbs,shell=True)
+    subprocess.call('qsub ' + file_pbs, shell=True)
 
     # Update folder list
     list_config_folders.append(config_folder)
+
 # We done
 # Processing results come afterward

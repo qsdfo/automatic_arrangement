@@ -95,10 +95,10 @@ def run_wrapper(params, config_folder):
                           logger_load=logger_run)
     time_load_1 = time.time()
     logger_run.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
-    import pdb; pdb.set_trace()
 
     ############################################################
     # Get dimensions of batches
+
     ############################################################
     piano_dim = piano_train.get_value().shape[1]
     orchestra_dim = orchestra_train.get_value().shape[1]

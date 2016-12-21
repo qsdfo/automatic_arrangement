@@ -7,9 +7,7 @@ import logging
 import numpy as np
 import cPickle as pkl
 # Perso
-from load_data import load_data
-# hopt
-from hyperopt import STATUS_OK
+from load_data import load_data_train, load_data_valid
 
 ####################
 # Debugging compiler flags
@@ -81,17 +79,23 @@ def run_wrapper(params, config_folder):
     # Load data
     ############################################################
     time_load_0 = time.time()
-    piano_train, orchestra_train, train_index, \
-        piano_valid, orchestra_valid, valid_index, \
-        piano_test, orchestra_test, test_index, generation_index \
-        = load_data(script_param['data_folder'],
-                    model_param['temporal_order'],
-                    model_param['batch_size'],
-                    binary_unit=script_param['binary_unit'],
-                    skip_sample=1,
-                    logger_load=logger_run)
+    piano_train, orchestra_train, train_index \
+        = load_data_train(script_param['data_folder'],
+                          model_param['temporal_order'],
+                          model_param['batch_size'],
+                          binary_unit=script_param['binary_unit'],
+                          skip_sample=script_param['skip_sample'],
+                          logger_load=logger_run)
+    piano_valid, orchestra_valid, valid_index \
+        = load_data_valid(script_param['data_folder'],
+                          model_param['temporal_order'],
+                          model_param['batch_size'],
+                          binary_unit=script_param['binary_unit'],
+                          skip_sample=script_param['skip_sample'],
+                          logger_load=logger_run)
     time_load_1 = time.time()
     logger_run.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
+    import pdb; pdb.set_trace()
 
     ############################################################
     # Get dimensions of batches
@@ -260,5 +264,4 @@ def train(model, optimizer,
 if __name__ == '__main__':
     config_folder = sys.argv[1]
     params = pkl.load(open(config_folder + '/config.pkl', "rb"))
-    import pdb; pdb.set_trace()
     run_wrapper(params, config_folder)

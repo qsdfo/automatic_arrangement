@@ -269,7 +269,7 @@ module load python/2.7.9 CUDA_Toolkit
 
 SRC=$HOME/lop/Source
 cd $SRC
-THEANO_FLAGS='device=gpu' python run_grid.py '""" + config_folder + "'"
+THEANO_FLAGS='device=gpu' python train.py '""" + config_folder + "'"
 
     with open(file_pbs, 'wb') as f:
         f.write(text_pbs)

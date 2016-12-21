@@ -14,7 +14,7 @@ import glob
 # Build data
 from build_data import build_data
 # Clean Script
-from clean_result_dir import clean
+from process_result_folder import clean
 
 ####################
 # Reminder for plotting tools
@@ -23,13 +23,14 @@ from clean_result_dir import clean
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 50
+N_HP_CONFIG = 2
+REBUILD_DATABASE = True
 
 ############################################################
 # Logging
 ############################################################
 # log file
-log_file_path = 'main_log'
+log_file_path = 'log/main_log'
 # set up logging to file - see previous section for more details
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
@@ -46,96 +47,78 @@ console.setFormatter(formatter)
 # add the handler to the root logger
 logging.getLogger('').addHandler(console)
 
-REBUILD_DATABASE = True
-
 ############################################################
 # Script parameters
 ############################################################
 logging.info('Script paramaters')
+
+# Get command line parameters and set default if not provided
+if not len(sys.argv) == 6:
+    command = ['', 'LSTM', 'gradient_descent', 'event_level', 'discrete_units', '4']
+else:
+    command = sys.argv
+
+# Store script parameters
 script_param = {}
-# Build data parameters :
-# Temporal granularity
-if len(sys.argv) < 4:
-    script_param['temporal_granularity'] = u'event_level'
-else:
-    script_param['temporal_granularity'] = sys.argv[3]
-    if script_param['temporal_granularity'] not in ['frame_level', 'event_level']:
-        raise ValueError(sys.argv[3] + " is not temporal_granularity")
-
-# Unit type
-if len(sys.argv) < 5:
-    script_param['binary_unit'] = True
-else:
-    unit_type = sys.argv[4]
-    if unit_type == 'continuous_units':
-        script_param['binary_unit'] = False
-    elif unit_type == 'discrete_units':
-        script_param['binary_unit'] = True
-    else:
-        raise ValueError("Wrong units type")
-
-# Quantization
-if len(sys.argv) < 6:
-    script_param['quantization'] = 4
-else:
-    try:
-        script_param['quantization'] = int(sys.argv[5])
-    except ValueError:
-        print(sys.argv[5] + ' is not an integer')
-        raise
 
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the optimization method
 ################### DISCRETE
-script_param['model_class'] = sys.argv[1]
-if sys.argv[1] == "RBM":
+script_param['model_class'] = command[1]
+if command[1] == "RBM":
     from acidano.models.lop.discrete.RBM import RBM as Model_class
-    if not script_param['binary_unit']:
-        logging.warning("You're using a model defined for binary units with real valued units")
-elif sys.argv[1] == "cRBM":
+elif command[1] == "cRBM":
     from acidano.models.lop.discrete.cRBM import cRBM as Model_class
-    if not script_param['binary_unit']:
-        logging.warning("You're using a model defined for binary units with real valued units")
-elif sys.argv[1] == "FGcRBM":
+elif command[1] == "FGcRBM":
     from acidano.models.lop.discrete.FGcRBM import FGcRBM as Model_class
-    if not script_param['binary_unit']:
-        logging.warning("You're using a model defined for binary units with real valued units")
-elif sys.argv[1] == "LSTM":
+elif command[1] == "LSTM":
     from acidano.models.lop.discrete.LSTM import LSTM as Model_class
-    if not script_param['binary_unit']:
-        logging.warning("You're using a model defined for binary units with real valued units")
-elif sys.argv[1] == "RnnRbm":
+elif command[1] == "RnnRbm":
     from acidano.models.lop.discrete.RnnRbm import RnnRbm as Model_class
-    if not script_param['binary_unit']:
-        logging.warning("You're using a model defined for binary units with real valued units")
-elif sys.argv[1] == "cRnnRbm":
+elif command[1] == "cRnnRbm":
     from acidano.models.lop.discrete.cRnnRbm import cRnnRbm as Model_class
-    if not script_param['binary_unit']:
-        logging.warning("You're using a model defined for binary units with real valued units")
 ###################  REAL
-elif sys.argv[1] == "LSTM_gaussian_mixture":
+elif command[1] == "LSTM_gaussian_mixture":
     from acidano.models.lop.real.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
-    if script_param['binary_unit']:
-        logging.warning("You're using a model defined for real valued units with binary units")
-elif sys.argv[1] == "LSTM_gaussian_mixture_2":
+elif command[1] == "LSTM_gaussian_mixture_2":
     from acidano.models.lop.real.LSTM_gaussian_mixture_2 import LSTM_gaussian_mixture_2 as Model_class
-    if script_param['binary_unit']:
-        logging.warning("You're using a model defined for real valued units with binary units")
 ###################
 else:
-    raise ValueError(sys.argv[1] + " is not a model")
+    raise ValueError(command[1] + " is not a model")
 
-script_param['optimization_method'] = sys.argv[2]
-if sys.argv[2] == "gradient_descent":
+# Optimization
+script_param['optimization_method'] = command[2]
+if command[2] == "gradient_descent":
     from acidano.utils.optim import gradient_descent as Optimization_method
-elif sys.argv[2] == 'adam_L2':
+elif command[2] == 'adam_L2':
     from acidano.utils.optim import adam_L2 as Optimization_method
-elif sys.argv[2] == 'rmsprop':
+elif command[2] == 'rmsprop':
     from acidano.utils.optim import rmsprop as Optimization_method
-elif sys.argv[2] == 'sgd_nesterov':
+elif command[2] == 'sgd_nesterov':
     from acidano.utils.optim import sgd_nesterov as Optimization_method
 else:
-    raise ValueError(sys.argv[2] + " is not an optimization method")
+    raise ValueError(command[2] + " is not an optimization method")
+
+# Temporal granularity
+script_param['temporal_granularity'] = command[3]
+if script_param['temporal_granularity'] not in ['frame_level', 'event_level']:
+    raise ValueError(command[3] + " is not temporal_granularity")
+
+# Unit type
+unit_type = command[4]
+if unit_type == 'continuous_units':
+    script_param['binary_unit'] = False
+elif unit_type == 'discrete_units':
+    script_param['binary_unit'] = True
+else:
+    raise ValueError("Wrong units type")
+
+# Quantization
+try:
+    script_param['quantization'] = int(command[5])
+except ValueError:
+    print(command[5] + ' is not an integer')
+    raise
 
 ############################################################
 # System paths
@@ -157,6 +140,7 @@ data_folder = SOURCE_DIR + '/../Data'
 if not os.path.isdir(data_folder):
     os.mkdir(data_folder)
 script_param['data_folder'] = data_folder
+script_param['skip_sample'] = 1
 
 ############################################################
 # Train parameters
@@ -170,11 +154,6 @@ train_param['max_iter'] = 100        # nb max of iterations when training 1 conf
 train_param['validation_order'] = 5
 train_param['initial_derivative_length'] = 20
 train_param['check_derivative_length'] = 5
-
-# Generation
-train_param['generation_length'] = 50
-train_param['seed_size'] = 10
-train_param['quantization_write'] = script_param['quantization']
 
 # Now, we can log to the root logger, or any other logger. First the root...
 logging.info('#'*40)
@@ -230,8 +209,6 @@ if REBUILD_DATABASE:
                store_folder=data_folder,
                logging=logging)
 
-import pdb; pdb.set_trace()
-
 ############################################################
 # Hyper parameter space
 ############################################################
@@ -283,16 +260,16 @@ for hp_config in range(number_hp_config):
     file_pbs = config_folder + '/submit.pbs'
     text_pbs = """#!/bin/bash
 
-    #PBS -l nodes=1:ppn=1:gpus=1
-    #PBS -l pmem=4000m
-    #PBS -l walltime=10:00:00
-    #PBS -q metaq
+#PBS -l nodes=1:ppn=1:gpus=1
+#PBS -l pmem=4000m
+#PBS -l walltime=10:00:00
+#PBS -q metaq
 
-    module load python/2.7.9 CUDA_Toolkit
+module load python/2.7.9 CUDA_Toolkit
 
-    SRC=$HOME/lop/Source
-    cd $SRC
-    THEANO_FLAGS='device=gpu' python run_grid.py '""" + config_folder + "'"
+SRC=$HOME/lop/Source
+cd $SRC
+THEANO_FLAGS='device=gpu' python run_grid.py '""" + config_folder + "'"
 
     with open(file_pbs, 'wb') as f:
         f.write(text_pbs)

@@ -23,8 +23,9 @@ from clean_result_folder import clean
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 2
+N_HP_CONFIG = 5
 REBUILD_DATABASE = False
+LOCAL = True
 
 ############################################################
 # Logging
@@ -256,9 +257,13 @@ for hp_config in range(number_hp_config):
     # Pickle the space in the config folder
     pkl.dump(space, open(config_folder + '/config.pkl', 'wb'))
 
-    # Write pbs script
-    file_pbs = config_folder + '/submit.pbs'
-    text_pbs = """#!/bin/bash
+    if LOCAL:
+        process = subprocess.Popen("THEANO_FLAGS='device=gpu' python train.py '" + config_folder + "'", shell=True, stdout=subprocess.PIPE)
+        process.wait()
+    else:
+        # Write pbs script
+        file_pbs = config_folder + '/submit.pbs'
+        text_pbs = """#!/bin/bash
 
 #PBS -l nodes=1:ppn=1:gpus=1
 #PBS -l pmem=4000m
@@ -271,11 +276,11 @@ SRC=$HOME/lop/Source
 cd $SRC
 THEANO_FLAGS='device=gpu' python train.py '""" + config_folder + "'"
 
-    with open(file_pbs, 'wb') as f:
-        f.write(text_pbs)
+        with open(file_pbs, 'wb') as f:
+            f.write(text_pbs)
 
-    # Launch script
-    subprocess.call('qsub ' + file_pbs, shell=True)
+        # Launch script
+        subprocess.call('qsub ' + file_pbs, shell=True)
 
     # Update folder list
     list_config_folders.append(config_folder)

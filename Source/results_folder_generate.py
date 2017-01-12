@@ -18,7 +18,7 @@ def generate_midi(config_folder, generation_length, seed_size, quantization_writ
     space = pkl.load(open(param_path, 'rb'))
     model_param = space['model']
     script_param = space['script']
-    metadata_path = script_param['data'] + '/metadata.pkl'
+    metadata_path = script_param['data_folder'] + '/metadata.pkl'
 
     if quantization_write is None:
         quantization_write = script_param['quantization']

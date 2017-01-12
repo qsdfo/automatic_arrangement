@@ -7,6 +7,7 @@ import logging
 
 from results_folder_generate import generate_midi
 from results_folder_plot_weights import plot_weights
+from results_folder_csv import get_results_and_id, write_csv_results
 
 # Main script for processing results folders
 # Processing consists in :
@@ -45,19 +46,20 @@ def processing_results(path, generation_length=50, seed_size=20, quantization_wr
     logger_plot = logging.getLogger('plot_weights')
 
     ############################################################
-    # Per folder processing
+    # Processing
     ############################################################
-    configurations = glob.glob(path + '/[0-9]+')
+    # Get folders starting with a number
+    configurations = glob.glob(path + '/[0-9]*')
+    id_result_list = []
     for configuration in configurations:
+        import pdb; pdb.set_trace()
         generate_midi(configuration, generation_length, seed_size, quantization_write, logger_generate)
+        import pdb; pdb.set_trace()
         plot_weights(configuration, logger_plot)
+        import pdb; pdb.set_trace()
+        id_result_list.append(get_results_and_id(configuration))
 
-    ############################################################
-    # Global processing
-    ############################################################
-    
-
-
+    write_csv_results(id_result_list, configurations[0])
 
 if __name__ == '__main__':
-    clean('/home/aciditeam-leo/Aciditeam/lop/Results/event_level/discrete_units/quantization_4/gradient_descent/LSTM')
+    processing_results('/home/aciditeam-leo/Aciditeam/lop/Results_bis/event_level/discrete_units/quantization_4/gradient_descent/RBM_inpainting')

@@ -27,7 +27,11 @@ def generate(model,
     instru_mapping = metadata['instru_mapping']
 
     # Given last indices, generate a batch of sequences
+    import pdb; pdb.set_trace()
     (generated_sequence,) = generate_sequence(indices)
+    # Get the ground-truth piano and orchestra
+    # IZY from piano, orchestra, indices, generation length and seed_size
+    # orchestra_original = orchestra[indices]
     if generated_folder is not None:
         for write_counter in xrange(generated_sequence.shape[0]):
             # Write midi

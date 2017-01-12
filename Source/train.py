@@ -261,6 +261,46 @@ def train(model, optimizer,
     best_loss = loss_tab[best_epoch]
     return best_loss, best_accuracy
 
+
+def train_keras(model, optimizer,
+                piano_train, orchestra_train, train_index,
+                piano_valid, orchestra_valid, valid_index,
+                train_param, logger_train):
+    ############################################################
+    # Compile theano functions
+    # Compilation of the training function is encapsulated in the class since the 'givens'
+    # can vary with the model
+    ############################################################
+    from keras.models import Sequential
+    from keras.layers import Dense, Dropout, Activation
+    from keras.optimizers import SGD
+
+    model = Sequential()
+    # Dense(64) is a fully-connected layer with 64 hidden units.
+    # in the first layer, you must specify the expected input data shape:
+    # here, 20-dimensional vectors.
+    model.add(Dense(64, input_dim=20, init='uniform'))
+    model.add(Activation('tanh'))
+    model.add(Dropout(0.5))
+    model.add(Dense(64, init='uniform'))
+    model.add(Activation('tanh'))
+    model.add(Dropout(0.5))
+    model.add(Dense(10, init='uniform'))
+    model.add(Activation('softmax'))
+
+    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='binary_crossentropy',
+                  optimizer=sgd,
+                  metrics=['accuracy'])
+
+    import pdb; pdb.set_trace()
+    model.fit(piano_train, orchestra_train,
+              nb_epoch=200,
+              batch_size=100)
+    score = model.evaluate(piano_valid, orchestra_valid, batch_size=100)
+
+    return score, score
+
 if __name__ == '__main__':
     config_folder = sys.argv[1]
     params = pkl.load(open(config_folder + '/config.pkl', "rb"))

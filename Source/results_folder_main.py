@@ -52,7 +52,6 @@ def processing_results(path, generation_length=50, seed_size=20, quantization_wr
     configurations = glob.glob(path + '/[0-9]*')
     id_result_list = []
     for configuration in configurations:
-        import pdb; pdb.set_trace()
         generate_midi(configuration, generation_length, seed_size, quantization_write, logger_generate)
         import pdb; pdb.set_trace()
         plot_weights(configuration, logger_plot)

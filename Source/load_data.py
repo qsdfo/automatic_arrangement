@@ -95,7 +95,7 @@ def load_data(data_folder, set_identifier, temporal_order=20, batch_size=100, ge
     if set_identifier != 'test':
         return piano_shared, orchestra_shared, np.asarray(batches, dtype=np.int32)
     else:
-        return piano_shared, orchestra_shared, np.asarray(batches, dtype=np.int32), generation_index
+        return piano_shared, orchestra_shared, np.asarray(batches, dtype=np.int32), np.asarray(generation_index)
 
 # Wrappers
 def load_data_train(data_folder, temporal_order=20, batch_size=100, generation_length=100,

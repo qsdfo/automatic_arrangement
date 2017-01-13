@@ -268,7 +268,6 @@ for hp_config in range(number_hp_config):
 #PBS -l nodes=1:ppn=1:gpus=1
 #PBS -l pmem=4000m
 #PBS -l walltime=10:00:00
-#PBS -q metaq
 
 module load python/2.7.9 CUDA_Toolkit
 

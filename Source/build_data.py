@@ -20,9 +20,9 @@ import os
 import numpy as np
 
 from acidano.data_processing.utils.build_dico import build_dico
-from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
 from acidano.data_processing.utils.event_level import get_event_ind_dict
+from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_pr_aux
 import build_data_aux
 import cPickle as pickle
 
@@ -125,36 +125,6 @@ def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, t
     return instru_mapping, quantization, T_dict, counter
 
 
-def process_folder(folder_path, quantization, temporal_granularity):
-    # Get instrus and prs from a folder name name
-    pr0, instru0, _, name0, pr1, instru1, _, name1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization)
-
-    # Temporal granularity
-    if temporal_granularity == 'event_level':
-        pr0 = warp_pr_aux(pr0, get_event_ind_dict(pr0))
-        pr1 = warp_pr_aux(pr1, get_event_ind_dict(pr1))
-
-    # Get trace from needleman_wunsch algorithm
-    # Traces are binary lists, 0 meaning a gap is inserted
-    trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1))
-
-    # Wrap dictionnaries according to the traces
-    assert(len(trace_0) == len(trace_1)), "size mismatch"
-    pr0_warp = warp_dictionnary_trace(pr0, trace_0)
-    pr1_warp = warp_dictionnary_trace(pr1, trace_1)
-
-    # Get pr warped and duration# In fact we just discard 0 in traces for both pr
-    trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
-
-    duration = sum(trace_prod)
-    if duration == 0:
-        return [None]*7
-    pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
-    pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
-
-    return pr0_aligned, instru0, name0, pr1_aligned, instru1, name1, duration
-
-
 def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, duration, instru_mapping, pr_orchestra, pr_piano, logging=None):
     pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(new_pr_orchestra, new_instru_orchestra, start_time, duration, instru_mapping, pr_orchestra)
     pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, start_time, duration, instru_mapping, pr_piano)
@@ -199,27 +169,16 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
                         continue
 
                     # Get pr warped and duration
-                    pr0, instru0, name0, pr1, instru1, name1, duration = process_folder(folder_path, quantization, temporal_granularity)
+                    new_pr_piano, new_instru_piano, name_piano, new_pr_orchestra, new_instru_orchestra, name_orchestra, duration\
+                        = build_data_aux.process_folder(folder_path, quantization, temporal_granularity)
 
                     # SKip shitty files
-                    if pr0 is None:
+                    if new_pr_piano is None:
                         # It's definitely not a match...
                         # Check for the files : are they really a piano score and its orchestration ??
                         with(open('log.txt', 'a')) as f:
                             f.write(folder_path + '\n')
                         continue
-
-                    # Find which pr is orchestra, which one is piano
-                    if len(set(instru0.keys())) > len(set(instru1.keys())):
-                        new_pr_orchestra = pr0
-                        new_instru_orchestra = instru0
-                        new_pr_piano = pr1
-                    elif len(set(instru0.keys())) < len(set(instru1.keys())):
-                        new_pr_orchestra = pr1
-                        new_instru_orchestra = instru1
-                        new_pr_piano = pr0
-                    else:
-                        logging.info('The two midi files have the same number of instruments')
 
                     # and cast them in the appropriate bigger structure
                     cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, time,

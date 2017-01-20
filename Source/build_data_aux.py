@@ -8,6 +8,9 @@ from unidecode import unidecode
 import numpy as np
 from acidano.data_processing.midi.read_midi import Read_midi
 from acidano.data_processing.utils.pianoroll_processing import clip_pr, get_pianoroll_time
+from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
+from acidano.data_processing.utils.event_level import get_event_ind_dict
+from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
 
 
 def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
@@ -40,7 +43,7 @@ def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
         instru0 = next(r0)
         r1 = csv.DictReader(f1, delimiter=';')
         instru1 = next(r1)
-    
+
     return pianoroll_0, instru0, T0, mid_files[0], pianoroll_1, instru1, T1, mid_files[1]
 
 
@@ -77,14 +80,66 @@ def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from
             # Sanity check : notations consistency
             v_no_suffix = re.split(ur'\s', v)[0]
             if (v_no_suffix not in instrument_list_from_dico) and (v not in instrument_list_from_dico):
-                print 'V PAS DANS INSTRUMENT LISTE'
-                import pdb; pdb.set_trace()
+                raise ValueError('V PAS DANS INSTRUMENT LISTE')
             instru_mapping[v] = {}
             this_min = min(np.nonzero(np.sum(pr_instru, axis=0))[0])
             this_max = max(np.nonzero(np.sum(pr_instru, axis=0))[0])
             instru_mapping[v]['pitch_min'] = this_min
             instru_mapping[v]['pitch_max'] = this_max
     return instru_mapping
+
+
+def process_folder(folder_path, quantization, temporal_granularity, logging):
+    # Get instrus and prs from a folder name name
+    pr0, instru0, _, name0, pr1, instru1, _, name1 = get_instru_and_pr_from_folder_path(folder_path, quantization)
+
+    # Temporal granularity
+    if temporal_granularity == 'event_level':
+        pr0 = warp_pr_aux(pr0, get_event_ind_dict(pr0))
+        pr1 = warp_pr_aux(pr1, get_event_ind_dict(pr1))
+
+    # Get trace from needleman_wunsch algorithm
+    # Traces are binary lists, 0 meaning a gap is inserted
+    trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1))
+
+    # Wrap dictionnaries according to the traces
+    assert(len(trace_0) == len(trace_1)), "size mismatch"
+    pr0_warp = warp_dictionnary_trace(pr0, trace_0)
+    pr1_warp = warp_dictionnary_trace(pr1, trace_1)
+
+    # Get pr warped and duration# In fact we just discard 0 in traces for both pr
+    trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
+
+    duration = sum(trace_prod)
+    if duration == 0:
+        return [None]*7
+    pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
+    pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
+
+    # Find which pr is orchestra, which one is piano
+    if len(set(instru0.keys())) > len(set(instru1.keys())):
+
+        pr_orchestra = pr0_aligned
+        instru_orchestra = instru0
+        name_orchestra = name0
+
+        pr_piano = pr1_aligned
+        instru_piano = instru1
+        name_piano = name1
+
+    elif len(set(instru0.keys())) < len(set(instru1.keys())):
+
+        pr_orchestra = pr1_aligned
+        instru_orchestra = instru1
+        name_orchestra = name1
+
+        pr_piano = pr0_aligned
+        instru_piano = instru0
+        name_piano = name0
+
+    else:
+        logging.info('The two midi files have the same number of instruments')
+    return pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra, duration
 
 
 def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, pr_big):
@@ -110,8 +165,7 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
             try:
                 instru_names = unmixed_instru(instru[track_name])
             except:
-                print track_name + ' not in instru'
-                import pdb; pdb.set_trace()
+                raise ValueError(track_name + ' not in instru')
 
         for instru_name in instru_names:
             # Little hack for a little problem i ran into :

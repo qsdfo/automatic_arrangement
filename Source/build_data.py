@@ -63,12 +63,7 @@ def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, t
                         continue
 
                     # Read pr
-                    try:
-                        pr0, instru0, T0, name0, pr1, instru1, T1, name1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization)
-                    except:
-                        with open('log', 'wb') as f:
-                            f.write('Bad file' + folder_path + '\n')
-                        continue
+                    pr0, instru0, T0, name0, pr1, instru1, T1, name1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization)
 
                     # Temporal granularity
                     if temporal_granularity == 'event_level':

@@ -6,8 +6,11 @@
 #################################################
 #################################################
 # Note :
-# - for instrument pitch limits, we count discarding instrument mixes
-#       then, casting the pr, we remove for instrumental mix the pitch outliers
+#   - pitch range for each instrument is set based on the observed pitch range of the database
+#   - for test set, we picked seminal examples. See the name_db_{test;train;valid}.txt files that
+#       list the files path :
+#           - beethoven/liszt symph 5 - 1 : liszt_classical_archive/16
+#           - mouss/ravel pictures exhib : bouliane/22
 #################################################
 #################################################
 #################################################
@@ -206,7 +209,7 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
                     # SKip shitty files
                     if pr0 is None:
                         # It's definitely not a match...
-                        # Check for the files : are they really an piano score and its orchestration ??
+                        # Check for the files : are they really a piano score and its orchestration ??
                         with(open('log.txt', 'a')) as f:
                             f.write(folder_path + '\n')
                         continue
@@ -284,10 +287,3 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
             csvfile.write(instru_name + u';' +
                           str(statistics[instru_name]['n_track_present']) + u';' +
                           str(statistics[instru_name]['n_note_played']) + '\n')
-
-
-if __name__ == '__main__':
-    quantization = 4
-    path = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/bouliane/21'
-    pr0, instru0, T0, name0, pr1, instru1, T1, name1 = build_data_aux.get_instru_and_pr_from_folder_path(path, quantization)
-    import pdb; pdb.set_trace()

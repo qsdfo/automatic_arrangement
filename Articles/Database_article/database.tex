@@ -88,7 +88,9 @@
 \date{\today} % Leave empty to omit a date
 \renewcommand{\maketitlehookd}{%
 \begin{abstract}
-\noindent This article introduces a midi score database. It is composed by (137 OU 224 si IMSLP, mais c'est tout faux) pairs of one piano score and one corresponding orchestration. To our best knowledge, this is the first database of this kind. Thus, we also introduce a projective orchestration task, which roughly consists in learning to perform automatic orchestration of a piano score. This task can be addressed using learning methods on this database.  
+\noindent This article introduces the \textbf{NAME} dataset, a freely-available collection of midi scores 
+
+midi score database. It is composed by (137 OU 224 si IMSLP, mais c'est tout faux) pairs of one piano score and one corresponding orchestration. To our best knowledge, this is the first database of this kind. Thus, we also introduce a projective orchestration task, which roughly consists in learning to perform automatic orchestration of a piano score. This task can be addressed using learning methods on this database.  
 \end{abstract}
 }
 
@@ -106,11 +108,11 @@
 \section{Introduction}
 % Orchestration = definition
 Orchestration is the subtle art of writing musical pieces for the orchestra by combining the properties of various instruments in order to achieve a particular sonic rendering. \cite{koechli_orch,Rimsky-Korsakov:1873aa}.
-% Projective orchestration = définition, et usage fréquent dans la musique classique
-Among the different writing techniques for orchestral works, one of them consists in first writing an harmonic and rhythmic structure in the form of a piano score and then adding the timbre dimension by spreading the different voices over the various instruments \cite{piston-orch}. 
-Here timbre refers to the property which allows listeners to distinguish two sounds produced at the same pitch and intensity. 
-We refer to this operation of extending a piano draft to an orchestral score as \textit{projective orchestration} \cite{eslingthesis}.
-The orchestral repertoire contains a large number of examples of projective orchestration (such as the piano reductions by Liszt of Beethoven symphonies or the \textit{pictures at an exhibition}, a piano piece by Moussorgsky orchestrated by several notorious composers). By observing a case of projective orchestration (see \prettyref{fig:orch}), we can clearly see that this process involves more than the mere allocation of notes written on the piano score across the different instruments. It rather implies harmonic enhancements and timbre manipulations to underline the already existing harmonic and rhythmic structure \cite{mcadams2013timbre}.
+Several treatise of orchestration exist \textbf{CITE}, but they all consist in a sum of example, and it seems that it has not been possible yet to theoretize.
+One reason might be because orchestration involve complexes psycho-acoustic mechanisms and embodies a huge complexity.
+EXPLIQUER PUORQUOI ???
+Hence, we believe that a thorough scientific investigation of the orchestration could help the advance of the discipline and help understanding the mechanisms involved.
+but no scientific investigation has been thoroughly lead.
 
 \begin{figure}
 \centering
@@ -135,7 +137,7 @@ The database is composed by \textbf{NN} pairs of piano score and their orchestra
 Each pair has a unique index.
 The scores format is midi.
 
-Because the scores come from different sources, we had to standardize  informations. Hence, for each midi file, a comma separated values (\textit{csv}) file link the name of the midi tracks to an instrument name (exemple : \textit{pia_001} is linked to \textit{piano}).
+Because the scores come from different sources, we had to standardize  informations. Hence, for each midi file, a comma separated values (\textit{csv}) file link the name of the midi tracks to an instrument name (exemple : \textit{pia\_001} is linked to \textit{piano}).
 Besides, a 
 \subsection{Automatic alignment}
 Since we gathered files from various origins, we had to perform automatic alignment for each pair. We used a \textit{Needleman-Wunsch} based algorithm with a measure adapted to the musical context.

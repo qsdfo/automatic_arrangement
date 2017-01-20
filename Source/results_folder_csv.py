@@ -2,7 +2,6 @@
 # -*- coding: utf8 -*-
 
 import re
-import glob
 import csv
 import cPickle as pkl
 
@@ -16,20 +15,19 @@ def get_results_and_id(config_path):
     result_file_path = config_path + '/result.csv'
     result_dict = {}
     with open(result_file_path, 'rb') as f:
-        reader = csv.reader(f)
-        for k, v in reader:
-            result_dict[k] = v
+        for row in f:
+            key, value = re.split(';', row)
+            result_dict[key] = value.strip('\n')
     # Store results in a list (ID, accuracy, loss)
-    return (ID, result_dict['accuracy'], result_dict['loss'])
+    return (ID, float(result_dict['accuracy']), float(result_dict['loss']))
 
 def write_csv_results(path, id_result_list, first_config):
     # Sort the results list according to accuracy
-    sorted_result = sorted(id_result_list, key=lambda x: x[1])
+    sorted_result = sorted(id_result_list, key=lambda x: -x[1])
 
     # Get header from the model of the first configuration
     model_path = first_config + '/model.pkl'
     model = pkl.load(open(model_path, 'rb'))
-    import pdb; pdb.set_trace()
     headers = ['ID', 'accuracy', 'loss']
     headers1 = (model.get_hp_space().keys())
     headers = headers + headers1
@@ -38,7 +36,7 @@ def write_csv_results(path, id_result_list, first_config):
     # Write it in a csv file
     with open(path + '/result.csv', 'wb') as f:
         writer = csv.DictWriter(f, delimiter=';', fieldnames=headers)
-        writer.writerow(headers)
+        writer.writeheader()
         for elem in sorted_result:
             # Get ID
             ID = elem[0]
@@ -53,6 +51,3 @@ def write_csv_results(path, id_result_list, first_config):
             # Write
             writer.writerow(result_dict)
     return
-
-if __name__ == '__main__':
-    process_result_csv('/home/aciditeam-leo/Aciditeam/lop/Results/event_level/discrete_units/quantization_4/gradient_descent/LSTM/')

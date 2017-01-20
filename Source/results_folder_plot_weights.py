@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-
+import time
 import cPickle as pkl
 import os
 
@@ -24,4 +24,7 @@ def plot_weights(path, logger_plot):
     ############################################################
     # Plot weights
     ############################################################
+    time_load_0 = time.time()
     model.save_weights(plot_folder)
+    time_load_1 = time.time()
+    logger_plot.info('TTT : Plotting took {} seconds'.format(time_load_1-time_load_0))

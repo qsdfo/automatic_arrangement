@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 
 import cPickle as pkl
-from reconstruct_pr import reconstruct_pr
+from reconstruct_pr import reconstruct_pr, reconstruct_piano
 from acidano.data_processing.midi.write_midi import write_midi
 
 
@@ -40,7 +40,7 @@ def generate(model,
             write_midi(pr_orchestra, quantization_write, write_path, tempo=80)
 
             # Write original piano
-            pr_piano_seed = reconstruct_pr(piano_seed[write_counter], instru_mapping)
+            pr_piano_seed = reconstruct_piano(piano_seed[write_counter], instru_mapping)
             write_path = generated_folder + '/' + str(write_counter) + '_piano_seed.mid'
             write_midi(pr_piano_seed, quantization_write, write_path, tempo=80)
 

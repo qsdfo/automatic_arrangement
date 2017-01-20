@@ -56,7 +56,7 @@ def generate_corrupted_results(config_folder, data_folder, generation_length, se
     mean_accuracy = 100 * np.mean(accuracy)
 
     with open(corrupted_folder + '/normal.txt', 'wb') as f:
-        f.write(mean_accuracy)
+        f.write(str(mean_accuracy))
 
     # Accuracy corrupted piano
     piano_valid_corrupted = shared_zeros(piano_valid.get_value(borrow=True).shape)
@@ -68,7 +68,7 @@ def generate_corrupted_results(config_folder, data_folder, generation_length, se
     mean_accuracy_corrupted_piano = 100 * np.mean(accuracy)
 
     with open(corrupted_folder + '/corrupted_piano.txt', 'wb') as f:
-        f.write(mean_accuracy_corrupted_piano)
+        f.write(str(mean_accuracy_corrupted_piano))
 
     # Accuracy corrupted piano
     orchestra_valid_corrupted = shared_zeros(orchestra_valid.get_value(borrow=True).shape)
@@ -80,7 +80,7 @@ def generate_corrupted_results(config_folder, data_folder, generation_length, se
     mean_accuracy_corrupted_orchestra = 100 * np.mean(accuracy)
 
     with open(corrupted_folder + '/corrupted_orchestra.txt', 'wb') as f:
-        f.write(mean_accuracy_corrupted_orchestra)
+        f.write(str(mean_accuracy_corrupted_orchestra))
 
 if __name__ == '__main__':
     config_folder = '/home/aciditeam-leo/Aciditeam/lop/Results/event_level/discrete_units/quantization_4/gradient_descent/cRnnRbm/8664641'

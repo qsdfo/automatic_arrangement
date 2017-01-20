@@ -28,6 +28,7 @@ def generate(model,
 
     # Given last indices, generate a batch of sequences
     (generated_sequence,) = generate_sequence(indices)
+
     # Get the ground-truth piano and orchestra
     # IZY from piano, orchestra, indices, generation length and seed_size
     piano_seed = model.build_seed(piano.get_value(), indices, len(indices), generation_length)

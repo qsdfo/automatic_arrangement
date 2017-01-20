@@ -23,7 +23,7 @@ from clean_result_folder import clean
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 5
+N_HP_CONFIG = 20
 REBUILD_DATABASE = False
 LOCAL = True
 
@@ -258,7 +258,7 @@ for hp_config in range(number_hp_config):
     pkl.dump(space, open(config_folder + '/config.pkl', 'wb'))
 
     if LOCAL:
-        process = subprocess.Popen("THEANO_FLAGS='device=gpu' python train.py '" + config_folder + "'", shell=True, stdout=subprocess.PIPE)
+        process = subprocess.Popen("THEANO_FLAGS='device=gpu1' python train.py '" + config_folder + "'", shell=True, stdout=subprocess.PIPE)
         process.wait()
     else:
         # Write pbs script

@@ -170,7 +170,7 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
 
                     # Get pr warped and duration
                     new_pr_piano, new_instru_piano, name_piano, new_pr_orchestra, new_instru_orchestra, name_orchestra, duration\
-                        = build_data_aux.process_folder(folder_path, quantization, temporal_granularity)
+                        = build_data_aux.process_folder(folder_path, quantization, temporal_granularity, logging)
 
                     # SKip shitty files
                     if new_pr_piano is None:

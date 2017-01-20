@@ -7,7 +7,7 @@ import logging
 import numpy as np
 import cPickle as pkl
 # Perso
-from load_data import load_data_train, load_data_valid
+from load_data import load_data_train, load_data_valid, load_data_test
 
 ####################
 # Debugging compiler flags
@@ -81,6 +81,7 @@ def run_wrapper(params, config_folder):
     time_load_0 = time.time()
     piano_train, orchestra_train, train_index \
         = load_data_train(script_param['data_folder'],
+                          None, None,
                           model_param['temporal_order'],
                           model_param['batch_size'],
                           binary_unit=script_param['binary_unit'],
@@ -88,17 +89,35 @@ def run_wrapper(params, config_folder):
                           logger_load=logger_run)
     piano_valid, orchestra_valid, valid_index \
         = load_data_valid(script_param['data_folder'],
+                          None, None,
                           model_param['temporal_order'],
                           model_param['batch_size'],
                           binary_unit=script_param['binary_unit'],
                           skip_sample=script_param['skip_sample'],
                           logger_load=logger_run)
+    # This load is only for sanity check purposes
+    piano_test, orchestra_test, _, _ \
+        = load_data_test(script_param['data_folder'],
+                         None, None,
+                         model_param['temporal_order'],
+                         model_param['batch_size'],
+                         binary_unit=script_param['binary_unit'],
+                         skip_sample=script_param['skip_sample'],
+                         logger_load=logger_run)
     time_load_1 = time.time()
     logger_run.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
+    # Create the checksum dictionnary
+    checksum_database = {
+        'piano_train': piano_train.get_value(borrow=True).sum(),
+        'orchestra_train': orchestra_train.get_value(borrow=True).sum(),
+        'piano_valid': piano_valid.get_value(borrow=True).sum(),
+        'orchestra_valid': orchestra_valid.get_value(borrow=True).sum(),
+        'piano_test': piano_test.get_value(borrow=True).sum(),
+        'orchestra_test': orchestra_test.get_value(borrow=True).sum()
+    }
 
     ############################################################
     # Get dimensions of batches
-
     ############################################################
     piano_dim = piano_train.get_value().shape[1]
     orchestra_dim = orchestra_train.get_value().shape[1]
@@ -130,7 +149,8 @@ def run_wrapper(params, config_folder):
     for k, v in optim_param.iteritems():
         logger_run.info((u'# ' + k + ' :  {}'.format(v)).encode('utf8'))
 
-    model = Model_class(model_param, dimensions)
+    model = Model_class(model_param, dimensions, checksum_database)
+
     # Define an optimizer
     optimizer = Optimization_method(optim_param)
 
@@ -293,7 +313,6 @@ def train_keras(model, optimizer,
                   optimizer=sgd,
                   metrics=['accuracy'])
 
-    import pdb; pdb.set_trace()
     model.fit(piano_train, orchestra_train,
               nb_epoch=200,
               batch_size=100)

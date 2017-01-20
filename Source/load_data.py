@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
+# A basic checksum mechanism has been implemented to guarantee that we maintain the same train/test/valid between the moment we
+# loaded the files for training and the post-processing steps (generations)
+
 import numpy as np
 import theano
 
@@ -9,8 +12,9 @@ import random
 import cPickle as pickle
 
 
-def load_data(data_folder, set_identifier, temporal_order=20, batch_size=100, generation_length=100,
+def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, temporal_order=20, batch_size=100, generation_length=100,
               binary_unit=True, skip_sample=1,logger_load=None):
+
     # If no logger, create one
     if logger_load is None:
         logging.basicConfig(level=logging.INFO,
@@ -44,6 +48,12 @@ def load_data(data_folder, set_identifier, temporal_order=20, batch_size=100, ge
     piano_shared = theano.shared(piano, name='piano_' + set_identifier, borrow=True)
     orchestra_shared = theano.shared(orchestra, name='orchestra_' + set_identifier, borrow=True)
 
+    # Sanity check
+    if piano_checksum and orchestra_checksum:  # test it's not a None
+        if (piano.sum() != piano_checksum) or (orchestra.sum() != orchestra_checksum):
+            raise ValueError("Checksum of the database failed")
+
+    # Get start and end for each track
     tracks_start_end = pickle.load(open(data_folder + '/tracks_start_end_' + set_identifier + '.pkl', 'rb'))
 
     # Get valid indices given start_track and temporal_order
@@ -92,20 +102,20 @@ def load_data(data_folder, set_identifier, temporal_order=20, batch_size=100, ge
     if set_identifier == 'test':
         generation_index = last_indices(tracks_start_end, generation_length)
 
-    if set_identifier != 'test':
-        return piano_shared, orchestra_shared, np.asarray(batches, dtype=np.int32)
+    if set_identifier == 'test':
+        return piano_shared, orchestra_shared, np.asarray(batches, dtype=np.int32), np.asarray(generation_index, dtype=np.int32)
     else:
-        return piano_shared, orchestra_shared, np.asarray(batches, dtype=np.int32), np.asarray(generation_index)
+        return piano_shared, orchestra_shared, np.asarray(batches, dtype=np.int32)
 
 # Wrappers
-def load_data_train(data_folder, temporal_order=20, batch_size=100, generation_length=100,
+def load_data_train(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100,
                     binary_unit=True, skip_sample=1,logger_load=None):
-    return load_data(data_folder, 'train', temporal_order, batch_size, generation_length, binary_unit, skip_sample,logger_load)
+    return load_data(data_folder, piano_checksum, orchestra_checksum, 'train', temporal_order, batch_size, generation_length, binary_unit, skip_sample,logger_load)
 
-def load_data_valid(data_folder, temporal_order=20, batch_size=100, generation_length=100,
+def load_data_valid(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100,
                     binary_unit=True, skip_sample=1,logger_load=None):
-    return load_data(data_folder, 'valid', temporal_order, batch_size, generation_length, binary_unit, skip_sample,logger_load)
+    return load_data(data_folder, piano_checksum, orchestra_checksum, 'valid', temporal_order, batch_size, generation_length, binary_unit, skip_sample,logger_load)
 
-def load_data_test(data_folder, temporal_order=20, batch_size=100, generation_length=100,
+def load_data_test(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100,
                    binary_unit=True, skip_sample=1,logger_load=None):
-    return load_data(data_folder, 'test', temporal_order, batch_size, generation_length, binary_unit, skip_sample,logger_load)
+    return load_data(data_folder, piano_checksum, orchestra_checksum, 'test', temporal_order, batch_size, generation_length, binary_unit, skip_sample,logger_load)

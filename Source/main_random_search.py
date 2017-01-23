@@ -7,7 +7,6 @@ import hyperopt
 import os
 import random
 import logging
-import sys
 import cPickle as pkl
 import subprocess
 import glob
@@ -274,7 +273,8 @@ for hp_config in range(number_hp_config):
 #PBS -l pmem=4000m
 #PBS -l walltime=10:00:00
 
-module load python/2.7.9 CUDA_Toolkit
+module load iomkl/2015b Python/2.7.10 CUDA cuDNN
+OMPI_MCA_mtl=^psm
 
 SRC=$HOME/lop/Source
 cd $SRC

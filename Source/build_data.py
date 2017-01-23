@@ -37,7 +37,7 @@ def aux(var, name, csv_path, html_path):
     return
 
 
-def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, temporal_granularity='frame_level', logging=None):
+def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, temporal_granularity='frame_level', logging=None):
     # Determine the temporal size of the matrices
     # If the two files have different sizes, we use the shortest (to limit the use of memory,
     # we better contract files instead of expanding them).
@@ -47,6 +47,7 @@ def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, t
     # instru_mapping = {'piano': {'pitch_min': 24, 'pitch_max':117, 'ind_min': 0, 'ind_max': 92},
     #                         'harp' ... }
     T_dict = {}      # indexed by set_identifier
+
     for set_identifier, index_files in index_files_dict.iteritems():
 
         logging.info("##########")
@@ -56,8 +57,8 @@ def get_dim_matrix(index_files_dict, meta_info_path='temp.p', quantization=12, t
         for index_file in index_files:
             # Read the csv file indexing the database
             with open(index_file, 'rb') as f:
-                for folder_path in f:
-                    folder_path = folder_path.rstrip()
+                for folder_path_relative in f:
+                    folder_path = root_dir + '/' + folder_path_relative.rstrip()
                     logging.info(folder_path)
                     if not os.path.isdir(folder_path):
                         continue
@@ -130,9 +131,9 @@ def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, du
     pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, start_time, duration, instru_mapping, pr_piano)
 
 
-def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, temporal_granularity='frame_level', store_folder='../Data', logging=None):
+def build_data(root_dir, index_files_dict, meta_info_path='temp.p',quantization=12, temporal_granularity='frame_level', store_folder='../Data', logging=None):
     # Get dimensions
-    instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(index_files_dict, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
+    instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
 
     statistics = {}
     # temp = pickle.load(open(meta_info_path, 'rb'))
@@ -162,8 +163,8 @@ def build_data(index_files_dict, meta_info_path='temp.p',quantization=12, tempor
         for index_file in index_files:
             # Read the csv file indexing the database
             with open(index_file, 'rb') as f:
-                for folder_path in f:
-                    folder_path = folder_path.rstrip()
+                for folder_path_relative in f:
+                    folder_path = root_dir + '/' + folder_path_relative.rstrip()
                     logging.info(folder_path)
                     if not os.path.isdir(folder_path):
                         continue

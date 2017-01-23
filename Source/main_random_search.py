@@ -24,8 +24,9 @@ from clean_result_folder import clean
 # plt.show()
 
 N_HP_CONFIG = 20
-REBUILD_DATABASE = False
 LOCAL = True
+BUILD_DATABASE = True
+DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
 
 ############################################################
 # Logging
@@ -180,35 +181,37 @@ logging.info((u'**** Result folder : ' + str(script_param['result_folder'])).en
 ############################################################
 # Build data
 ############################################################
-if REBUILD_DATABASE:
-    logging.info('# ** Database REBUILT **')
-    PREFIX_INDEX_FOLDER = SOURCE_DIR + "/../Data/Index/"
+if BUILD_DATABASE:
+    logging.info('# ** BUILD DATABASE **')
     index_files_dict = {}
     index_files_dict['train'] = [
-        # PREFIX_INDEX_FOLDER + "debug_train.txt",
-        PREFIX_INDEX_FOLDER + "bouliane_train.txt",
-        PREFIX_INDEX_FOLDER + "hand_picked_Spotify_train.txt",
-        PREFIX_INDEX_FOLDER + "liszt_classical_archives_train.txt"
+        # DATABASE_PATH + "/debug_train.txt",
+        DATABASE_PATH + "/bouliane_train.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_train.txt",
+        DATABASE_PATH + "/liszt_classical_archives_train.txt"
     ]
     index_files_dict['valid'] = [
-        # PREFIX_INDEX_FOLDER + "debug_valid.txt",
-        PREFIX_INDEX_FOLDER + "bouliane_valid.txt",
-        PREFIX_INDEX_FOLDER + "hand_picked_Spotify_valid.txt",
-        PREFIX_INDEX_FOLDER + "liszt_classical_archives_valid.txt"
+        # DATABASE_PATH + "/debug_valid.txt",
+        DATABASE_PATH + "/bouliane_valid.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
+        DATABASE_PATH + "/liszt_classical_archives_valid.txt"
     ]
     index_files_dict['test'] = [
-        # PREFIX_INDEX_FOLDER + "debug_test.txt",
-        PREFIX_INDEX_FOLDER + "bouliane_test.txt",
-        PREFIX_INDEX_FOLDER + "hand_picked_Spotify_test.txt",
-        PREFIX_INDEX_FOLDER + "liszt_classical_archives_test.txt"
+        # DATABASE_PATH + "/debug_test.txt",
+        DATABASE_PATH + "/bouliane_test.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_test.txt",
+        DATABASE_PATH + "/liszt_classical_archives_test.txt"
     ]
 
-    build_data(index_files_dict=index_files_dict,
+    build_data(root_dir=DATABASE_PATH,
+               index_files_dict=index_files_dict,
                meta_info_path=data_folder + '/temp.p',
                quantization=script_param['quantization'],
                temporal_granularity=script_param['temporal_granularity'],
                store_folder=data_folder,
                logging=logging)
+
+import pdb; pdb.set_trace()
 
 ############################################################
 # Hyper parameter space

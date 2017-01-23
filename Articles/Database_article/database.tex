@@ -30,7 +30,7 @@
 
 \usepackage[english]{babel} % Language hyphenation and typographical rules
 
-\usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
+\usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt,left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry} % Document margins
 \usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
 \usepackage{booktabs} % Horizontal rules in tables
 
@@ -107,12 +107,43 @@ midi score database. It is composed by (137 OU 224 si IMSLP, mais c'est tout fau
 
 \section{Introduction}
 % Orchestration = definition
-Orchestration is the subtle art of writing musical pieces for the orchestra by combining the properties of various instruments in order to achieve a particular sonic rendering. \cite{koechli_orch,Rimsky-Korsakov:1873aa}.
-Several treatise of orchestration exist \textbf{CITE}, but they all consist in a sum of example, and it seems that it has not been possible yet to theoretize.
-One reason might be because orchestration involve complexes psycho-acoustic mechanisms and embodies a huge complexity.
-EXPLIQUER PUORQUOI ???
-Hence, we believe that a thorough scientific investigation of the orchestration could help the advance of the discipline and help understanding the mechanisms involved.
-but no scientific investigation has been thoroughly lead.
+Orchestration is the subtle art of writing musical pieces for the orchestra by combining the properties of various instruments in order to achieve a particular sonic rendering. \cite{koechli_orch,Rimsky-Korsakov:1873aa}. 
+% Orchestration projective
+Among the different writing techniques for orchestration, we define \textit{projective orchestration} as the technique which consists in writing first a piano score and then projecting it on an orchestra. This technique has been long used by classic composers \textbf{(exemple ?)}.
+% Dataset symbolic pour l'orchestration projective
+This paper introduces what is to our best knowledge, the first symbolic dataset of projective orchestration.
+% Rapide description
+It contains midi scores of piano pieces, and for each of this piece, one or several corresponding orchestration(s) written by famous composers.
+
+This database has several purposes :
+\begin{itemize}
+\item being the starting point for a scientific investigation of orchestration, especially for statistic-based approaches on high-level symbolic information
+\item establishing a reference dataset for generative algorithms 
+\item indexing works of famous composers for musicological purposes
+\end{itemize}
+
+The remainder of this paper is organized as follows. The first section introduces the structure of the database, the reason why it has been created and how informations have been gathered. In the section two, we introduce an automatic projective orchestration task. Our proposed algorithm rely on learning based methods, and uses this database. We also define an evaluation criterion that uses a part of the database. Conclusions are provided in the last section.
+
+\section{Dataset}
+\subsection{Symbolic information for orchestration}
+% Teahching orchestration = exemples
+Several treatise of orchestration exist \cite{koechli_orch,piston-orch,Rimsky-Korsakov:1873aa}, but they all consist in a sum of examples rather than a comprehensive theorization.
+% Why ? Because it is highly complex, and we can't handle this complexity
+An explanation of this observation lies in the tremendous complexity that emerges from an orchestral work. For the composer, the number of pitch and intensity ranges of each instrument is powered by the number of instruments in the orchestra, and lead to a huge combinatoric. During the performance, acoustic summation of the instruments give rise to highly non-linear effects at the signal level, which make the resulting sound almost impossible to predict. Eventually, only a little is known about the complex psycho-acoustic phenomena involved in the listening process. All those aspects play an important role in an orchestral work. Then, it seems almost impossible for a human mind to grasp in its entirety an orchestral rendering.
+
+% Problem too complex : need for scientific investigation
+Hence, we believe that a thorough scientific investigation could help disentangling the multiple factors involved in an orchestral work, and might be a precious help toward a greater understanding of the discipline.
+% Scientific investigation already made ? Yes : signal et psycho-ac
+If major works have already been produced in psycho-acoustic CITE and signal processing CITE, no attempts have been made to tackle orchestration from a symbolic perspective.
+Here, symbolic means a scores with musical notation, as represented in \ref{fig:orch}.
+% Utilité du symboliques
+However, symbolic representations convey high-level information. Observing famous orchestral works from this perspective could be gratifying.
+% Pourquoi pas de symbolique alors ? Complexité + pas encore les techniques adaptées
+The combinatorial complexity involved by symbolic representation is directly related to the average pitch range of an instrument powered by the number of instrument. For a symphonic orchestra, we see that this complexity quickly explode. Even for a computer, an exhaustive investigation of all the possible combinations is unimaginable.
+% Et maintenant on a le deep learning
+But the recent advent in machine learning brought techniques that could cope with the dimensionality involved by symbolic data.
+% Mais on a besoin de... DATA :)
+Based on statistical tools, those techniques require a huge amount of data. This dataset is a first attempt to fill this gap.
 
 \begin{figure}
 \centering
@@ -121,26 +152,28 @@ but no scientific investigation has been thoroughly lead.
 \label{fig:orch}
 \end{figure}
 
+\subsection{Why projective orchestration}
 % Pourquoi c'est intéressant les orchestrations projectives ?
-Observing projective orchestrations made by famous composers is highly informative. First because the orchestrated version highlights the structure analyzed by the composer. Then, because it gives precious informations about the timbral mapping performed by the composer.
-%
-%
-For these reasons, we believe that the absence of a database of projective orchestration was an acute lack to the scientific study of orchestration.
+We think that projective orchestration is an extremely interesting particular case. Because orchestrating a piano piece often stem from its analysis, studying the orchestration written by a famous composer is, in a restricted way, listening to its analysis. Besides, the harmonic, rhythmic and melodic structure of a piece is already fixed in the piano score, and observing the joint information of the original piano score and an orchestrated version consists in focusing on the timbral augmentation of this primal structure. In other words, it allows to focus on how the musical discourse is highlighted by the evolution of the timbre.
 
-In the remainder of this paper, we introduce the database we have constructed in section 1. More specifically, we describe its structure and the alignment algorithms we used to guarantee that the piano and orchestra scores are aligned. In section 2, we introduce an task that we called \textit{automatic projective orchestration}. We then detail our approach to tackle this newly introduced problem.
+\subsection{Structure of the database}
+% Number of file, main aspect a+ Format midi
+The \textbf{NAME} database consists in piano and orchestra scores in MIDI format. 
+% Organization, hierarchy
+The files are grouped in folders indexed by a number. Each folder contains a pair : piano score and a possible orchestration. 
+% Where does it come from
+Since the files have been manually collected on several existing databases on the internet,
+% CSV instrumentation
+the relation between the track name and the instrument this track effectively represents is often not obvious. For that reason, a \textit{CSV} file is associated to each \textit{MIDI} file. It has the same name as the midi file. It links the name of the track in the midi file and the name of an instrument, according to a nomenclature (see nomenclatura.txt at the root of the folder).
+% Metadata
+% Aligned and non-aligned versions
+% Other statistics
 
-%------------------------------------------------
-
-\section{Description of the database}
-\subsection{Structure}
-The database is composed by \textbf{NN} pairs of piano score and their orchestration. 
-Each pair has a unique index.
-The scores format is midi.
-
-Because the scores come from different sources, we had to standardize  informations. Hence, for each midi file, a comma separated values (\textit{csv}) file link the name of the midi tracks to an instrument name (exemple : \textit{pia\_001} is linked to \textit{piano}).
-Besides, a 
-\subsection{Automatic alignment}
+\subsection{Alignment algorithm}
 Since we gathered files from various origins, we had to perform automatic alignment for each pair. We used a \textit{Needleman-Wunsch} based algorithm with a measure adapted to the musical context.
+
+\section{A case study : projective automatic orchestration}
+
 %------------------------------------------------
 
 \section{Projective orchestration}
@@ -150,15 +183,8 @@ Since we gathered files from various origins, we had to perform automatic alignm
 %	REFERENCE LIST
 %----------------------------------------------------------------------------------------
 
-\begin{thebibliography}{99} % Bibliography - this is intentionally simple in this template
-
-\bibitem[Figueredo and Wolf, 2009]{Figueredo:2009dg}
-Figueredo, A.~J. and Wolf, P. S.~A. (2009).
-\newblock Assortative pairing and life history strategy - a cross-cultural
-  study.
-\newblock {\em Human Nature}, 20:317--330.
- 
-\end{thebibliography}
+\bibliographystyle{plain}
+\bibliography{../Biblio/biblio}
 
 %----------------------------------------------------------------------------------------
 

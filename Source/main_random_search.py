@@ -28,6 +28,14 @@ LOCAL = True
 BUILD_DATABASE = True
 DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
 
+commands = [
+    'LSTM',
+    'gradient_descent',
+    'event_level',
+    'discrete_units',
+    '4'
+]
+
 ############################################################
 # Logging
 ############################################################
@@ -54,60 +62,54 @@ logging.getLogger('').addHandler(console)
 ############################################################
 logging.info('Script paramaters')
 
-# Get command line parameters and set default if not provided
-if not len(sys.argv) == 6:
-    command = ['', 'LSTM', 'gradient_descent', 'event_level', 'discrete_units', '4']
-else:
-    command = sys.argv
-
 # Store script parameters
 script_param = {}
 
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the optimization method
 ################### DISCRETE
-script_param['model_class'] = command[1]
-if command[1] == "RBM":
+script_param['model_class'] = commands[0]
+if commands[0] == "RBM":
     from acidano.models.lop.discrete.RBM import RBM as Model_class
-elif command[1] == "cRBM":
+elif commands[0] == "cRBM":
     from acidano.models.lop.discrete.cRBM import cRBM as Model_class
-elif command[1] == "FGcRBM":
+elif commands[0] == "FGcRBM":
     from acidano.models.lop.discrete.FGcRBM import FGcRBM as Model_class
-elif command[1] == "LSTM":
+elif commands[0] == "LSTM":
     from acidano.models.lop.discrete.LSTM import LSTM as Model_class
-elif command[1] == "RnnRbm":
+elif commands[0] == "RnnRbm":
     from acidano.models.lop.discrete.RnnRbm import RnnRbm as Model_class
-elif command[1] == "cRnnRbm":
+elif commands[0] == "cRnnRbm":
     from acidano.models.lop.discrete.cRnnRbm import cRnnRbm as Model_class
 ###################  REAL
-elif command[1] == "LSTM_gaussian_mixture":
+elif commands[0] == "LSTM_gaussian_mixture":
     from acidano.models.lop.real.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
-elif command[1] == "LSTM_gaussian_mixture_2":
+elif commands[0] == "LSTM_gaussian_mixture_2":
     from acidano.models.lop.real.LSTM_gaussian_mixture_2 import LSTM_gaussian_mixture_2 as Model_class
 ###################
 else:
-    raise ValueError(command[1] + " is not a model")
+    raise ValueError(commands[0] + " is not a model")
 
 # Optimization
-script_param['optimization_method'] = command[2]
-if command[2] == "gradient_descent":
+script_param['optimization_method'] = commands[1]
+if commands[1] == "gradient_descent":
     from acidano.utils.optim import gradient_descent as Optimization_method
-elif command[2] == 'adam_L2':
+elif commands[1] == 'adam_L2':
     from acidano.utils.optim import adam_L2 as Optimization_method
-elif command[2] == 'rmsprop':
+elif commands[1] == 'rmsprop':
     from acidano.utils.optim import rmsprop as Optimization_method
-elif command[2] == 'sgd_nesterov':
+elif commands[1] == 'sgd_nesterov':
     from acidano.utils.optim import sgd_nesterov as Optimization_method
 else:
-    raise ValueError(command[2] + " is not an optimization method")
+    raise ValueError(commands[1] + " is not an optimization method")
 
 # Temporal granularity
-script_param['temporal_granularity'] = command[3]
+script_param['temporal_granularity'] = commands[2]
 if script_param['temporal_granularity'] not in ['frame_level', 'event_level']:
-    raise ValueError(command[3] + " is not temporal_granularity")
+    raise ValueError(commands[2] + " is not temporal_granularity")
 
 # Unit type
-unit_type = command[4]
+unit_type = commands[3]
 if unit_type == 'continuous_units':
     script_param['binary_unit'] = False
 elif unit_type == 'discrete_units':
@@ -117,9 +119,9 @@ else:
 
 # Quantization
 try:
-    script_param['quantization'] = int(command[5])
+    script_param['quantization'] = int(commands[4])
 except ValueError:
-    print(command[5] + ' is not an integer')
+    print(commands[4] + ' is not an integer')
     raise
 
 ############################################################

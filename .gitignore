@@ -3,6 +3,8 @@
 Database
 Data
 Results
+Results_gpu
+Results_test
 TRASH
 Source/Needlepote
 Source/test.py
@@ -42,6 +44,7 @@ Articles/Figures/DRAFT_SOURCE
 **/*.out
 **/*.blg
 **/*.bak
+**/*.sav
 **/*.synctex.gz
 ICCC/ICCC-author-kit/
 ICCC/Corrections*
@@ -51,6 +54,5 @@ ICCC/Corrections*
 Source/submission.sh
 
 # Dumped files
-Source/script_folder/
 Source/core.*
 Source/*.pbs.*

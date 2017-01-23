@@ -30,7 +30,7 @@ from corrupted import generate_corrupted_results
 ############################################################
 # Logging
 ############################################################
-log_file_path = 'generate_log'
+log_file_path = 'log/generate_log'
 # set up logging to file - see previous section for more details
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',

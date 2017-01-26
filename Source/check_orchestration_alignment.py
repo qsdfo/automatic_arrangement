@@ -21,12 +21,6 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
                  '_' + str(gapopen) +\
                  '_' + str(gapextend)
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    else:
-        # Avoid re-running the algo on already tested parameters
-        return
-
     counter = 0
     sum_score = 0
     nbFrame = 0
@@ -53,9 +47,9 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
 
             # Get trace from needleman_wunsch algorithm
             # Traces are binary lists, 0 meaning a gap is inserted
-            trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1))
+            trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1), gapopen, gapextend)
 
-            # Wrap dictionnaries according to the traces
+            # Warp dictionnaries according to the traces
             assert(len(trace_0) == len(trace_1)), "size mismatch"
             pr0_warp = warp_dictionnary_trace(pr0, trace_0)
             pr1_warp = warp_dictionnary_trace(pr1, trace_1)
@@ -109,7 +103,7 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
             write_midi(pr={'piano1': AAA_aligned, 'piano2': BBB_aligned}, quantization=quantization, write_path=save_folder_name + '/both__aligned.mid', tempo=80)
 
     # Write statistics
-    mean_score = float(sum_score) / nbFrame
+    mean_score = float(sum_score) / max(1,nbFrame)
     nbId_norm = nbId / quantization
     nbDiffs_norm = nbDiffs / quantization
 
@@ -137,8 +131,10 @@ if __name__ == '__main__':
     ]
 
     grid_search = {}
-    grid_search['gapopen'] = [1, 2, 3, 4, 5]
-    grid_search['quantization'] = [4, 8, 12]
+    # grid_search['gapopen'] = [1, 2, 3, 4, 5]
+    # grid_search['quantization'] = [4, 8, 12]
+    grid_search['gapopen'] = [1]
+    grid_search['quantization'] = [4]
 
     # Build all possible values
     for gapopen, quantization in list(itertools.product(

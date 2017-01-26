@@ -90,8 +90,7 @@
 \renewcommand{\maketitlehookd}{%
 \begin{abstract}
 \noindent This article introduces the \textbf{NAME} dataset, a freely-available collection of midi scores 
-
-midi score database. It is composed by (137 OU 224 si IMSLP, mais c'est tout faux) pairs of one piano score and one corresponding orchestration. To our best knowledge, this is the first database of this kind. Thus, we also introduce a projective orchestration task, which roughly consists in learning to perform automatic orchestration of a piano score. This task can be addressed using learning methods on this database.  
+midi score database. It is composed by  pairs of one piano score and one corresponding orchestration. To our best knowledge, this is the first database of this kind. Thus, we also introduce a projective orchestration task, which roughly consists in learning to perform automatic orchestration of a piano score. This task can be addressed using learning methods on this database.  
 \end{abstract}
 }
 
@@ -105,6 +104,10 @@ midi score database. It is composed by (137 OU 224 si IMSLP, mais c'est tout fau
 %----------------------------------------------------------------------------------------
 %	ARTICLE CONTENTS
 %----------------------------------------------------------------------------------------
+
+N pairs = (137 OU 224 si IMSLP, mais c'est tout faux)
+
+
 
 \section{Introduction}
 % Orchestration = definition
@@ -126,7 +129,7 @@ This database has several purposes :
 The remainder of this paper is organized as follows. The first section introduces the structure of the database, the reason why it has been created and how informations have been gathered. In the section two, we introduce an automatic projective orchestration task. Our proposed algorithm rely on learning based methods, and uses this database. We also define an evaluation criterion that uses a part of the database. Conclusions are provided in the last section.
 
 \section{Dataset}
-\subsection{Symbolic information for orchestration}
+\subsection{Projective orchestration}
 % Teahching orchestration = exemples
 Several treatise of orchestration exist \cite{koechli_orch,piston-orch,Rimsky-Korsakov:1873aa}, but they all consist in a sum of examples rather than a comprehensive theorization.
 % Why ? Because it is highly complex, and we can't handle this complexity
@@ -154,7 +157,6 @@ This dataset is a first attempt to fill this gap.
 \label{fig:orch}
 \end{figure}
 
-\subsection{Why projective orchestration}
 % Pourquoi c'est intéressant les orchestrations projectives ?
 We think that projective orchestration is an extremely interesting particular case. Because orchestrating a piano piece often stem from its analysis, studying the orchestration written by a famous composer is, in a restricted way, listening to its analysis. Besides, the harmonic, rhythmic and melodic structure of a piece is already fixed in the piano score, and observing the joint information of the original piano score and an orchestrated version consists in focusing on the timbral augmentation of this primal structure. In other words, it allows to focus on how the musical discourse is highlighted by the evolution of the timbre.
 
@@ -220,7 +222,7 @@ We propose the following process :
 \item if one of the vector is only filled with zero, it represents a silence, and the score is set to zero.
 \item else, for two pitch-class vectors A and B, we define the score as 
 \begin{equation}
-S =	C . \frac{\sum_{i=1}^{12} \delta(A_i , B_i)}{||A+B||_1}
+S =	C \ . \ \frac{\sum_{i=1}^{12} \delta(A_i , B_i)}{max(||A+B||_1 , 1)}
 \end{equation}
 with
 \[\delta(x) =
@@ -243,18 +245,97 @@ In addition to defining a score function, the \textit{Needleman-Wunsch} algorith
 \end{itemize}
 
 % Removing the gap for BOTH scores
-
-
 \textbf{SCHEMA}
 
 \section{A case study : projective automatic orchestration}
 
-%------------------------------------------------
+In this section, we introduce and formalize the automatic projective orchestration task (\prettyref{fig:orch}). In particular, we propose a system based on statistical learning and define an evaluation framework that both rely on the \textbf{NAME} database.
 
+\subsection{Task definition}
+\paragraph{Data representation}
+In order to process the scores, we import them as \textit{piano-roll} matrices (see \prettyref{fig:pianoroll}). 
+Its extension to represent an orchestra is straightforwardly obtained by the concatenation of the \textit{piano-rolls} of each instrument along the pitch dimension.
 
-%----------------------------------------------------------------------------------------
-%	REFERENCE LIST
-%----------------------------------------------------------------------------------------
+The rhythmic quantization is defined as the number of time frame in the \textit{piano-roll} per quarter note. When constructing the piano-rolls, we used a rhythmic quantization of 4.
+
+In order to reduce the number of units, we systematically remove, for each instrument, any pitch which is never played in the training database. Hence, the dimension of the orchestral vector decreased from 2432 to 456 and the piano vector dimension from 128 to 88.
+Also, we follow the classic orchestral simplifications used when writing orchestral scores by grouping together all the instruments of the same section. For instance, the \textit{violin} section, which might be composed by several instrumentalists, is written as a single part.
+Finally, the velocity information is discarded, since we use binary units which solely indicate if a note is on or off.
+
+\paragraph{Orchestral inference}
+For each orchestral piece, we define $O(t)$ and $P(t)$ as the sequence of column vectors from the \textit{piano-roll} of the orchestra and piano part respectively, with $t \in \left[ 1,N_{T} \right]$ where $N_{T}$ is the length of the pianoroll, given a particular quantization.
+
+At each time index $t$, the objective is to design a function that is able to infer the present orchestral frame knowing the recent past of the orchestra sequence and both past and present of the piano sequence. Mathematically, it consists in designing a function $f$ as
+\begin{equation}
+\begin{aligned}
+\hat{O}(t) = \bm{f}\lbrack & O(t-1), ..., O(t-N), & \\
+	& P(t), ... ,P(t-N) \rbrack & \forall t \in \left\lbrack|1, ... N_{T}|\right\rbrack\\
+\end{aligned}
+\label{eq:inference_function}
+\end{equation}
+$N$ defines the order of the model, and can freely be set.
+
+\paragraph{Evaluation framework}
+We propose an \textit{event-level orchestral inference} task to compare the performances of different models. \textbf{To our best knowledge, this is the first attempt to define a quantitative evaluation framework for automatic projective orchestration. USELESS ? + FAUX AU MOMENT OU ON PUBLIERA}
+
+% Méthode générale
+The proposed evaluation process first consists in extracting a subset of files in the database. We refer to this sub set as the \textit{test subset}. Then, for each file of this subset and for a given time index $t > N$, where N is the order of the model, the output $\hat{O}(t)$ given by \prettyref{eq:inference_function} can be compared to the ground-truth $O(t)$ read in the file.
+
+% Comment comparer deux instants
+To compare the inferred and ground-truth frames at time $t$, the accuracy measure commonly used in the music generation field \cite{DBLP:journals/corr/YaoCVDD15,boulanger2012modeling,lavrenko2003polyphonic} seems to be a good candidate. It is defined as
+\begin{equation}
+\text{Accuracy}(t)  = \frac{TP(t)}{TP(t) + FP(t) + FN(t)}
+\label{eq:accuracy}
+\end{equation}
+where $TP(t)$ (true positives) is the number of notes correctly predicted (note played in both $\hat{O}(t)$ and $O(t)$). $FP(t)$ (false positive) is the number of notes predicted which are not in the original sequence (note played in $\hat{O}(t)$ but not in $O(t)$). $FN(t)$ (false negative) is the number on unreported notes (note absent in $\hat{O}(t)$, but played in $O(t)$). 
+Note that in many other prediction framework, the true negatives also appears in the numerator and denominator of the accuracy measure. Because of the sparsity of the pianoroll representation, the accuracy values are squashed to 1 in most symbolic musical applications. Hence, the true negatives are not taken into consideration in the definition of the accuracy measure.
+
+% Event level
+Traditionally, in the music generation field, the accuracy measure is computed for each time frame $N <= t <= T_{N}$. However, it appears that a model which simply repeats the previous frame gradually becomes the best model as the quantization gets finer. Actually, this is already observed for a quantization of 4.
+Hence, we suggest to compute the accuracy measure only for time indexes in $T_e$, the set of indexes $t_e$ such that
+\[\text{Orch}(t_{e}) \neq \text{Orch}(t_{e} - 1)\]
+Moreover, in the projective orchestration framework, rhythmic patterns are already established by the known piano score and, thus, does not have to be learned by the model.
+
+% Au final, on mean simplement les différents score obtenus sur chaque event
+Eventually, the mean accuracy measure over the dataset is given by
+\begin{equation}
+\frac{1}{K} \sum_{s \in \mathcal{D}_{test}} \sum_{t_e \in T_e(s)} Accuracy(t_e)
+\end{equation}
+where $\mathcal{D}_{test}$ define the test subset, $T_{e}(s)$ the set of event time indexes for the file s, and $K = \sum_{s \in \mathcal{D}_{test}} |T_e(s)|$
+
+% Warning, if the design of the function is done by training, be careful with train/validate/test dataset
+Note that in the case when the orchestral inference function is designed through a learning algorithm, the set of files used for the training step must carefully be kept disjoint from the test subset \cite{bishop2006pattern}.
+
+\subsection{Proposed model}
+We proposed a learning based approach, and developed N models. Their detailed description can be found in this article \textbf{REFFERRENEDCOSIDJPSDOC}.
+The models we explored are defined in a probabilistic framework, were the vectors $O(t)$ and $P(t)$ are represented as random variables. The orchestral inference function takes the form of a neural network which expresses the conditional dependencies between the different variables (past, and present, orchestra and piano). The likelihood is used as a training objective.
+
+\subsection{Results}
+Four models are evaluated on the orchestral inference task. The first model is a random generation of the orchestral frames from a Bernoulli distribution of parameter $0.5$. The second model predicts an orchestral frame at time $t$ by repeating the frame at time $t-1$. Those two naive models constitute a first baseline against which we compare the cRBM and FGcRBM models.
+
+The results are summed up in \prettyref{tab:result_event_level}. As expected, the random model has poor results. The repeat model performs significantly better. Indeed, it is relatively common that a note is sustained between two successive events. The cRBM largely outperforms those two models. However, the FGcRBM model has a lower score than the repeat model. We observed that the activation function of the visible units during the generative step was extremely noisy, which suggests that the training procedure mostly failed. We believe that this is due to the number of parameter,  and especially the dimension of the feature units. Indeed, in \cite{taylor2009factored}, only ten different configuration of the feature units were possible. When training on an orchestral database,  each different piano frame define a different configuration.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{c c}
+\hline
+Model & Orchestral Event-level (\%)\\
+\hline
+Random & 0.5\\ 
+Repeat & 12.6\\
+\hline \hline
+cRBM & 23.2\\ 
+FGcRBM & 6.2\\ 
+\end{tabular}
+\caption{Event-level accuracy for the orchestral inference task. Even though the cRBM performances increase by a factor 3 between the cRBM and the random model, the inclusion of features units provides a leap in the accuracy by multiplying the performances by 4.}
+\label{tab:result_event_level}
+\end{table}
+
+\subsection{Limits of this framework}
+% Limits of this task
+% Ground-truth is not only truth
+
+\section{Conclusion and future works}
 
 \bibliographystyle{plain}
 \bibliography{../Biblio/biblio}

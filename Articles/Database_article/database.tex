@@ -62,6 +62,7 @@
 
 % Packages maison
 \usepackage{amsmath,amssymb} % For including math equations, theorems, symbols, etc
+\usepackage{mathtools}
 \usepackage{bm}
 \usepackage{graphicx} % Required for including images
 \graphicspath{{../Figures/}} % Set the default folder for images
@@ -109,7 +110,7 @@ midi score database. It is composed by (137 OU 224 si IMSLP, mais c'est tout fau
 % Orchestration = definition
 Orchestration is the subtle art of writing musical pieces for the orchestra by combining the properties of various instruments in order to achieve a particular sonic rendering. \cite{koechli_orch,Rimsky-Korsakov:1873aa}. 
 % Orchestration projective
-Among the different writing techniques for orchestration, we define \textit{projective orchestration} as the technique which consists in writing first a piano score and then projecting it on an orchestra. This technique has been long used by classic composers \textbf{(exemple ?)}.
+Among the different writing techniques for orchestration, we define \textit{projective orchestration} as the technique which consists in writing first a piano score and then projecting it on an orchestra (\prettyref{fig:orch}). This technique has been long used by classic composers \textbf{(exemple ?)}.
 % Dataset symbolic pour l'orchestration projective
 This paper introduces what is to our best knowledge, the first symbolic dataset of projective orchestration.
 % Rapide description
@@ -143,7 +144,8 @@ The combinatorial complexity involved by symbolic representation is directly rel
 % Et maintenant on a le deep learning
 But the recent advent in machine learning brought techniques that could cope with the dimensionality involved by symbolic data.
 % Mais on a besoin de... DATA :)
-Based on statistical tools, those techniques require a huge amount of data. This dataset is a first attempt to fill this gap.
+Based on statistical tools, those techniques require a huge amount of data. Unfortunately, there is no free-access symbolic database for orchestration.
+This dataset is a first attempt to fill this gap.
 
 \begin{figure}
 \centering
@@ -158,25 +160,96 @@ We think that projective orchestration is an extremely interesting particular ca
 
 \subsection{Structure of the database}
 % Number of file, main aspect a+ Format midi
-The \textbf{NAME} database consists in piano and orchestra scores in MIDI format. 
+The \textbf{NAME} database consists in piano and orchestra scores in MIDI format.
 % Organization, hierarchy
 The files are grouped in folders indexed by a number. Each folder contains a pair : piano score and a possible orchestration. 
 % Where does it come from
-Since the files have been manually collected on several existing databases on the internet,
-% CSV instrumentation
-the relation between the track name and the instrument this track effectively represents is often not obvious. For that reason, a \textit{CSV} file is associated to each \textit{MIDI} file. It has the same name as the midi file. It links the name of the track in the midi file and the name of an instrument, according to a nomenclature (see nomenclatura.txt at the root of the folder).
-% Metadata
-% Aligned and non-aligned versions
-% Other statistics
+The files have been manually collected on several free-access databases found on the Internet (\textbf{CITE ??}).
 
-\subsection{Alignment algorithm}
-Since we gathered files from various origins, we had to perform automatic alignment for each pair. We used a \textit{Needleman-Wunsch} based algorithm with a measure adapted to the musical context.
+% CSV instrumentation
+In most orchestral midi files, one midi track is associated to one instrument. The files which were not respecting this construction have automatically been discarded. However, even for the files which respect this construction, the names of the midi tracks are often ambiguous or vague. 
+Hence, a \textit{CSV} file is associated to each \textit{MIDI} file. It has the same name as the midi file. It links the name of the midi tracks to the names of an instrument, according to a nomenclature (see nomenclature.txt at the root of the folder).
+
+% Metadata
+At the root of the database folder, a \textit{metadata.csv} file can be found. It gathers, for each folder index, the relative path to the folder from the database root directory, and when available, the composer and song name for the orchestral and piano works.
+
+% Other statistics
+\textbf{General statistics about the whole database can be found in the \textit{statistics.txt} file : the number of composers, the number of instruments} \textbf{USELESS ??}.
+
+% Manually checked
+Both metadata and instrumentation csv files have been automatically generated, but manually checked. We adopted a conservative approach when sorting the files. For instance, we automatically rejected a file with the slightest ambiguity between a midi track name and an instrument and a possible instrument.
+
+% Aligned and non-aligned versions
+Two versions of the database can be downloaded. The first version contains unmodified midi files as they were originally found on the diverse websites. The second version contains midi files automatically aligned using a \textit{Needleman-Wunsch} algorithm (\textbf{CITE}). The way we used this algorithm is detailed in the next section.
+
+% Matrices
+Eventually, we offer the possibility to download a pianoroll version of the database. In this case, all the midi files of piano (respectively orchestra) work have been transformed and concatenated into one a two dimensional structure (matrix). The starting and ending time of each track is indicated in the \textit{metadata.csv} file. \textbf{Those matrices (one for the piano, one for the orchestra) can be downloaded as \textit{.mat} (Matlab) or pickle (Python) files OR JUST CSV ????}
+
+\subsection{Construction of the database}
+% Automatic search for projective orchestration match
+\paragraph{Automatic search for pairs}
+Freely accessible classical midi databases on the Internet contains a large number of files. Although it seems that a lot of piano and orchestra pairs can be found in those databases, it is extremely hard to link them by pair, because the metadata have not been created with this particular task in mind. Hence, we used a fuzzy string matching algorithm based on the Levenshtein distance (\cite{fuzzywuzzy}) on the names of the files to automatically detect possible piano/orchestra pairs among a database.
+
+% Automatic alignment
+\paragraph{Automatic alignment}
+% Constat : toutes les partitions ne sont pas alignées
+Given the diverse origins of the midi files, it often happens that a piano score and its proposed orchestration were not aligned. Indeed, one file can be shorter than the other one, because of a dilation factor or skipped parts.
+% A quoi ça sert d'avoir des partitions alignées ?
+Those misalignments were problematic for the learning based tasks we introduce in the next section, and in general for any processing which intends to take advantage of the joint information of the piano and orchestra score. Hence, we propose an algorithm to automatically align two symbolic scores.
+% QC'est quoi aligner ? C'est aligner les séquences d'accords formées par le pianoroll
+More precisely, we consider the pianoroll representations (\prettyref{fig:pianoroll}) of scores. Hence, a score can be represented as a sequence of chords. From a computational point of view, a chord is a binary vector (representing a note on or off). Note that we used a binary representations to perform alignment, but preserved the intensity in the files. Then, if we manage to define a distance between chords, the problem of aligning two scores can be casted as a classic sequence alignment problem.
+% Definition pianoroll
+\textbf{CHANGER LA FIGURE QUI EST CHEUM DE OUF. LA BONNE TRAINE SUR LE MAC, DANS LE DOSSIER JJCASS POSTER}
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.35]{data_representation}
+\caption{From the score of an orchestral piece, a convenient representation for computer processing named \textit{piano-roll} is extracted. A piano-roll $pr$ is a matrix whose rows represent pitches and columns represent a time frame depending on the discretization of time. A pitch $p$ at time $t$ played with an intensity $i$ is represented by $pr(p,t) = i$, $0$ being a note off. This definition is extended to an orchestra by simply concatenating the \textit{piano-rolls} of every instruments along the pitch dimension.}
+\label{fig:pianoroll}
+\end{figure}
+
+% Aligner une séquence : on sait faire = Needleman
+% Description Needleman-Wunsch
+Indeed, the \textit{Needleman-Wunsch}  algorithm \cite{NEEDLEMAN1970443} is a dynamic programming technique, which allows to find the optimal alignment of any two symbolic sequences, using only the introduction of gaps (\textit{i.e.} empty slots) in the sequences, but no deletion.
+The only requirement of this algorithm is to be able to define a scoring system, composed by a similarity function and a gap penalty. In our case defining a similarity function boils down to building a match score between two chords.
+
+% Similarity matrix
+\paragraph{Similarity function}
+We propose the following process :
+\begin{itemize}
+\item compute the pitch-class representation of the two chords \textbf{DETAILS}. Vectors of size 12 are obtained.
+\item if one of the vector is only filled with zero, it represents a silence, and the score is set to zero.
+\item else, for two pitch-class vectors A and B, we define the score as 
+\begin{equation}
+S =	C . \frac{\sum_{i=1}^{12} \delta(A_i , B_i)}{||A+B||_1}
+\end{equation}
+with
+\[\delta(x) =
+    \begin{cases*}
+      0 & if x = 0\\
+      -1 & if x = 1\\
+      1 & if x = 2
+    \end{cases*} 
+\]
+We detail the setting of the scaling factor C in the next section.
+\end{itemize}
+
+\paragraph{Tuning the algorithm}
+% Gap penalty
+In addition to defining a score function, the \textit{Needleman-Wunsch} algorithm has to be carefully tuned. We detail the different parameters and the value we used.
+\begin{itemize}
+\item the scaling factor of the similarity function ($C$) is set to 10
+\item the gap open penalty defines the cost of introducing a gap in one of the two sequence. It is set to 3
+\item the gap extend penalty defines the cost of extending a gap in one of the two sequence. It is to 0
+\end{itemize}
+
+% Removing the gap for BOTH scores
+
+
+\textbf{SCHEMA}
 
 \section{A case study : projective automatic orchestration}
 
 %------------------------------------------------
-
-\section{Projective orchestration}
 
 
 %----------------------------------------------------------------------------------------

@@ -8,6 +8,8 @@ import shutil
 def clean(path):
     list_dir = glob.glob(path + '/*')
     for dirname in list_dir:
+        if os.path.isfile(dirname):
+            continue
         list_file = os.listdir(dirname)
         NO_RESULT_FILE = 'result.csv' not in list_file
         NO_CONFIG_FILE = 'config.pkl' not in list_file

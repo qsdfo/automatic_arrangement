@@ -26,6 +26,7 @@ from results_folder_generate import generate_midi, generate_midi_full_track_refe
 from results_folder_plot_weights import plot_weights
 from results_folder_csv import get_results_and_id, write_csv_results
 from corrupted import generate_corrupted_results
+from clean_result_folder import clean
 
 ############################################################
 # Logging
@@ -63,8 +64,8 @@ def processing_results(configurations_path, data_folder, track_paths, generation
 
     for configuration in configurations:
         # generate_midi(configuration, data_folder, generation_length, seed_size, quantization_write, None, logger_generate)
-        for track_path in track_paths:
-            generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, quantization_write, number_of_version, logger_generate)
+        # for track_path in track_paths:
+        #     generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, quantization_write, number_of_version, logger_generate)
         # generate_corrupted_results(configuration, data_folder, generation_length, seed_size)
         # plot_weights(configuration, logger_plot)
         id_result_list.append(get_results_and_id(configuration))
@@ -77,7 +78,7 @@ if __name__ == '__main__':
     #   USE EXACTLY THE SAME DATA FOLDER THAT THE ONE USED FOR training
     #   Hence, if trained on guillimin, scp it before doing any post processing
     data_folder = '/home/aciditeam-leo/Aciditeam/lop/Data'
-    model_path = '/home/aciditeam-leo/Aciditeam/lop/Results_gpu/event_level/discrete_units/quantization_4/gradient_descent/'
+    model_path = '/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/event_level/discrete_units/quantization_4/gradient_descent'
     track_paths = [
         '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/liszt_classical_archive/16',
         '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/bouliane/22',
@@ -89,6 +90,7 @@ if __name__ == '__main__':
 
     for nn in ['cRBM', 'cRnnRbm', 'FGcRBM', 'LSTM', 'RBM_inpainting', 'RnnRbm_inpainting']:
         model_path_this = model_path + '/' + nn
+        clean(model_path_this)
         processing_results(model_path_this, data_folder, track_paths)
 
     #################################

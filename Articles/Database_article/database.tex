@@ -113,39 +113,42 @@ N pairs = (137 OU 224 si IMSLP, mais c'est tout faux)
 % Orchestration = definition
 Orchestration is the subtle art of writing musical pieces for the orchestra by combining the properties of various instruments in order to achieve a particular sonic rendering. \cite{koechli_orch,Rimsky-Korsakov:1873aa}. 
 % Orchestration projective
-Among the different writing techniques for orchestration, we define \textit{projective orchestration} as the technique which consists in writing first a piano score and then projecting it on an orchestra (\prettyref{fig:orch}). This technique has been long used by classic composers \textbf{(exemple ?)}.
+Among the different writing techniques for orchestration, we define \textit{projective orchestration} as the technique which consists in writing first a piano score and then projecting it on an orchestra (\prettyref{fig:orch}). This technique has been long used by classic composers.
+See for instance \textit{Pictures at an exhibition} written by Modest Mussorgsky and orchestrated by Maurice Ravel.
 % Dataset symbolic pour l'orchestration projective
-This paper introduces what is to our best knowledge, the first symbolic dataset of projective orchestration.
+This paper introduces what is to our best knowledge, the first symbolic dataset of projective orchestrations.
 % Rapide description
-It contains midi scores of piano pieces, and for each of this piece, one or several corresponding orchestration(s) written by famous composers.
-
+It contains pairs of a piano piece and an associated orchestration written by famous composers. Note that several orchestrations can be found for one given piano score.
 This database has several purposes :
 \begin{itemize}
-\item being the starting point for a scientific investigation of orchestration, especially for statistic-based approaches on high-level symbolic information
-\item establishing a reference dataset for generative algorithms 
-\item indexing works of famous composers for musicological purposes
+	\item being the starting point for a scientific investigation of orchestration, especially for statistic-based approaches on high-level symbolic information
+	\item establishing a reference dataset for the evaluation of generative algorithms 
+	\item indexing works of famous composers for musicological purposes
 \end{itemize}
 
-The remainder of this paper is organized as follows. The first section introduces the structure of the database, the reason why it has been created and how informations have been gathered. In the section two, we introduce an automatic projective orchestration task. Our proposed algorithm rely on learning based methods, and uses this database. We also define an evaluation criterion that uses a part of the database. Conclusions are provided in the last section.
+The remainder of this paper is organized as follows. The first section details the structure of the database. An automatic projective orchestration task is introduced in section two, along with an evaluation framework and several proposition of learning based models that rely on the database.  Conclusions are provided in the last section.
 
 \section{Dataset}
-\subsection{Projective orchestration}
+\subsection{Symbolic information for orchestration}
 % Teahching orchestration = exemples
-Several treatise of orchestration exist \cite{koechli_orch,piston-orch,Rimsky-Korsakov:1873aa}, but they all consist in a sum of examples rather than a comprehensive theorization.
+Several treatises have been written by famous composers in an attempt to formalize orchestration (\cite{koechli_orch,piston-orch,Rimsky-Korsakov:1873aa}).
+They compound a remarkable sum of examples, but do not build a comprehensive theorization.
 % Why ? Because it is highly complex, and we can't handle this complexity
-An explanation of this observation lies in the tremendous complexity that emerges from an orchestral work. For the composer, the number of pitch and intensity ranges of each instrument is powered by the number of instruments in the orchestra, and lead to a huge combinatoric. During the performance, acoustic summation of the instruments give rise to highly non-linear effects at the signal level, which make the resulting sound almost impossible to predict. Eventually, only a little is known about the complex psycho-acoustic phenomena involved in the listening process. All those aspects play an important role in an orchestral work. Then, it seems almost impossible for a human mind to grasp in its entirety an orchestral rendering.
+An explanation of this observation lies in the tremendous complexity that emerges from an orchestral work. The number of pitch and intensity ranges of each instrument is powered by the number of instruments in the orchestra, and lead to a huge combinatoric. During the performance, acoustic summation of the instruments give rise to highly non-linear effects at the signal level, which make the resulting sound almost impossible to predict. Eventually, only a little is known about the complex psycho-acoustic phenomena involved in the listening process. All those aspects play an important role in an orchestral work. Then, it seems almost impossible for a human mind to grasp in its entirety an orchestral rendering.
 
+%% SYMBOLIC
 % Problem too complex : need for scientific investigation
 Hence, we believe that a thorough scientific investigation could help disentangling the multiple factors involved in an orchestral work, and might be a precious help toward a greater understanding of the discipline.
 % Scientific investigation already made ? Yes : signal et psycho-ac
-If major works have already been produced in psycho-acoustic CITE and signal processing CITE, no attempts have been made to tackle orchestration from a symbolic perspective.
-Here, symbolic means a scores with musical notation, as represented in \ref{fig:orch}.
+If major works have already been produced in psycho-acoustic \cite{mcadams2013timbre,pressnitzer2000perception,tardieu2012perception} and signal processing \cite{peeters2011timbre}, no attempts have been made to tackle orchestration from a symbolic perspective (i.e. considering score instead of audio signal).
 % Utilité du symboliques
-However, symbolic representations convey high-level information. Observing famous orchestral works from this perspective could be gratifying.
+However, symbolic representations convey high-level information about the intuitive knowledge composers have about timbre manipulations.
+
 % Pourquoi pas de symbolique alors ? Complexité + pas encore les techniques adaptées
-The combinatorial complexity involved by symbolic representation is directly related to the average pitch range of an instrument powered by the number of instrument. For a symphonic orchestra, we see that this complexity quickly explode. Even for a computer, an exhaustive investigation of all the possible combinations is unimaginable.
+From a computational point of view, symbolic data involve an important complexity.
+The average pitch range of an instrument powered by the number of instruments is a rough approximation of the large combinatoric engendered by a symphonic orchestra. Even for a computer, an exhaustive investigation of all the possible combinations is unimaginable.
 % Et maintenant on a le deep learning
-But the recent advent in machine learning brought techniques that could cope with the dimensionality involved by symbolic data.
+But the recent advents in machine learning brought techniques that could cope with the dimensionality involved by symbolic data.
 % Mais on a besoin de... DATA :)
 Based on statistical tools, those techniques require a huge amount of data. Unfortunately, there is no free-access symbolic database for orchestration.
 This dataset is a first attempt to fill this gap.
@@ -157,6 +160,10 @@ This dataset is a first attempt to fill this gap.
 \label{fig:orch}
 \end{figure}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Pourquoi c'est intéressant les orchestrations projectives ?
 We think that projective orchestration is an extremely interesting particular case. Because orchestrating a piano piece often stem from its analysis, studying the orchestration written by a famous composer is, in a restricted way, listening to its analysis. Besides, the harmonic, rhythmic and melodic structure of a piece is already fixed in the piano score, and observing the joint information of the original piano score and an orchestrated version consists in focusing on the timbral augmentation of this primal structure. In other words, it allows to focus on how the musical discourse is highlighted by the evolution of the timbre.
 

@@ -131,10 +131,8 @@ if __name__ == '__main__':
     ]
 
     grid_search = {}
-    # grid_search['gapopen'] = [1, 2, 3, 4, 5]
-    # grid_search['quantization'] = [4, 8, 12]
-    grid_search['gapopen'] = [1]
-    grid_search['quantization'] = [4]
+    grid_search['gapopen'] = [1, 2, 3, 4, 5]
+    grid_search['quantization'] = [4, 8, 12]
 
     # Build all possible values
     for gapopen, quantization in list(itertools.product(

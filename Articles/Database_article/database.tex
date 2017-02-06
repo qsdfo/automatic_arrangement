@@ -76,11 +76,11 @@
 
 \pretitle{\begin{center}\Huge\bfseries} % Article title formatting
 \posttitle{\end{center}} % Article title closing formatting
-\title{A database of piano and orchestral midi scores.\\Application to automatic projective orchestration} % Article title
+\title{A database linking piano and orchestral MIDI scores for automatic projective orchestration \textbf{(RESTREINT LE CHAMP D'APPLICATION, C'EST DOMMAGE NON ?)}} % Article title
 \author{%
-\textsc{John Smith}\thanks{A thank you or further information} \\[1ex] % Your name
-\normalsize University of California \\ % Your institution
-\normalsize \href{mailto:john@smith.com}{john@smith.com} % Your email address
+\textsc{L\'eopold Crestel, Philippe Esling}\\[1ex] % Your name
+\normalsize IRCAM \\ % Your institution
+\normalsize \href{mailto:leopold.crestel@ircam.fr}{leopold.crestel@ircam.fr} % Your email address
 %\and % Uncomment if 2 authors are required, duplicate these 4 lines if more
 %\textsc{Jane Smith}\thanks{Corresponding author} \\[1ex] % Second author's name
 %\normalsize University of Utah \\ % Second author's institution
@@ -89,8 +89,11 @@
 \date{\today} % Leave empty to omit a date
 \renewcommand{\maketitlehookd}{%
 \begin{abstract}
-\noindent This article introduces the \textbf{POD} dataset, a freely-available collection of midi scores 
-midi score database. It is composed by  pairs of one piano score and one corresponding orchestration. To our best knowledge, this is the first database of this kind. Thus, we also introduce a projective orchestration task, which roughly consists in learning to perform automatic orchestration of a piano score. This task can be addressed using learning methods on this database.  
+\noindent This article introduces the Projective Orchestral Database \textbf{POD}, a freely-available collection of midi scores composed of pairs linking piano scores to their corresponding orchestrations. To our best knowledge, this is the first database of its kind. 
+This can allow to perform piano or orchestral prediction, but more importantly to try to learn the correlation between piano and orchestral scores.
+Hence, we introduce the projective orchestration task, which consists in learning to perform automatic orchestration of a piano score. 
+This task can be seen as the generation of a symbolic time series (an orchestral score) conditioned by another symbolic time series (the piano score).
+We show how this task can be addressed using learning methods and also provide methodological guidelines to use the database.
 \end{abstract}
 }
 
@@ -104,10 +107,6 @@ midi score database. It is composed by  pairs of one piano score and one corresp
 %----------------------------------------------------------------------------------------
 %	ARTICLE CONTENTS
 %----------------------------------------------------------------------------------------
-
-N pairs = (137 OU 224 si IMSLP, mais c'est tout faux)
-
-
 
 \section{Introduction}
 % Orchestration = definition
@@ -195,7 +194,7 @@ Two versions of the database can be downloaded. The first version contains unmod
 
 \paragraph{Formats}
 % Matrices
-Eventually, we offer the possibility to download a pianoroll (\prettyref{fig:pianoroll}) version of the database. In this case, all the midi files of piano (respectively orchestra) work have been transformed and concatenated into a unique two dimensional matrix. The starting and ending time of each track is indicated in the \textit{metadata.csv} file. \textbf{Those matrices (one for the piano, one for the orchestra) can be downloaded as \textit{.mat} (Matlab) or pickle (Python) files OR JUST CSV ????}
+Eventually, we offer the possibility to download a piano-roll (\prettyref{fig:piano-roll}) version of the database. In this case, all the midi files of piano (respectively orchestra) work have been transformed and concatenated into a unique two dimensional matrix. The starting and ending time of each track is indicated in the \textit{metadata.csv} file. \textbf{Those matrices (one for the piano, one for the orchestra) can be downloaded as \textit{.mat} (Matlab) or pickle (Python) files OR JUST CSV ????}
 
 \subsection{Construction of the database}
 % Automatic search for projective orchestration match
@@ -213,15 +212,15 @@ For matching file names, a fuzzy string matching algorithm based on the \textit{
 Given the diverse origins of the midi files, it often happens that a piano score and its proposed orchestration were not aligned. Indeed, one file can be shorter than the other one, because of a dilation factor or skipped parts.
 % A quoi ça sert d'avoir des partitions alignées ?
 Those misalignments were problematic for the learning based tasks we introduce in the next section, and in general for any processing which intends to take advantage of the joint information of the piano and orchestra score. Hence, we propose an algorithm to automatically align two scores.
-% C'est quoi aligner ? C'est aligner les séquences d'accords formées par le pianoroll
-More precisely, we consider the piano-roll representations (\prettyref{fig:pianoroll}) of scores. Hence, a score can be represented as a sequence of vectors. Then, if we manage to define a distance between chords, the problem of aligning two scores can be casted as a classic sequence alignment problem.
-% Definition pianoroll
+% C'est quoi aligner ? C'est aligner les séquences d'accords formées par le piano-roll
+More precisely, we consider the piano-roll representations (\prettyref{fig:piano-roll}) of scores. Hence, a score can be represented as a sequence of vectors. Then, if we manage to define a distance between chords, the problem of aligning two scores can be casted as a classic sequence alignment problem.
+% Definition piano-roll
 
 \begin{figure}[ht]
 \centering
 \includegraphics[scale=0.35]{Data_representation/from_score_to_pianoroll}
 \caption{From the score of an orchestral piece, a convenient representation for computer processing named \textit{piano-roll} is extracted. A piano-roll $pr$ is a matrix whose rows represent pitches and columns represent a time frame depending on the discretization of time. A pitch $p$ at time $t$ played with an intensity $i$ is represented by $pr(p,t) = i$, $0$ being a note off. This definition is extended to an orchestra by simply concatenating the \textit{piano-rolls} of every instruments along the pitch dimension.}
-\label{fig:pianoroll}
+\label{fig:piano-roll}
 \end{figure}
 
 % Aligner une séquence : on sait faire = Needleman
@@ -274,7 +273,7 @@ In this section, we introduce and formalize the automatic projective orchestrati
 
 \subsection{Task definition}
 \paragraph{Data representation}
-In order to process the scores, we import them as \textit{piano-roll} matrices (see \prettyref{fig:pianoroll}). 
+In order to process the scores, we import them as \textit{piano-roll} matrices (see \prettyref{fig:piano-roll}). 
 Its extension to represent an orchestra is straightforwardly obtained by the concatenation of the \textit{piano-rolls} of each instrument along the pitch dimension.
 
 The rhythmic quantization is defined as the number of time frame in the \textit{piano-roll} per quarter note. When constructing the piano-rolls, we used a rhythmic quantization of 4.
@@ -284,7 +283,7 @@ Also, we follow the classic orchestral simplifications used when writing orchest
 Finally, the velocity information is discarded, since we use binary units which solely indicate if a note is on or off.
 
 \paragraph{Orchestral inference}
-For each orchestral piece, we define $O(t)$ and $P(t)$ as the sequence of column vectors from the \textit{piano-roll} of the orchestra and piano part respectively, with $t \in \left[ 1,N_{T} \right]$ where $N_{T}$ is the length of the pianoroll, given a particular quantization.
+For each orchestral piece, we define $O(t)$ and $P(t)$ as the sequence of column vectors from the \textit{piano-roll} of the orchestra and piano part respectively, with $t \in \left[ 1,N_{T} \right]$ where $N_{T}$ is the length of the piano-roll, given a particular quantization.
 
 At each time index $t$, the objective is to design a function that is able to infer the present orchestral frame knowing the recent past of the orchestra sequence and both past and present of the piano sequence. Mathematically, it consists in designing a function $f$ as
 \begin{equation}
@@ -309,7 +308,7 @@ To compare the inferred and ground-truth frames at time $t$, the accuracy measur
 \label{eq:accuracy}
 \end{equation}
 where $TP(t)$ (true positives) is the number of notes correctly predicted (note played in both $\hat{O}(t)$ and $O(t)$). $FP(t)$ (false positive) is the number of notes predicted which are not in the original sequence (note played in $\hat{O}(t)$ but not in $O(t)$). $FN(t)$ (false negative) is the number on unreported notes (note absent in $\hat{O}(t)$, but played in $O(t)$). 
-Note that in many other prediction framework, the true negatives also appears in the numerator and denominator of the accuracy measure. Because of the sparsity of the pianoroll representation, the accuracy values are squashed to 1 in most symbolic musical applications. Hence, the true negatives are not taken into consideration in the definition of the accuracy measure.
+Note that in many other prediction framework, the true negatives also appears in the numerator and denominator of the accuracy measure. Because of the sparsity of the piano-roll representation, the accuracy values are squashed to 1 in most symbolic musical applications. Hence, the true negatives are not taken into consideration in the definition of the accuracy measure.
 
 % Event level
 Traditionally, in the music generation field, the accuracy measure is computed for each time frame $N <= t <= T_{N}$. However, it appears that a model which simply repeats the previous frame gradually becomes the best model as the quantization gets finer. Actually, this is already observed for a quantization of 4.

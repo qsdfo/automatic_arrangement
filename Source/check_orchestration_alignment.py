@@ -17,7 +17,7 @@ from acidano.data_processing.midi.write_midi import write_midi
 
 def check_orchestration_alignment(path_db, subfolder_names, quantization, gapopen, gapextend):
 
-    output_dir = 'DEBUG/' + str(quantization) +\
+    output_dir = 'Grid_search_database_alignment/' + str(quantization) +\
                  '_' + str(gapopen) +\
                  '_' + str(gapextend)
 

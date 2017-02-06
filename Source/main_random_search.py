@@ -26,9 +26,12 @@ N_HP_CONFIG = 20
 LOCAL = True
 BUILD_DATABASE = True
 DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
-# RESULT_ROOT = os.getcwd() + '/../'
+
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
-RESULT_ROOT = "/sb/project/ymd-084-aa/"
+if LOCAL:
+    RESULT_ROOT = os.getcwd() + '/../'
+else:
+    RESULT_ROOT = "/sb/project/ymd-084-aa/"
 
 commands = [
     'LSTM',

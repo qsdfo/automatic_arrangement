@@ -74,7 +74,7 @@ def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantiza
                         pr1 = warp_pr_aux(pr1, new_event_1)
 
                     # Get T
-                    trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1))
+                    trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1), 3, 1)
                     trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
                     T += sum(trace_prod)
                     # Modify the mapping from instrument to indices in pianorolls and pitch bounds

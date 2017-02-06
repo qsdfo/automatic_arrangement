@@ -100,7 +100,7 @@ def process_folder(folder_path, quantization, temporal_granularity, logging):
 
     # Get trace from needleman_wunsch algorithm
     # Traces are binary lists, 0 meaning a gap is inserted
-    trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1))
+    trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1), 3, 1)
 
     # Wrap dictionnaries according to the traces
     assert(len(trace_0) == len(trace_1)), "size mismatch"

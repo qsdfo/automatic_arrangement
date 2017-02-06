@@ -15,6 +15,7 @@ from build_data import build_data
 # Clean Script
 from clean_result_folder import clean
 
+import train
 ####################
 # Reminder for plotting tools
 # import matplotlib.pyplot as plt
@@ -22,9 +23,9 @@ from clean_result_folder import clean
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 20
+N_HP_CONFIG = 21
 LOCAL = True
-BUILD_DATABASE = True
+BUILD_DATABASE = False
 DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
@@ -34,7 +35,7 @@ else:
     RESULT_ROOT = "/sb/project/ymd-084-aa/"
 
 commands = [
-    'LSTM',
+    'FGcRnnRbm',
     'gradient_descent',
     'event_level',
     'discrete_units',
@@ -80,6 +81,8 @@ elif commands[0] == "cRBM":
     from acidano.models.lop.discrete.cRBM import cRBM as Model_class
 elif commands[0] == "FGcRBM":
     from acidano.models.lop.discrete.FGcRBM import FGcRBM as Model_class
+elif commands[0] == "FGcRnnRbm":
+    from acidano.models.lop.discrete.FGcRnnRbm import FGcRnnRbm as Model_class
 elif commands[0] == "LSTM":
     from acidano.models.lop.discrete.LSTM import LSTM as Model_class
 elif commands[0] == "RnnRbm":
@@ -266,8 +269,9 @@ for hp_config in range(number_hp_config):
     pkl.dump(space, open(config_folder + '/config.pkl', 'wb'))
 
     if LOCAL:
-        process = subprocess.Popen("THEANO_FLAGS='device=gpu1' python train.py '" + config_folder + "'", shell=True, stdout=subprocess.PIPE)
-        process.wait()
+        config_folder = config_folder
+        params = pkl.load(open(config_folder + '/config.pkl', "rb"))
+        train.run_wrapper(params, config_folder)
     else:
         # Write pbs script
         file_pbs = config_folder + '/submit.pbs'

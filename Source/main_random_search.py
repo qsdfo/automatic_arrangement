@@ -26,6 +26,9 @@ N_HP_CONFIG = 20
 LOCAL = True
 BUILD_DATABASE = True
 DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
+# RESULT_ROOT = os.getcwd() + '/../'
+# For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
+RESULT_ROOT = "/sb/project/ymd-084-aa/"
 
 commands = [
     'LSTM',
@@ -128,7 +131,7 @@ except ValueError:
 ############################################################
 logging.info('System paths')
 SOURCE_DIR = os.getcwd()
-result_folder = SOURCE_DIR + u'/../Results/' + script_param['temporal_granularity'] + '/' + unit_type + '/' +\
+result_folder = RESULT_ROOT + u'Results/' + script_param['temporal_granularity'] + '/' + unit_type + '/' +\
     'quantization_' + str(script_param['quantization']) + '/' + Optimization_method.name() + '/' + Model_class.name()
 
 # Check if the result folder exists
@@ -212,8 +215,6 @@ if BUILD_DATABASE:
                store_folder=data_folder,
                logging=logging)
 
-import pdb; pdb.set_trace()
-
 ############################################################
 # Hyper parameter space
 ############################################################
@@ -269,7 +270,7 @@ for hp_config in range(number_hp_config):
         file_pbs = config_folder + '/submit.pbs'
         text_pbs = """#!/bin/bash
 
-#PBS -l nodes=1:ppn=1:gpus=1
+#PBS -l nodes=1:ppn=2:gpus=1
 #PBS -l pmem=4000m
 #PBS -l walltime=10:00:00
 

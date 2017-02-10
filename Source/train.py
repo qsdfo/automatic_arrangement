@@ -50,13 +50,13 @@ def run_wrapper(params, config_folder):
         from acidano.models.lop.real.LSTM_gaussian_mixture_2 import LSTM_gaussian_mixture_2 as Model_class
 
     if script_param['optimization_method'] == "gradient_descent":
-        from acidano.utils.optim import gradient_descent as Optimization_method
+        from acidano.utils.optim.gradient_descent import Gradient_descent as Optimization_method
     elif script_param['optimization_method'] == 'adam_L2':
-        from acidano.utils.optim import adam_L2 as Optimization_method
+        from acidano.utils.optim.adam_L2 import Adam_L2 as Optimization_method
     elif script_param['optimization_method'] == 'rmsprop':
-        from acidano.utils.optim import rmsprop as Optimization_method
+        from acidano.utils.optim.rmsprop import Rmsprop as Optimization_method
     elif script_param['optimization_method'] == 'sgd_nesterov':
-        from acidano.utils.optim import sgd_nesterov as Optimization_method
+        from acidano.utils.optim.sgd_nesterov import Sgd_nesterov as Optimization_method
 
     ############################################################
     # Paths

@@ -23,7 +23,7 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 21
+N_HP_CONFIG = 1
 LOCAL = True
 BUILD_DATABASE = False
 DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
@@ -282,7 +282,7 @@ for hp_config in range(number_hp_config):
 #PBS -l walltime=10:00:00
 
 module load iomkl/2015b Python/2.7.10 CUDA cuDNN
-OMPI_MCA_mtl=^psm
+export OMPI_MCA_mtl=^psm
 
 SRC=$HOME/lop/Source
 cd $SRC

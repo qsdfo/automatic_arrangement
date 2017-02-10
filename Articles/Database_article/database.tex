@@ -56,6 +56,13 @@
 \fancyhead[C]{Running title $\bullet$ May 2016 $\bullet$ Vol. XXI, No. 1} % Custom header text
 \fancyfoot[RO,LE]{\thepage} % Custom footer text
 
+% Makecell 
+\usepackage{makecell}
+\renewcommand\theadalign{cb}
+\renewcommand\theadfont{\bfseries}
+\renewcommand\theadgape{\Gape[4pt]}
+\renewcommand\cellgape{\Gape[4pt]}
+
 \usepackage{titling} % Customizing the title section
 
 \usepackage{hyperref} % For hyperlinks in the PDF
@@ -89,7 +96,7 @@
 \date{\today} % Leave empty to omit a date
 \renewcommand{\maketitlehookd}{%
 \begin{abstract}
-\noindent This article introduces the Projective Orchestral Database \textbf{POD}, a freely-available collection of midi scores composed of pairs linking piano scores to their corresponding orchestrations. To our best knowledge, this is the first database of its kind. 
+\noindent This article introduces the Projective Orchestral Database \textit{POD}, a freely-available collection of midi scores composed of pairs linking piano scores to their corresponding orchestrations. To our best knowledge, this is the first database of its kind. 
 \textbf{This can allow to perform piano or orchestral prediction, but more importantly to try to learn the correlation between piano and orchestral scores.} (\textbf{TROP RESTRICTIF})
 Hence, we introduce the projective orchestration task, which consists in learning to perform automatic orchestration of a piano score. 
 This task can be seen as the generation of a symbolic time series (an orchestral score) conditioned by another symbolic time series (the piano score).
@@ -107,6 +114,15 @@ We show how this task can be addressed using learning methods and also provide m
 %----------------------------------------------------------------------------------------
 %	ARTICLE CONTENTS
 %----------------------------------------------------------------------------------------
+
+\section{TODO}
+\begin{itemize}
+\item Remplir le tableau avec les statistiques (table 1)
+\item évoquer le split train/test, et éventuellement l'imposer dans la construction de la db ?
+\item générer les db déjà aligner,  et les .pkl et .m
+\item faire un site web, y insérer des exemples sonores
+\item y insérer aussi des exemples de pianorolls alignés, juste parce que c'est beau
+\end{itemize}
 
 \section{Introduction}
 % Orchestration = definition
@@ -180,7 +196,8 @@ Hence, a comma separated value (\textit{CSV}) file is associated to each \textit
 At the root of the database folder, a \textit{metadata.csv} file gathers, for each folder, the relative path to the folder from the database root directory, the composer name and the song name for the orchestral and piano works.
 % Other statistics
 General statistics about the whole database can be found in the \textit{statistics.csv} file such as the number of composers and number of instruments which are reported in \prettyref{tab:stats} \textbf{MEGA USELSESS ca ?}.
-\begin{figure}
+
+\begin{table}[h]
 \centering
 \begin{tabular}{lll}
    Number of files & Composers & Instruments\\
@@ -188,9 +205,9 @@ General statistics about the whole database can be found in the \textit{statisti
     &  & 
    \\
 \end{tabular}
-\caption{BLABLABLA}
+\caption{BLABLABLABLABLABLABLABLABLABLABLABLABLABLA}
 \label{tab:stats}
-\end{figure}
+\end{table}
 
 \paragraph{Integrity}
 % Manually checked
@@ -336,8 +353,45 @@ Finally, the mean accuracy measure over the dataset is given by
 where $\mathcal{D}_{test}$ define the test subset, $T_{e}(s)$ the set of event time indexes for a given score s, and $K = \sum_{s \in \mathcal{D}_{test}} |T_e(s)|$
 
 \subsection{Proposed model}
-We proposed a learning based approach, and developed N models. Their detailed description can be found in this article \textbf{REFFERRENEDCOSIDJPSDOC}.
-The models we explored are defined in a probabilistic framework, were the vectors $O(t)$ and $P(t)$ are represented as random variables. The orchestral inference function takes the form of a neural network which expresses the conditional dependencies between the different variables (past, and present, orchestra and piano). The likelihood is used as a training objective.
+In this section, we propose a learning based approach to tackle the automatic orchestral inference task.
+We present the results for two models called \textit{conditional Restricted Boltzmann Machine} (\textit{cRBM}) and \textit{Factored Gated conditional Restricted Boltzmann Machine} (\textit{FGcRBM}). We provide a short description  in the next paragraph, a more detailed one can be found in \cite{taylor2009factored}.
+The models we explored are defined in a probabilistic framework, were the vectors $O(t)$ and $P(t)$ are represented as random variables. The orchestral inference function is a neural network which expresses the conditional dependencies between the different variables : the present orchestral frame $O(t)$, the present piano frame $P(t)$ and the past orchestral frames $O(t-1,...,t-N)$. \textit{Hidden units} are introduced to model the co-activation of these variables.
+The training step consists in minimizing an energy function $E$ by modifying the parameters of the model. Thus, a given parameter $w$ is iteratively modified as
+\[
+w_{new} = w_{old} - \lambda \frac{\partial E}{\partial w}
+\]
+where $\lambda$ is an hyper-parameter called the training step and usually fixed between $10^{-3}$
+and $10^{-4}$.
+\paragraph{\textit{cRBM} equations}
+\begin{equation}
+\begin{array}{rcl}
+E(\bm{O}(t),\bm{h}(t)|\bm{x}(t)) & = & - \sum_{i} \hat{a}_{i}(t)O_{i}(t)\\
+& & - \sum_{ij}W_{ij}O_{i}(t)h_{j}(t)\\
+& & - \sum_{j} \hat{b}_{j}(t)h_{j}(t)\\
+\hat{a}_{i}(t) & = & a_{i} + \sum_{k}A_{ki}x_{k}(t)\\
+\hat{b}_{j}(t) & = & b_{j} + \sum_{k}B_{kj}x_{k}(t)
+\end{array}
+\end{equation}
+where the vector x is the concatenation of the present piano frame and the past orchestra
+\[\bm{x}(t) = \left[ \text{Piano}(t) , \text{Orch}(t-1) , ... , \text{Orch}(t-N)\right]\]
+
+$\left\{a, A, b, B, W\right\}$ are the parameters of the models modified during the training procedure.
+
+
+\paragraph{\textit{FGcRBM} equations}
+\begin{equation}
+\begin{array}{rcl}
+E(\bm{O}(t),\bm{h}(t)|\bm{x}(t),\bm{P}(t)) & = & - \sum_{i} \hat{a}_{i}(t)O_{i}(t)\\ 
+& & - \sum_{j} \hat{b}_{j}(t)h_{j}(t)\\
+& & \scalebox{0.75}{$-\sum_{f}\sum_{ijl} W_{if}^{v} W_{jf}^{h} W_{lf}^{z} O_{i}(t) h_{j}(t) P_{l}(t)$}\\
+\hat{a}_{i}(t) & = & a_{i} + \scalebox{0.75}{$\sum_{m} \sum_{kl}A_{im}^{v}A_{km}^{x}A_{lm}^{z}x_{k}(t)z_{l}(t)$}\\
+\hat{b}_{j}(t) & = & b_{j} + \scalebox{0.75}{$\sum_{n} \sum_{kl}B_{jn}^{h}B_{kn}^{x}B_{ln}^{z}x_{k}(t)z_{l}(t)$}\\
+\end{array}
+\end{equation}
+where the vector x is the concatenation of the past orchestral frames, but not the present piano frame anymore 
+\[\bm{x}(t) = \left[\text{Orch}(t-1) , ... , \text{Orch}(t-N)\right]\]
+
+In both models, minimizing the energy function around the point observed in the training dataset amount to maximizing the likelihood of the training points. For several reasons, the energy function is too complex to be computed, and a training procedure called contrastive divergence is used \cite{carreira2005contrastive}, in which the parameters are updated by an approximation of the gradient of the energy function.
 
 \paragraph{Data representation}
 In order to process the scores, we import them as \textit{piano-roll} matrices (see \prettyref{fig:piano-roll}). 
@@ -354,8 +408,8 @@ During the generation of an orchestral score given a piano score, the next orche
 
 \begin{figure}
 \centering
-\includegraphics{}
-\caption{heading}
+\includegraphics[scale=0.15]{Data_representation/event_level_generation}
+\caption{\textbf{From a piano score, the generation of an orchestral score consists in going to the event-level framework, generate the sequence of orchestral events, and then injecting them at the position of the event from the piano score.}}
 \label{fig:event_level_generation}
 \end{figure}
 
@@ -364,31 +418,62 @@ Also, we follow the usual orchestral simplifications used when writing orchestra
 Finally, the velocity information is discarded, since we use binary units which solely indicate if a note is on or off.
 
 \paragraph{Results}
-Four models are evaluated on the orchestral inference task. The first model is a random generation of the orchestral frames from a Bernoulli distribution of parameter $0.5$. The second model predicts an orchestral frame at time $t$ by repeating the frame at time $t-1$. Those two naive models constitute a first baseline against which we compare the cRBM and FGcRBM models.
-
-The results are summed up in \prettyref{tab:result_event_level}. As expected, the random model has poor results. The repeat model performs significantly better. Indeed, it is relatively common that a note is sustained between two successive events. The cRBM largely outperforms those two models. However, the FGcRBM model has a lower score than the repeat model. We observed that the activation function of the visible units during the generative step was extremely noisy, which suggests that the training procedure mostly failed. We believe that this is due to the number of parameter,  and especially the dimension of the feature units. Indeed, in \cite{taylor2009factored}, only ten different configuration of the feature units were possible. When training on an orchestral database,  each different piano frame define a different configuration.
+The results of the \textit{cRBM} and \textit{FGcRBM} on the orchestral inference task are compared to two naives models. The first model is a random generation of the orchestral frames from a Bernoulli distribution of parameter $0.5$. The second model predicts an orchestral frame at time $t$ by simply repeating the frame at time $t-1$.
+The results are summed up in \prettyref{tab:result_event_level}.
 
 \begin{table}[h]
 \centering
-\begin{tabular}{c c}
+\begin{tabular}{c c c}
 \hline
-Model & Orchestral Event-level (\%)\\
+\thead{Model} & \thead{Frame-level\\ accuracy} & \thead{Event-level\\ accuracy} \\
 \hline
-Random & 0.5\\ 
-Repeat & 12.6\\
+Random & ? & ?\\ 
+Repeat & ? & ?\\
 \hline \hline
-cRBM & 23.2\\ 
-FGcRBM & 6.2\\ 
+cRBM & ? & ?\\ 
+FGcRBM & ? & ?\\
 \end{tabular}
-\caption{Event-level accuracy for the orchestral inference task. Even though the cRBM performances increase by a factor 3 between the cRBM and the random model, the inclusion of features units provides a leap in the accuracy by multiplying the performances by 4.}
+\caption{Event-level and frame-level (with quantization 4) accuracy for the orchestral inference task.}
 \label{tab:result_event_level}
 \end{table}
 
+As expected, the random model has poor results. The repeat model performs significantly better and even outperform the \textit{cRBM} model. Indeed, it is relatively common that a note is sustained between two successive events.
+The \textit{FGcRBM} largely outperforms the three other models, which underlines the importance of factorizing the weights. \textbf{EST-ce QUE JE PARLE DU TEST OU ON COUPE LES UNITS PIANO OU ORCH ? OU JE LE GARDE PLUTÔT POUR L'ARTICLE SMC ?}
+
 \subsection{Limits of this framework}
-% Limits of this task
-% Ground-truth is not only truth
+The orchestral inference framework we defined allow to perform model selection and provide results that corroborate the listening experience.
+\textbf{CORROBORE L'ÉCOUTE -> PROFDUIRE DES .MIDI ET LES METTRE SUR LE SITE WEB}.
+However, we identified several flaws.
+
+% No intensity
+The accuracy measure is defined for binary units only. Hence, intensities of the notes have to be discarded. However, dynamics are a crucial information for orchestrating a piece. It impacts, for instance, the number of section playing. Determining a pertinent distance between two orchestral vectors with dynamic is of utmost importance. Although defining a mathematic distance that faithfully transcribes the perceptual distances between two orchestral vectors seems to be a challenging task, satisfying approximations might be found.
+
+% Number of instrument in each pupitre
+The number of instrument per section is an important information contained in an orchestral score. For instance the number of violin decreases at the end of the \textbf{2nd ??} movement of the Symphony No.9 written by Antonin Dvorak.
+More than a mere dynamic information, this number deeply affect the overall timbre. Several examples can be found where the number of instrumentalist per section evolves along the piece.
+Unfortunately, this information is rarely contained in the files we downloaded. Hence, finding this information and linking it to the files would be a substantial addition to the database.
+
+% Ground-truth is not only truth : predicting != generating
+A more philosophical problem arise from the disjunction between the training task - predicting the next time frame - and the original objective - generating from a piano score a pertinent orchestration. One 
+
 
 \section{Conclusion and future works}
+% Une database pour l'orchestration projective
+We introduced the Projective Orchestral Database \textit{POD}, a collection of MIDI files dedicated to the study of the relations between a piano score and corresponding orchestrations. We believe that the recent advent in machine learning and data mining brought the proper tools to take advantage of this important mass of information and investigate the blatant correlations between a piano score and its orchestrations.
+\textbf{ON PARLE PAS DE L'ALIGNEMENT NON ? CA SERT UN PEU A RIEN ICI}
+
+% Une tache
+We proposed a task called automatic orchestral inference which consists in predicting the next time frame of an orchestral score, knowing its recent past and the corresponding piano reduction.
+% Un framework d'evaluation
+Then, we introduced an evaluation framework for this task based on a train and test split of the database, and the definition of an accuracy measure.
+We finally present the results of two models (the \textit{cRBM} and \textit{FGcRBM}) in this framework.
+
+% Future work :
+% intensity accuracy
+We identified two flaws in the automatic orchestral inference task we proposed. First because of the definition of the accuracy measure that forces us to discard the intensity information. Then in the construction of the database itself, since an important information - the number of instrumentalist per section - is absent.
+
+% increase size
+We hope that the \textit{POD} will be useful for many researchers and that a dynamic community would crystallize around this database. Obvious improvement will come with a large number of users. The veracity of the metadata and integrity of the files will be insured. We also hope that people will contribute to enlarge this database by sharing files and help us gathering the missing informations.
 
 \bibliographystyle{plain}
 \bibliography{../Biblio/biblio}

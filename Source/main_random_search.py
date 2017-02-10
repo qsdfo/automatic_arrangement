@@ -159,7 +159,7 @@ script_param['skip_sample'] = 1
 ############################################################
 train_param = {}
 # Fixed hyper parameter
-train_param['max_iter'] = 200        # nb max of iterations when training 1 configuration of hparams
+train_param['max_iter'] = 1        # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 
 # Validation

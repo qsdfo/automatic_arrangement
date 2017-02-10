@@ -36,6 +36,8 @@ def run_wrapper(params, config_folder):
         from acidano.models.lop.discrete.cRBM import cRBM as Model_class
     elif script_param['model_class'] == "FGcRBM":
         from acidano.models.lop.discrete.FGcRBM import FGcRBM as Model_class
+    elif script_param['model_class'] == "FGcRnnRbm":
+        from acidano.models.lop.discrete.FGcRnnRbm import FGcRnnRbm as Model_class
     elif script_param['model_class'] == "LSTM":
         from acidano.models.lop.discrete.LSTM import LSTM as Model_class
     elif script_param['model_class'] == "RnnRbm":

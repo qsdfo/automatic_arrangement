@@ -73,10 +73,17 @@ def processing_results(configurations_path, data_folder, track_paths, generation
     write_csv_results(configurations_path, id_result_list, configurations[0])
 
 if __name__ == '__main__':
+    ####################################################################################
+    ####################################################################################
+    ####################################################################################
     # IMPORTANT :
     #   To avoid mixing training and generation files, and most importantly to be sure that the reconstruction is correctly done,
     #   USE EXACTLY THE SAME DATA FOLDER THAT THE ONE USED FOR training
-    #   Hence, if trained on guillimin, scp it before doing any post processing
+    #   Hence, if trained on guillimin, scp the database folder before doing any post processing
+    ####################################################################################
+    ####################################################################################
+    ####################################################################################
+
     data_folder = '/home/aciditeam-leo/Aciditeam/lop/Data'
     model_path = '/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/event_level/discrete_units/quantization_4/gradient_descent'
     track_paths = [
@@ -84,21 +91,21 @@ if __name__ == '__main__':
         '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/bouliane/22',
     ]
 
-    # ccc = '/home/aciditeam-leo/Aciditeam/lop/Results_gpu/event_level/discrete_units/quantization_4/gradient_descent/cRnnRbm/3639643'
-    # eee = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/bouliane/22'
-    # generate_midi_full_track_reference(ccc, data_folder, eee, 20, 4, 5, logger_generate)
-
-    for nn in ['cRBM', 'cRnnRbm', 'FGcRBM', 'LSTM', 'RBM_inpainting', 'RnnRbm_inpainting']:
-        model_path_this = model_path + '/' + nn
-        clean(model_path_this)
-        processing_results(model_path_this, data_folder, track_paths)
+    #################################
+    # Generate the results for all the configs of a model
+    #################################
+    # for nn in ['FGcRBM', 'LSTM']:
+    #     model_path_this = model_path + '/' + nn
+    #     clean(model_path_this)
+    #     processing_results(model_path_this, data_folder, track_paths)
 
     #################################
     # Or just generate or plot weight of a specific configuration
     #################################
-    # configuration = '/home/aciditeam-leo/Aciditeam/lop/Results_bis/event_level/discrete_units/quantization_4/gradient_descent/RBM_inpainting/6546512'
-    # generation_length = 50
-    # seed_size = 20
-    # quantization_write = 4
-    # logger_generate = logger_generate
-    # generate_midi(configuration, data_folder, generation_length, seed_size, quantization_write, logger_generate)
+    configuration = '/home/aciditeam-leo/Aciditeam/lop/Results/event_level/discrete_units/quantization_4/gradient_descent/FGcRnnRbm/23403608'
+    generation_length = 50
+    seed_size = 20
+    quantization_write = 4
+    logger_generate = logger_generate
+    corruption_flag = None
+    generate_midi(configuration, data_folder, generation_length, seed_size, quantization_write, corruption_flag, logger_generate)

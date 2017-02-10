@@ -23,16 +23,17 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 1
-LOCAL = True
+N_HP_CONFIG = 50
+LOCAL = False
 BUILD_DATABASE = False
-DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
     RESULT_ROOT = os.getcwd() + '/../'
+    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
 else:
     RESULT_ROOT = "/sb/project/ymd-084-aa/"
+    DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
     'FGcRnnRbm',

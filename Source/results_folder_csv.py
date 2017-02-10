@@ -26,12 +26,13 @@ def write_csv_results(path, id_result_list, first_config):
     sorted_result = sorted(id_result_list, key=lambda x: -x[1])
 
     # Get header from the model of the first configuration
-    model_path = first_config + '/model.pkl'
-    model = pkl.load(open(model_path, 'rb'))
-    headers = ['ID', 'accuracy', 'loss']
-    headers1 = (model.get_hp_space().keys())
-    headers = headers + headers1
-    del(model)
+    space_path = first_config + '/config.pkl'
+    space = pkl.load(open(space_path, 'rb'))
+    headers = ['ID', 'accuracy', 'loss', 'model']
+    headers_model = (space['model'].keys())
+    headers_optim = (space['optim'].keys())
+    headers = headers + headers_model + ['optim'] + headers_optim
+    del(space)
 
     # Write it in a csv file
     with open(path + '/result.csv', 'wb') as f:
@@ -45,9 +46,13 @@ def write_csv_results(path, id_result_list, first_config):
             param_path = config_folder + '/config.pkl'
             space = pkl.load(open(param_path, 'rb'))
             model_param = space['model']
+            model_name = space['script']['model_class']
+            optim_param = space['optim']
+            optim_name = space['script']['optimization_method']
             # Write result as a dict
-            result_dict = {'ID': elem[0], 'accuracy': elem[1], 'loss': elem[2]}
+            result_dict = {'ID': elem[0], 'accuracy': elem[1], 'loss': elem[2], 'model': model_name, 'optim': optim_name}
             result_dict.update(model_param)
+            result_dict.update(optim_param)
             # Write
             writer.writerow(result_dict)
     return

@@ -23,8 +23,8 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 50
-LOCAL = False
+N_HP_CONFIG = 2
+LOCAL = True
 BUILD_DATABASE = False
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
@@ -36,8 +36,8 @@ else:
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'FGcRnnRbm',
-    'gradient_descent',
+    'RBM',
+    'rmsprop',
     'event_level',
     'discrete_units',
     '4'
@@ -102,13 +102,13 @@ else:
 # Optimization
 script_param['optimization_method'] = commands[1]
 if commands[1] == "gradient_descent":
-    from acidano.utils.optim import gradient_descent as Optimization_method
+    from acidano.utils.optim.gradient_descent import Gradient_descent as Optimization_method
 elif commands[1] == 'adam_L2':
-    from acidano.utils.optim import adam_L2 as Optimization_method
+    from acidano.utils.optim.adam_L2 import Adam_L2 as Optimization_method
 elif commands[1] == 'rmsprop':
-    from acidano.utils.optim import rmsprop as Optimization_method
+    from acidano.utils.optim.rmsprop import Rmsprop as Optimization_method
 elif commands[1] == 'sgd_nesterov':
-    from acidano.utils.optim import sgd_nesterov as Optimization_method
+    from acidano.utils.optim.sgd_nesterov import Sgd_nesterov as Optimization_method
 else:
     raise ValueError(commands[1] + " is not an optimization method")
 

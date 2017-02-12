@@ -94,18 +94,18 @@ if __name__ == '__main__':
     #################################
     # Generate the results for all the configs of a model
     #################################
-    # for nn in ['FGcRBM', 'LSTM']:
-    #     model_path_this = model_path + '/' + nn
-    #     clean(model_path_this)
-    #     processing_results(model_path_this, data_folder, track_paths)
+    for nn in ['FGcRBM']:
+        model_path_this = model_path + '/' + nn
+        clean(model_path_this)
+        processing_results(model_path_this, data_folder, track_paths)
 
     #################################
     # Or just generate or plot weight of a specific configuration
     #################################
-    configuration = '/home/aciditeam-leo/Aciditeam/lop/Results/event_level/discrete_units/quantization_4/gradient_descent/FGcRnnRbm/23403608'
-    generation_length = 50
-    seed_size = 20
-    quantization_write = 4
-    logger_generate = logger_generate
-    corruption_flag = None
-    generate_midi(configuration, data_folder, generation_length, seed_size, quantization_write, corruption_flag, logger_generate)
+    # configuration = '/home/aciditeam-leo/Aciditeam/lop/Results/event_level/discrete_units/quantization_4/gradient_descent/FGcRnnRbm/23403608'
+    # generation_length = 50
+    # seed_size = 20
+    # quantization_write = 4
+    # logger_generate = logger_generate
+    # corruption_flag = None
+    # generate_midi(configuration, data_folder, generation_length, seed_size, quantization_write, corruption_flag, logger_generate)

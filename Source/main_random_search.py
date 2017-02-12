@@ -23,7 +23,7 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 2
+N_HP_CONFIG = 50
 LOCAL = True
 BUILD_DATABASE = False
 
@@ -36,8 +36,8 @@ else:
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'RBM',
-    'rmsprop',
+    'FGcRnnRbm',
+    'gradient_descent',
     'event_level',
     'discrete_units',
     '4'

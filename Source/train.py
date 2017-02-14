@@ -207,11 +207,9 @@ def train(model, optimizer,
     logger_train.info("# Training")
     epoch = 0
     OVERFITTING = False
-    DIVERGING = False
     val_tab = np.zeros(max(1,train_param['max_iter']))
     loss_tab = np.zeros(max(1,train_param['max_iter']))
     while (not OVERFITTING
-           and not DIVERGING
            and epoch!=train_param['max_iter']):
         #######################################
         # Train
@@ -239,6 +237,7 @@ def train(model, optimizer,
         mean_accuracy = 100 * np.mean(accuracy)
 
         #######################################
+        # OLD VERSION
         # Early stopping criterion
         # Note that sum_{i=0}^{n} der = der(n) - der(0)
         # So mean over successive derivatives makes no sense
@@ -247,20 +246,41 @@ def train(model, optimizer,
         #
         # 2/ At each iteration, compare the mean derivative over the last five epochs :
         #       \sum_{i=0}^{validation_order} E(t)
+        #
+        # val_tab[epoch] = mean_accuracy
+        # if epoch == train_param['initial_derivative_length']-1:
+        #     ind = np.arange(train_param['validation_order']-1, train_param['initial_derivative_length'])
+        #     increase_reference = (val_tab[ind] - val_tab[ind-train_param['validation_order']+1]).sum() / (train_param['validation_order'] * len(ind))
+        #     if increase_reference <= 0:
+        #         # Early stop if the model didn't really improved over the first iteration
+        #         DIVERGING = True
+        # elif epoch >= train_param['initial_derivative_length']:
+        #     ind = np.arange(epoch - train_param['check_derivative_length'] + 1, epoch+1)
+        #     derivative_mean = (val_tab[ind] - val_tab[ind-train_param['validation_order']+1]).sum() / (train_param['validation_order'] * len(ind))
+        #     # Mean derivative is less than 10% of increase reference
+        #     if derivative_mean < 0.1 * increase_reference:
+        #         OVERFITTING = True
         #######################################
+
+        #######################################
+        # Article
+        # Early stopping, but when ?
+        # Lutz Prechelt
+        # UP criterion (except that we expect accuracy to go up in our case,
+        # so it's more a DOWN criterion)
         val_tab[epoch] = mean_accuracy
-        if epoch == train_param['initial_derivative_length']-1:
-            ind = np.arange(train_param['validation_order']-1, train_param['initial_derivative_length'])
-            increase_reference = (val_tab[ind] - val_tab[ind-train_param['validation_order']+1]).sum() / (train_param['validation_order'] * len(ind))
-            if increase_reference <= 0:
-                # Early stop if the model didn't really improved over the first iteration
-                DIVERGING = True
-        elif epoch >= train_param['initial_derivative_length']:
-            ind = np.arange(epoch - train_param['check_derivative_length'] + 1, epoch+1)
-            derivative_mean = (val_tab[ind] - val_tab[ind-train_param['validation_order']+1]).sum() / (train_param['validation_order'] * len(ind))
-            # Mean derivative is less than 10% of increase reference
-            if derivative_mean < 0.1 * increase_reference:
-                OVERFITTING = True
+        if epoch >= train_param['number_strips'] + train_param['validation_order'] - 1:
+            DOWN = True
+            OVERFITTING = True
+            s = 0
+            while(DOWN and s < train_param['number_strips']):
+                t = epoch - s
+                tmk = epoch - s - train_param['validation_order'] + 1
+                DOWN = val_tab[t] <= val_tab[tmk]  # equal prevent from being stuck in Nan cost training which imply a 0 accuracy
+                s = s + 1
+                if not DOWN:
+                    OVERFITTING = False
+        #######################################
 
         #######################################
         # Log training
@@ -268,9 +288,8 @@ def train(model, optimizer,
         logger_train.info(('Epoch : {} , Monitor : {} , Cost : {} , Valid acc : {}'
                           .format(epoch, np.mean(train_monitor_epoch), mean_loss, mean_accuracy))
                           .encode('utf8'))
-        if DIVERGING:
-            logger_train.info('DIVERGING !!')
-        elif OVERFITTING:
+
+        if OVERFITTING:
             logger_train.info('OVERFITTING !!')
 
         #######################################

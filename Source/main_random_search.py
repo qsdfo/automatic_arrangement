@@ -23,7 +23,7 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 50
+N_HP_CONFIG = 2
 LOCAL = True
 BUILD_DATABASE = False
 
@@ -36,7 +36,7 @@ else:
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'FGcRnnRbm',
+    'LSTM',
     'gradient_descent',
     'event_level',
     'discrete_units',
@@ -165,8 +165,9 @@ train_param['max_iter'] = 200        # nb max of iterations when training 1 conf
 
 # Validation
 train_param['validation_order'] = 5
-train_param['initial_derivative_length'] = 20
-train_param['check_derivative_length'] = 5
+train_param['number_strips'] = 6
+# train_param['initial_derivative_length'] = 20
+# train_param['check_derivative_length'] = 5
 
 # Now, we can log to the root logger, or any other logger. First the root...
 logging.info('#'*40)

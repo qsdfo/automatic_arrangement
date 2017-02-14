@@ -84,17 +84,25 @@ if __name__ == '__main__':
     ####################################################################################
     ####################################################################################
 
-    data_folder = '/home/aciditeam-leo/Aciditeam/lop/Data'
-    model_path = '/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/event_level/discrete_units/quantization_4/gradient_descent'
+    # data_folder = '/home/aciditeam-leo/Aciditeam/lop/Data'
+    # model_path = '/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/event_level/discrete_units/quantization_4/gradient_descent'
+    # track_paths = [
+    #     '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/liszt_classical_archive/16',
+    #     '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/bouliane/22',
+    # ]
+
+    data_folder = "/home/crestel/lop/Data"
+    model_path = "/sb/project/ymd-084-aa/Results/event_level/discrete_units/quantization_4/gradient_descent"
     track_paths = [
-        '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/liszt_classical_archive/16',
-        '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/bouliane/22',
+ 	'/home/crestel/database/orchestration/liszt_classical_archive/16',
+	'/home/crestel/database/orchestration/bouliane/22'
     ]
+
 
     #################################
     # Generate the results for all the configs of a model
     #################################
-    for nn in ['FGcRBM']:
+    for nn in ['FGcRnnRbm']:
         model_path_this = model_path + '/' + nn
         clean(model_path_this)
         processing_results(model_path_this, data_folder, track_paths)

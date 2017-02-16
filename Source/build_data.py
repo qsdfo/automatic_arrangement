@@ -117,12 +117,12 @@ def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantiza
     ########################################
     ########################################
     ########################################
-    # temp = {}
-    # temp['instru_mapping'] = instru_mapping
-    # temp['quantization'] = quantization
-    # temp['T'] = T_dict
-    # temp['N_orchestra'] = counter
-    # pickle.dump(temp, open(meta_info_path, 'wb'))
+    temp = {}
+    temp['instru_mapping'] = instru_mapping
+    temp['quantization'] = quantization
+    temp['T'] = T_dict
+    temp['N_orchestra'] = counter
+    pickle.dump(temp, open(meta_info_path, 'wb'))
     return instru_mapping, quantization, T_dict, counter
 
 
@@ -136,11 +136,12 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p',quantization=
     instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
 
     statistics = {}
-    # temp = pickle.load(open(meta_info_path, 'rb'))
-    # instru_mapping = temp['instru_mapping']
-    # quantization = temp['quantization']
-    # T_dict = temp['T']
-    # N_orchestra = temp['N_orchestra']
+
+    temp = pickle.load(open(meta_info_path, 'rb'))
+    instru_mapping = temp['instru_mapping']
+    quantization = temp['quantization']
+    T_dict = temp['T']
+    N_orchestra = temp['N_orchestra']
     N_piano = instru_mapping['piano']['index_max']
 
     for set_identifier, index_files in index_files_dict.iteritems():
@@ -148,7 +149,6 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p',quantization=
         logging.info('T = ' + str(T))
         logging.info('N_orchestra = ' + str(N_orchestra))
         logging.info('N_piano = ' + str(N_piano))
-
         ########################################
         ########################################
         ########################################
@@ -242,3 +242,36 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p',quantization=
             csvfile.write(instru_name + u';' +
                           str(statistics[instru_name]['n_track_present']) + u';' +
                           str(statistics[instru_name]['n_note_played']) + '\n')
+
+
+if __name__ == '__main__':
+    import logging
+    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
+    data_folder = 'DEBUG'
+    index_files_dict = {}
+    index_files_dict['train'] = [
+        # DATABASE_PATH + "/debug_train.txt",
+        DATABASE_PATH + "/bouliane_train.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_train.txt",
+        DATABASE_PATH + "/liszt_classical_archives_train.txt"
+    ]
+    index_files_dict['valid'] = [
+        # DATABASE_PATH + "/debug_valid.txt",
+        DATABASE_PATH + "/bouliane_valid.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
+        DATABASE_PATH + "/liszt_classical_archives_valid.txt"
+    ]
+    index_files_dict['test'] = [
+        # DATABASE_PATH + "/debug_test.txt",
+        DATABASE_PATH + "/bouliane_test.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_test.txt",
+        DATABASE_PATH + "/liszt_classical_archives_test.txt"
+    ]
+
+    build_data(root_dir=DATABASE_PATH,
+               index_files_dict=index_files_dict,
+               meta_info_path=data_folder + '/temp.p',
+               quantization=4,
+               temporal_granularity='frame_level',
+               store_folder=data_folder,
+               logging=logging)

@@ -44,13 +44,16 @@ def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
         r1 = csv.DictReader(f1, delimiter=';')
         instru1 = next(r1)
 
-    return pianoroll_0, instru0, T0, mid_files[0], pianoroll_1, instru1, T1, mid_files[1]
+    # Simplify names
+    instru0_simple = {k:simplify_instrumentation(v) for k,v in instru0.iteritems()}
+    instru1_simple = {k:simplify_instrumentation(v) for k,v in instru1.iteritems()}
+
+    return pianoroll_0, instru0_simple, T0, mid_files[0], pianoroll_1, instru1_simple, T1, mid_files[1]
 
 
 def unmixed_instru(instru_string):
     instru_list = re.split(ur' and ', instru_string)
     return instru_list
-
 
 def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from_dico):
     for k,v in instrumentation.iteritems():
@@ -60,32 +63,38 @@ def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from
             # listed in the csv file, but not return by the read_midi function...
             # FIX THAT (don't write them in the csv file when generating it)
             continue
-        instru_liste = unmixed_instru(v)
-        if len(instru_liste) > 1:
-            # As explained in the readme of build_data.py function,
-            # instrumental mixes are not taken into consideration for pitch ranges
+        # Get unmixed instru names
+        instru_names = unmixed_instru(v)
+        # Avoid mixed instrumentation for determining the range.
+        # Why ?
+        # For instance, tutti strings in the score will be written as a huge chord spanning all violin -> dbass range
+        # Hence we don't want range of dbas in violin
+        if len(instru_names) > 1:
             continue
+        # Corresponding pianoroll
         pr_instru = pr[k]
-        if v in instru_mapping.keys():
-            old_min = instru_mapping[v]['pitch_min']
-            old_max = instru_mapping[v]['pitch_max']
-            # Get the min :
-            #   - sum along time dimension
-            #   - get the first non-zero index
-            this_min = min(np.nonzero(np.sum(pr_instru, axis=0))[0])
-            this_max = max(np.nonzero(np.sum(pr_instru, axis=0))[0])
-            instru_mapping[v]['pitch_min'] = min(old_min, this_min)
-            instru_mapping[v]['pitch_max'] = max(old_max, this_max)
-        else:
-            # Sanity check : notations consistency
-            v_no_suffix = re.split(ur'\s', v)[0]
-            if (v_no_suffix not in instrument_list_from_dico) and (v not in instrument_list_from_dico):
-                raise ValueError('V PAS DANS INSTRUMENT LISTE')
-            instru_mapping[v] = {}
-            this_min = min(np.nonzero(np.sum(pr_instru, axis=0))[0])
-            this_max = max(np.nonzero(np.sum(pr_instru, axis=0))[0])
-            instru_mapping[v]['pitch_min'] = this_min
-            instru_mapping[v]['pitch_max'] = this_max
+        for instru_name in instru_names:
+            if instru_name in instru_mapping.keys():
+                ### ???
+                # v_no_suffix = re.split(ur'\s', instru_name)[0]
+                #######
+                old_min = instru_mapping[instru_name]['pitch_min']
+                old_max = instru_mapping[instru_name]['pitch_max']
+                # Get the min :
+                #   - sum along time dimension
+                #   - get the first non-zero index
+                this_min = min(np.nonzero(np.sum(pr_instru, axis=0))[0])
+                this_max = max(np.nonzero(np.sum(pr_instru, axis=0))[0])
+                instru_mapping[instru_name]['pitch_min'] = min(old_min, this_min)
+                instru_mapping[instru_name]['pitch_max'] = max(old_max, this_max)
+            else:
+                if (instru_name not in instrument_list_from_dico) and (v not in instrument_list_from_dico):
+                    raise ValueError('V PAS DANS INSTRUMENT LISTE')
+                instru_mapping[instru_name] = {}
+                this_min = min(np.nonzero(np.sum(pr_instru, axis=0))[0])
+                this_max = max(np.nonzero(np.sum(pr_instru, axis=0))[0])
+                instru_mapping[instru_name]['pitch_min'] = this_min
+                instru_mapping[instru_name]['pitch_max'] = this_max
     return instru_mapping
 
 
@@ -160,21 +169,9 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
             instru_names = ['piano']
         else:
             # unmix instrus
-            # The pitch selection (pitch_min and pitch_max) will automatically remove
-            # pitch outliers
-            try:
-                instru_names = unmixed_instru(instru[track_name])
-            except:
-                raise ValueError(track_name + ' not in instru')
+            instru_names = unmixed_instru(instru[track_name])
 
         for instru_name in instru_names:
-            # Little hack for a little problem i ran into :
-            # harpsichord was only present as a mixed instrument in the database
-            # Then it never appears in the instrument mapping though
-            # it is a track name for valid names...
-            if instru_name not in instru_mapping.keys():
-                print instru_name + ' does not have pitch and indices ranges'
-                continue
             # For pr_instrument, remove the column out of pitch_min and pitch_max
             pitch_min = instru_mapping[instru_name]['pitch_min']
             pitch_max = instru_mapping[instru_name]['pitch_max']
@@ -184,14 +181,73 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
             index_max = instru_mapping[instru_name]['index_max']
 
             # Insert the small pr in the big one :)
-            try:
-                # Insertion is max between already written notes and new ones
-                pr_big[t_min:t_max, index_min:index_max] = np.maximum(pr_big[t_min:t_max, index_min:index_max], pr_instru[:, pitch_min:pitch_max])
-            except:
-                import pdb; pdb.set_trace()
+            # Insertion is max between already written notes and new ones
+            pr_big[t_min:t_max, index_min:index_max] = np.maximum(pr_big[t_min:t_max, index_min:index_max], pr_instru[:, pitch_min:pitch_max])
 
     return pr_big
 
+def simplify_instrumentation(instru_name_complex):
+    # In the Orchestration_checked folder, midi files are associated to csv files
+    # This script aims at reducing the number of instrument written in the csv files
+    # by grouping together different but close instruments ()
+    simplify_mapping = {
+        u'tuba bass': u'tuba',
+        u'voice soprano mezzo': u'voice',
+        u'bell': u'percussion',
+        u'voice baritone': u'voice',
+        # 'piccolo': 'piccolo',
+        u'trombone tenor': u'trombone',
+        # 'celesta': 'celesta',
+        # 'horn': 'horn',
+        u'castanets': u'percussion',
+        # 'euphonium': 'euphonium',
+        # 'lyre': 'lyre',
+        # 'english horn': 'english horn',
+        # 'trombone': 'trombone',
+        # 'violin': 'violin',
+        # 'clarinet': 'clarinet',
+        # 'trumpet': 'trumpet',
+        u'cornet': u'trumpet',
+        # 'bassoon': 'bassoon',
+        u'trombone bass': u'trombone',
+        # 'timpani': 'timpani',
+        # 'tuba': 'tuba',
+        # 'percussion': 'percussion',
+        # 'violoncello': 'violoncello',
+        u'bassoon bass': u'bassoon',
+        # 'viola': 'viola',
+        # 'piano': 'piano',
+        # 'harp': 'harp',
+        u'voice soprano': u'voice',
+        u'triangle': u'percussion',
+        u'trombone alto tenor': u'trombone',
+        # 'oboe': 'oboe',
+        u'drum bass': u'percussion',
+        # 'flute':,
+        u'cymbal': u'percussion',
+        u'trombone alto': u'trombone',
+        u'glockenspiel': u'percussion',
+        u'voice alto': u'voice',
+        u'tam tam': u'percussion',
+        u'drum': u'percussion',
+        # 'organ':,
+        u'voice bass': u'voice',
+        u'clarinet bass': u'clarinet',
+        # 'double bass':,
+        # 'saxophone':,
+        # 'voice':,
+        u'voice tenor': u'voice',
+        u'harpsichord': u'piano'
+    }
+    instru_name_unmixed = unmixed_instru(instru_name_complex)
+    instru_name_unmixed_simple = []
+    for e in instru_name_unmixed:
+        if e in simplify_mapping:
+            instru_name_unmixed_simple.append(simplify_mapping[e])
+        else:
+            instru_name_unmixed_simple.append(e)
+    link = " and "
+    return link.join(instru_name_unmixed_simple)
 
 if __name__=='__main__':
     name = 'DEBUG/test.mid'

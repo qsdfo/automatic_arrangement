@@ -32,15 +32,15 @@ if LOCAL:
     RESULT_ROOT = os.getcwd() + '/../'
     DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
 else:
-    RESULT_ROOT = "/sb/project/ymd-084-aa/"
+    RESULT_ROOT = "/sb/project/ymd-084-aa/leo"
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'LSTM',
-    'sgd_nesterov',
+    'RBM',
+    'gradient_descent',
     'event_level',
     'discrete_units',
-    '4'
+    '100'
 ]
 
 ############################################################

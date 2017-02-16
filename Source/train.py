@@ -31,19 +31,19 @@ def run_wrapper(params, config_folder):
     # Load models and optim modules
     ############################################################
     if script_param['model_class'] == "RBM":
-        from acidano.models.lop.discrete.RBM import RBM as Model_class
+        from acidano.models.lop.binary.RBM import RBM as Model_class
     elif script_param['model_class'] == "cRBM":
-        from acidano.models.lop.discrete.cRBM import cRBM as Model_class
+        from acidano.models.lop.binary.cRBM import cRBM as Model_class
     elif script_param['model_class'] == "FGcRBM":
-        from acidano.models.lop.discrete.FGcRBM import FGcRBM as Model_class
+        from acidano.models.lop.binary.FGcRBM import FGcRBM as Model_class
     elif script_param['model_class'] == "FGcRnnRbm":
-        from acidano.models.lop.discrete.FGcRnnRbm import FGcRnnRbm as Model_class
+        from acidano.models.lop.binary.FGcRnnRbm import FGcRnnRbm as Model_class
     elif script_param['model_class'] == "LSTM":
-        from acidano.models.lop.discrete.LSTM import LSTM as Model_class
+        from acidano.models.lop.binary.LSTM import LSTM as Model_class
     elif script_param['model_class'] == "RnnRbm":
-        from acidano.models.lop.discrete.RnnRbm import RnnRbm as Model_class
+        from acidano.models.lop.binary.RnnRbm import RnnRbm as Model_class
     elif script_param['model_class'] == "cRnnRbm":
-        from acidano.models.lop.discrete.cRnnRbm import cRnnRbm as Model_class
+        from acidano.models.lop.binary.cRnnRbm import cRnnRbm as Model_class
     elif script_param['model_class'] == "LSTM_gaussian_mixture":
         from acidano.models.lop.real.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
     elif script_param['model_class'] == "LSTM_gaussian_mixture_2":

@@ -276,21 +276,29 @@ where $\mathcal{D}$ is the training dataset, $N_{\mathcal{D}}$ its size. The siz
 
 % Likelihood ? Intractable
 Ideally, the training procedure consists in modifying the parameters $\Theta$ of the model along the gradient of the error function.
-However, the gradient of negative log-likelihood is intractable,
+However, the gradient of the negative log-likelihood is intractable.
 % Contrastive divergence
-<<<<<<< HEAD
-and an approximation of this quantity is used instead. This technique is called contrastive divergence (\textit{CD}) \cite{fischer2012introduction,hinton2010practical}.
-=======
-and an approximation of this quantity is used instead. This technique is called contrastive divergence (\textit{CD}) 
->>>>>>> 6ee6fa73abf0c32a3a84beedcbfaefbdc9362f21
+The contrastive divergence (\textit{CD}) algorithm \cite{fischer2012introduction,hinton2010practical} resort to an approximation of this quantity and ensure a training procedure that decreases a lower bound on the log-likelihood.
+
 \subsubsection{Generating}
 % Computing p(x) ?
+After a model has been trained, the generation steps consists in producing a sample $\hat{O}(t)$ knowing $O(t-N),...,O(t-1)$ and $P(t)$, which corresponds to the inference function defined in equation \prettyref{eq:inference_function}.
+
 % = negative particule of the CD !!
+The CD algorithm essentially consists in comparing values from the training set $\bm{v}$ (referred to as positive samples) and  values sampled from an approximation of the marginal distribution of the model $p_{model}(\bm{v})$ (referred to as negative samples).
+
+According to the visible unit definition in the case of orchestral inference \ref{eq:visible_rbm}, sampling from the marginal distribution $p_{model}(\bm{v})$ provides access to $\hat{O}(t)$, along with $O(t-N),...,O(t-1)$ and $P(t)$.
 % Pbm, in the case of RBM simple generate piano + orchestra -> generation through inpainting
+However, the past orchestral and current piano frames are already known when generating samples.
+
+Thus, it is possible to infer the negative samples of the CD algorithm while clamping $O(t-N), ..., O(t-1)$ and $P(t)$ to their known values. This technique is known as \textit{inpainting} \cite{Fischer2012}.
+
 % Mais du coup, c'est un peu con de modéliser le piano pour pas l'utiliser non ?
+\textbf{However,  extensive efforts are made to infer values that are finally not used by the }
 
 \subsection{Conditional models}
 % Un moyen de tej le piano de la function d'energie = conditional models. En fait, c'est un peu comme clamper en permanence, même durant la training step, le piano.
+Conditional models offer a way to separate the context (past orchestra and present piano) from the data we actually want to generate (present orchestra)
 \subsubsection{Conditional RBM}
 \subsubsection{Factored Gated cRBM}
 % Gated = dissocier la contribution du passé et l'influence du piano

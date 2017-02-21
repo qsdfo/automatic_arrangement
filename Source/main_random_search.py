@@ -23,7 +23,7 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 2
+N_HP_CONFIG = 10
 LOCAL = True
 BUILD_DATABASE = False
 
@@ -36,7 +36,7 @@ else:
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'RBM',
+    'random',
     'gradient_descent',
     'event_level',
     'discrete_units',
@@ -76,7 +76,9 @@ script_param = {}
 # Two things define a model : it's architecture and the optimization method
 ################### DISCRETE
 script_param['model_class'] = commands[0]
-if commands[0] == "RBM":
+if commands[0] == "random":
+    from acidano.models.lop.binary.random import Random as Model_class
+elif commands[0] == "RBM":
     from acidano.models.lop.binary.RBM import RBM as Model_class
 elif commands[0] == "cRBM":
     from acidano.models.lop.binary.cRBM import cRBM as Model_class
@@ -166,6 +168,7 @@ train_param['max_iter'] = 200        # nb max of iterations when training 1 conf
 # Validation
 train_param['validation_order'] = 5
 train_param['number_strips'] = 6
+train_param['min_number_iteration'] = 50
 # train_param['initial_derivative_length'] = 20
 # train_param['check_derivative_length'] = 5
 

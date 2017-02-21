@@ -30,7 +30,9 @@ def run_wrapper(params, config_folder):
     ############################################################
     # Load models and optim modules
     ############################################################
-    if script_param['model_class'] == "RBM":
+    if script_param['model_class'] == "random":
+        from acidano.models.lop.binary.random import Random as Model_class
+    elif script_param['model_class'] == "RBM":
         from acidano.models.lop.binary.RBM import RBM as Model_class
     elif script_param['model_class'] == "cRBM":
         from acidano.models.lop.binary.cRBM import cRBM as Model_class
@@ -269,7 +271,7 @@ def train(model, optimizer,
         # UP criterion (except that we expect accuracy to go up in our case,
         # so it's more a DOWN criterion)
         val_tab[epoch] = mean_accuracy
-        if epoch >= train_param['number_strips'] + train_param['validation_order'] - 1:
+        if epoch >= train_param['min_number_iteration']:
             DOWN = True
             OVERFITTING = True
             s = 0

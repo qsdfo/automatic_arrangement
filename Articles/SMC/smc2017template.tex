@@ -294,12 +294,13 @@ However, the past orchestral and current piano frames are already known when gen
 Thus, it is possible to infer the negative samples of the CD algorithm while clamping $O(t-N), ..., O(t-1)$ and $P(t)$ to their known values. This technique is known as \textit{inpainting} \cite{Fischer2012}.
 
 % Mais du coup, c'est un peu con de modéliser le piano pour pas l'utiliser non ?
-\textbf{However,  extensive efforts are made to infer values that are finally not used by the }
+Note, however, that extensive efforts are made during the training phase to infer values that are finally clamped during the generation phase. Conditional models offer a way to separate the context (past orchestra and present piano) from the data we actually want to generate (present orchestra).
 
 \subsection{Conditional models}
-% Un moyen de tej le piano de la function d'energie = conditional models. En fait, c'est un peu comme clamper en permanence, même durant la training step, le piano.
-Conditional models offer a way to separate the context (past orchestra and present piano) from the data we actually want to generate (present orchestra)
+We introduce two models that implement a notion of conditional dependency : the \textit{cRBM} and \textit{FGcRBM}.
+
 \subsubsection{Conditional RBM}
+
 \subsubsection{Factored Gated cRBM}
 % Gated = dissocier la contribution du passé et l'influence du piano
 % Factor = Solve computations problèmes (tensor mega huge)

@@ -55,6 +55,7 @@ def unmixed_instru(instru_string):
     instru_list = re.split(ur' and ', instru_string)
     return instru_list
 
+
 def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from_dico):
     for k,v in instrumentation.iteritems():
         if k not in pr.keys():
@@ -88,8 +89,6 @@ def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from
                 instru_mapping[instru_name]['pitch_min'] = min(old_min, this_min)
                 instru_mapping[instru_name]['pitch_max'] = max(old_max, this_max)
             else:
-                if (instru_name not in instrument_list_from_dico) and (v not in instrument_list_from_dico):
-                    raise ValueError('V PAS DANS INSTRUMENT LISTE')
                 instru_mapping[instru_name] = {}
                 this_min = min(np.nonzero(np.sum(pr_instru, axis=0))[0])
                 this_max = max(np.nonzero(np.sum(pr_instru, axis=0))[0])
@@ -186,20 +185,21 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
 
     return pr_big
 
+
 def simplify_instrumentation(instru_name_complex):
     # In the Orchestration_checked folder, midi files are associated to csv files
     # This script aims at reducing the number of instrument written in the csv files
     # by grouping together different but close instruments ()
     simplify_mapping = {
         # u'tuba bass': u'tuba',
-        # u'voice soprano mezzo': u'voice',
-        # u'bell': u'percussion',
-        # u'voice baritone': u'voice',
+        u'voice soprano mezzo': u'voice',
+        u'bell': u'percussion',
+        u'voice baritone': u'voice',
         # 'piccolo': 'piccolo',
-        # u'trombone tenor': u'trombone',
+        u'trombone tenor': u'trombone',
         # 'celesta': 'celesta',
         # 'horn': 'horn',
-        # u'castanets': u'percussion',
+        u'castanets': u'percussion',
         # 'euphonium': 'euphonium',
         # 'lyre': 'lyre',
         # 'english horn': 'english horn',
@@ -209,7 +209,7 @@ def simplify_instrumentation(instru_name_complex):
         # 'trumpet': 'trumpet',
         # u'cornet': u'trumpet',
         # 'bassoon': 'bassoon',
-        # u'trombone bass': u'trombone',
+        u'trombone bass': u'trombone',
         # 'timpani': 'timpani',
         # 'tuba': 'tuba',
         # 'percussion': 'percussion',
@@ -218,26 +218,26 @@ def simplify_instrumentation(instru_name_complex):
         # 'viola': 'viola',
         # 'piano': 'piano',
         # 'harp': 'harp',
-        # u'voice soprano': u'voice',
-        # u'triangle': u'percussion',
-        # u'trombone alto tenor': u'trombone',
+        u'voice soprano': u'voice',
+        u'triangle': u'percussion',
+        u'trombone alto tenor': u'trombone',
         # 'oboe': 'oboe',
-        # u'drum bass': u'percussion',
+        u'drum bass': u'percussion',
         # 'flute':,
-        # u'cymbal': u'percussion',
-        # u'trombone alto': u'trombone',
-        # u'glockenspiel': u'percussion',
-        # u'voice alto': u'voice',
-        # u'tam tam': u'percussion',
-        # u'drum': u'percussion',
+        u'cymbal': u'percussion',
+        u'trombone alto': u'trombone',
+        u'glockenspiel': u'percussion',
+        u'voice alto': u'voice',
+        u'tam tam': u'percussion',
+        u'drum': u'percussion',
         # 'organ':,
-        # u'voice bass': u'voice',
+        u'voice bass': u'voice',
         # u'clarinet bass': u'clarinet',
         # 'double bass':,
         # 'saxophone':,
         # 'voice':,
-        # u'voice tenor': u'voice',
-        # u'harpsichord': u'piano'
+        u'voice tenor': u'voice',
+        u'harpsichord': u'piano'  # A bit scandalous, but actually never present alone in the corpus, only as a mixed instrument, which causes problems
     }
     instru_name_unmixed = unmixed_instru(instru_name_complex)
     instru_name_unmixed_simple = []

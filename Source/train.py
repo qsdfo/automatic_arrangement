@@ -278,7 +278,7 @@ def train(model, optimizer,
             while(DOWN and s < train_param['number_strips']):
                 t = epoch - s
                 tmk = epoch - s - train_param['validation_order'] + 1
-                DOWN = val_tab[t] < val_tab[tmk] + 0.1  # equal prevent from being stuck in Nan cost training which imply a 0 accuracy
+                DOWN = val_tab[t] < val_tab[tmk] + 0.001  # equal prevent from being stuck in Nan cost training which imply a 0 accuracy
                 s = s + 1
                 if not DOWN:
                     OVERFITTING = False

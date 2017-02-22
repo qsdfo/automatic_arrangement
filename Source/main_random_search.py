@@ -23,9 +23,9 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 10
-LOCAL = True
-BUILD_DATABASE = False
+N_HP_CONFIG = 50
+LOCAL = False
+BUILD_DATABASE = True
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
@@ -36,7 +36,7 @@ else:
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'random',
+    'cRBM',
     'gradient_descent',
     'event_level',
     'discrete_units',

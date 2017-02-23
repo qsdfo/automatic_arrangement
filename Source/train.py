@@ -48,6 +48,8 @@ def run_wrapper(params, config_folder):
         from acidano.models.lop.binary.cRnnRbm import cRnnRbm as Model_class
     elif script_param['model_class'] == "cLstmRbm":
         from acidano.models.lop.binary.cLstmRbm import cLstmRbm as Model_class
+    elif script_param['model_class'] == "LstmRbm":
+        from acidano.models.lop.binary.LstmRbm import LstmRbm as Model_class
     elif script_param['model_class'] == "LSTM_gaussian_mixture":
         from acidano.models.lop.real.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
     elif script_param['model_class'] == "LSTM_gaussian_mixture_2":

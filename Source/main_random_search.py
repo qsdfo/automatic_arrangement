@@ -37,7 +37,7 @@ else:
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'LSTM',
+    'LstmRbm',
     'gradient_descent',
     'event_level',
     'discrete_units',
@@ -93,6 +93,8 @@ elif commands[0] == "RnnRbm":
     from acidano.models.lop.binary.RnnRbm import RnnRbm as Model_class
 elif commands[0] == "cRnnRbm":
     from acidano.models.lop.binary.cRnnRbm import cRnnRbm as Model_class
+elif commands[0] == "LstmRbm":
+    from acidano.models.lop.binary.LstmRbm import LstmRbm as Model_class
 elif commands[0] == "cLstmRbm":
     from acidano.models.lop.binary.cLstmRbm import cLstmRbm as Model_class
 ###################  REAL

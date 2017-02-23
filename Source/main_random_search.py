@@ -23,20 +23,21 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 50
-LOCAL = False
-BUILD_DATABASE = True
+N_HP_CONFIG = 1
+LOCAL = True
+BUILD_DATABASE = False
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
     RESULT_ROOT = os.getcwd() + '/../'
-    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
+    # DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
+    DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/Orchestration_checked'
 else:
     RESULT_ROOT = "/sb/project/ymd-084-aa/leo/"
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'cRBM',
+    'LSTM',
     'gradient_descent',
     'event_level',
     'discrete_units',
@@ -92,6 +93,8 @@ elif commands[0] == "RnnRbm":
     from acidano.models.lop.binary.RnnRbm import RnnRbm as Model_class
 elif commands[0] == "cRnnRbm":
     from acidano.models.lop.binary.cRnnRbm import cRnnRbm as Model_class
+elif commands[0] == "cLstmRbm":
+    from acidano.models.lop.binary.cLstmRbm import cLstmRbm as Model_class
 ###################  REAL
 elif commands[0] == "LSTM_gaussian_mixture":
     from acidano.models.lop.real.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class

@@ -6,6 +6,7 @@ import time
 import logging
 import numpy as np
 import cPickle as pkl
+import time
 # Perso
 from load_data import load_data_train, load_data_valid, load_data_test
 
@@ -18,7 +19,7 @@ import theano
 theano.config.compute_test_value = 'off'
 
 
-def run_wrapper(params, config_folder):
+def run_wrapper(params, config_folder, start_time_train):
     ############################################################
     # Unpack parameters
     ############################################################
@@ -150,6 +151,11 @@ def run_wrapper(params, config_folder):
     train_param['n_val_batches'] = n_val_batches
 
     ############################################################
+    # Update train_param dict with time infos
+    ############################################################
+    train_param['start_time_train'] = start_time_train
+
+    ############################################################
     # Instanciate model and Optimization method
     ############################################################
     logger_run.info((u'##### Model parameters').encode('utf8'))
@@ -171,7 +177,7 @@ def run_wrapper(params, config_folder):
     loss, accuracy = train(model, optimizer,
                            piano_train, orchestra_train, train_index,
                            piano_valid, orchestra_valid, valid_index,
-                           train_param, logger_run)
+                           train_param, time_start_train, logger_run)
     time_train_1 = time.time()
     training_time = time_train_1-time_train_0
     logger_run.info('TTT : Training data took {} seconds'.format(training_time))
@@ -200,6 +206,12 @@ def train(model, optimizer,
           piano_valid, orchestra_valid, valid_index,
           train_param, logger_train):
     ############################################################
+    # Time information used
+    ############################################################
+    time_limit = train_param['walltime'] * 3600 - 30*60 # walltime - 30 minutes in seconds
+    start_time_train = train_param['start_time_train']
+
+    ############################################################
     # Compile theano functions
     # Compilation of the training function is encapsulated in the class since the 'givens'
     # can vary with the model
@@ -215,9 +227,10 @@ def train(model, optimizer,
     logger_train.info("# Training")
     epoch = 0
     OVERFITTING = False
+    TIME_LIMIT = False
     val_tab = np.zeros(max(1,train_param['max_iter']))
     loss_tab = np.zeros(max(1,train_param['max_iter']))
-    while (not OVERFITTING
+    while (not OVERFITTING and not TIME_LIMIT
            and epoch!=train_param['max_iter']):
         #######################################
         # Train
@@ -291,6 +304,12 @@ def train(model, optimizer,
         #######################################
 
         #######################################
+        # Monitor time (guillimin walltime)
+        if (time.time() - start_time_train) > time_limit:
+            TIME_LIMIT = True
+        #######################################
+
+        #######################################
         # Log training
         #######################################
         logger_train.info(('Epoch : {} , Monitor : {} , Cost : {} , Valid acc : {}'
@@ -299,6 +318,9 @@ def train(model, optimizer,
 
         if OVERFITTING:
             logger_train.info('OVERFITTING !!')
+
+        if TIME_LIMIT:
+            logger_train.info('TIME OUT !!')
 
         #######################################
         # Epoch +1
@@ -350,6 +372,7 @@ def train_keras(model, optimizer,
     return score, score
 
 if __name__ == '__main__':
+    start_time_train = time.time()
     config_folder = sys.argv[1]
     params = pkl.load(open(config_folder + '/config.pkl', "rb"))
-    run_wrapper(params, config_folder)
+    run_wrapper(params, config_folder, start_time_train)

@@ -169,8 +169,9 @@ script_param['skip_sample'] = 1
 ############################################################
 train_param = {}
 # Fixed hyper parameter
-train_param['max_iter'] = 200        # nb max of iterations when training 1 configuration of hparams
+train_param['max_iter'] = 200  # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
+train_param['walltime'] = 11  # in hours
 
 # Validation
 train_param['validation_order'] = 5
@@ -291,7 +292,7 @@ for hp_config in range(number_hp_config):
 
 #PBS -l nodes=1:ppn=2:gpus=1
 #PBS -l pmem=4000m
-#PBS -l walltime=10:00:00
+#PBS -l walltime=""" + str(train_param['walltime']) + """:00:00
 
 module load iomkl/2015b Python/2.7.10 CUDA cuDNN
 export OMPI_MCA_mtl=^psm

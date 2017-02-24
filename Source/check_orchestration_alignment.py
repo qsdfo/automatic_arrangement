@@ -9,9 +9,10 @@ import numpy as np
 import itertools
 
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
-from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace
+from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
 from acidano.visualization.numpy_array.visualize_numpy import visualize_mat
 from acidano.data_processing.midi.write_midi import write_midi
+from acidano.data_processing.utils.event_level import get_event_ind_dict
 # from acidano.data_processing.midi.read_midi import Read_midi
 
 
@@ -35,7 +36,6 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
             continue
 
         for folder_name in os.listdir(sub_db_path):
-
             print '#' * 20
             print '#' + folder_name + '\n'
             folder_path = sub_db_path + '/' + folder_name
@@ -43,27 +43,32 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
                 continue
 
             # Get instrus and prs from a folder name name
-            pr0, instru0, T0, path_0, pr1, instru1, T1, path_1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization=quantization, clip=True)
+            pr0, instru0, _, name0, pr1, instru1, _, name1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization)
+
+            # Temporal granularity ## HACKYY
+            if quantization == 100:
+                pr0 = warp_pr_aux(pr0, get_event_ind_dict(pr0))
+                pr1 = warp_pr_aux(pr1, get_event_ind_dict(pr1))
 
             # Get trace from needleman_wunsch algorithm
             # Traces are binary lists, 0 meaning a gap is inserted
-            trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1), gapopen, gapextend)
+            trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1), 3, 1)
 
-            # Warp dictionnaries according to the traces
+            # Wrap dictionnaries according to the traces
             assert(len(trace_0) == len(trace_1)), "size mismatch"
             pr0_warp = warp_dictionnary_trace(pr0, trace_0)
             pr1_warp = warp_dictionnary_trace(pr1, trace_1)
 
-            # In fact we just discard 0 in traces for both pr
+            # Get pr warped and duration# In fact we just discard 0 in traces for both pr
             trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
-            if sum(trace_prod) == 0:
-                # It's definitely not a match...
-                # Check for the files : are they really an piano score and its orchestration ??
-                with(open('log.txt', 'a')) as f:
-                    f.write(folder_path + '\n')
-                continue
-            pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
-            pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
+
+            duration = sum(trace_prod)
+            if duration == 0:
+                pr0_aligned = {'rien': np.zeros((5,128))}
+                pr1_aligned = {'rien': np.zeros((5,128))}
+            else:
+                pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
+                pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 
             # Sum all instrument
             AAA_warp = sum_along_instru_dim(pr0_warp)
@@ -90,7 +95,7 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
             save_folder_name = output_dir +\
                 '/' + sub_db + '_' + folder_name
 
-            if not os.path.exists(save_folder_name):
+            if not os.path.isdir(save_folder_name):
                 os.makedirs(save_folder_name)
 
             visualize_mat(CCC_warp, save_folder_name, 'warp')
@@ -132,7 +137,8 @@ if __name__ == '__main__':
 
     grid_search = {}
     grid_search['gapopen'] = [1, 2, 3, 4, 5]
-    grid_search['quantization'] = [4, 8, 12]
+    # grid_search['quantization'] = [4, 8, 12]
+    grid_search['quantization'] = [100]
 
     # Build all possible values
     for gapopen, quantization in list(itertools.product(

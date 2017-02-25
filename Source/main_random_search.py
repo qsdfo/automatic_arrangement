@@ -10,6 +10,7 @@ import logging
 import cPickle as pkl
 import subprocess
 import glob
+import time
 # Build data
 from build_data import build_data
 # Clean Script
@@ -23,7 +24,7 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 1
+N_HP_CONFIG = 100
 LOCAL = True
 BUILD_DATABASE = False
 
@@ -282,9 +283,10 @@ for hp_config in range(number_hp_config):
     pkl.dump(space, open(config_folder + '/config.pkl', 'wb'))
 
     if LOCAL:
+        start_time_train = time.time()
         config_folder = config_folder
         params = pkl.load(open(config_folder + '/config.pkl', "rb"))
-        train.run_wrapper(params, config_folder)
+        train.run_wrapper(params, config_folder, start_time_train)
     else:
         # Write pbs script
         file_pbs = config_folder + '/submit.pbs'

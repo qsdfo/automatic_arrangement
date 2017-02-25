@@ -177,7 +177,7 @@ def run_wrapper(params, config_folder, start_time_train):
     loss, accuracy = train(model, optimizer,
                            piano_train, orchestra_train, train_index,
                            piano_valid, orchestra_valid, valid_index,
-                           train_param, time_start_train, logger_run)
+                           train_param, start_time_train, logger_run)
     time_train_1 = time.time()
     training_time = time_train_1-time_train_0
     logger_run.info('TTT : Training data took {} seconds'.format(training_time))

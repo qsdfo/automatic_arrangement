@@ -297,9 +297,19 @@ Thus, it is possible to infer the negative samples of the CD algorithm while cla
 Note, however, that extensive efforts are made during the training phase to infer values that are finally clamped during the generation phase. Conditional models offer a way to separate the context (past orchestra and present piano) from the data we actually want to generate (present orchestra).
 
 \subsection{Conditional models}
-We introduce two models that implement a notion of conditional dependency : the \textit{cRBM} and \textit{FGcRBM}.
+We introduce two conditional models that implement a notion of conditional dependency of the visible units given context units (denoted $\bm{x}$) :  the \textit{cRBM} and \textit{FGcRBM}.
 
-\subsubsection{Conditional RBM}
+\subsubsection{Conditional RBM)}
+In the \textit{cRBM} model, the influence of the context units is implemented by an additive term on the bias of both visible and hidden units. Through the modification of the bias term, context units can stimulate or inhibit the activation of the hidden an visible units.
+Hence, the \textit{cRBM} model keeps exactly the same.
+% SCHEMA
+
+
+The idea is to separate the current orchestral frame $O(t)$ from the past orchestral frames and piano frame $[O(t-N),...,O(t-1), P(t)]$.
+Then, in the application to orchestral inference, $O(t)$ is modelled by the visible units $v$ and is the vector we want to generate, and $[O(t-N),...,O(t-1), P(t)$ is modelled by the context units $x$.
+% Schéma sigmoid avec biais ?
+
+
 
 \subsubsection{Factored Gated cRBM}
 % Gated = dissocier la contribution du passé et l'influence du piano

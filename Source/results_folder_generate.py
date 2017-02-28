@@ -14,6 +14,7 @@ import theano
 import re
 
 from acidano.utils.init import shared_zeros
+import acidano.data_processing.utils.unit_type as Unit_type
 
 def generate_midi(config_folder, data_folder, generation_length, seed_size, quantization_write, corruption_flag, logger_generate):
     if logger_generate is None:
@@ -130,8 +131,7 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     pr_orchestra_shared = theano.shared(pr_orchestra, name='orchestra_generation', borrow=True)
 
     # Generation parameters
-    generation_length = duration - 150
-    seed_size = 20
+    generation_length = duration - seed_size
     # generation_index is the last index of the track we want to generate
     # We feed several time the same index to get different proposition of orchestration
     generation_index = np.asarray([duration-1,] * number_of_version, dtype=np.int32)

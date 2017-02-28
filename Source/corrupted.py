@@ -37,11 +37,11 @@ def generate_corrupted_results(config_folder, data_folder, generation_length, se
 
     # Load data
     piano_valid, orchestra_valid, valid_index \
-        = load_data_valid(script_param['data_folder'],
+        = load_data_valid(data_folder,
                           model.checksum_database['piano_valid'], model.checksum_database['orchestra_valid'],
                           model_param['temporal_order'],
                           model_param['batch_size'],
-                          binary_unit=script_param['binary_unit'],
+                          unit_type=script_param['unit_type'],
                           skip_sample=script_param['skip_sample'],
                           logger_load=logger)
 

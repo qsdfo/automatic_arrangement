@@ -45,7 +45,7 @@ def generate_midi(config_folder, data_folder, generation_length, seed_size, quan
                          piano_checksum, orchestra_checksum,
                          model_param['temporal_order'],
                          model_param['batch_size'],
-                         binary_unit=script_param['binary_unit'],
+                         unit_type=script_param['unit_type'],
                          skip_sample=script_param['skip_sample'],
                          logger_load=logger_generate)
     time_load_1 = time.time()
@@ -120,17 +120,10 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     pr_piano = build_data_aux.cast_small_pr_into_big_pr(piano_test_dict, {}, 0, duration, instru_mapping, pr_piano)
     pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(orchestra_test_dict, instru_orchestra, 0, duration, instru_mapping, pr_orchestra)
 
-    # Is it binary units ?
-    binary_unit = script_param['binary_unit']
-    if binary_unit:
-        pr_piano[np.nonzero(pr_piano)] = 1
-        pr_orchestra[np.nonzero(pr_orchestra)] = 1
-    else:
-        # Much easier to work with unit between 0 and 1, for several reason :
-        #       - 'normalized' values
-        #       - same reconstruction as for binary units when building midi files
-        pr_piano = pr_piano / 127
-        pr_orchestra = pr_orchestra / 127
+    # Unit type
+    unit_type = script_param['unit_type']
+    pr_piano = Unit_type.type_conversion(pr_piano, unit_type)
+    pr_orchestra = Unit_type.type_conversion(pr_orchestra, unit_type)
 
     # Push them on the GPU
     pr_piano_shared = theano.shared(pr_piano, name='piano_generation', borrow=True)

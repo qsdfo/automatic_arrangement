@@ -6,14 +6,15 @@
 
 import numpy as np
 import theano
-
+import re
 import logging
 import random
 import cPickle as pickle
 
+import acidano.data_processing.utils.unit_type as Unit_type
 
 def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, temporal_order=20, batch_size=100, generation_length=100,
-              binary_unit=True, skip_sample=1,logger_load=None):
+              unit_type='binary', skip_sample=1,logger_load=None):
 
     # If no logger, create one
     if logger_load is None:
@@ -27,16 +28,8 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
     piano = np.load(data_folder + '/piano_' + set_identifier + '.csv')
     orchestra = np.load(data_folder + '/orchestra_' + set_identifier + '.csv')
 
-    # Binary unit ?
-    if binary_unit:
-        piano[np.nonzero(piano)] = 1
-        orchestra[np.nonzero(orchestra)] = 1
-    else:
-        # Much easier to work with unit between 0 and 1, for several reason :
-        #       - 'normalized' values
-        #       - same reconstruction as for binary units when building midi files
-        piano = piano / 127
-        orchestra = orchestra / 127
+    piano = Unit_type.type_conversion(piano, unit_type)
+    orchestra = Unit_type.type_conversion(orchestra, unit_type)
 
     # Shared variables : push data on GPU, memory problem for this dataset ??
     # First check type
@@ -109,13 +102,13 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
 
 # Wrappers
 def load_data_train(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100,
-                    binary_unit=True, skip_sample=1,logger_load=None):
-    return load_data(data_folder, piano_checksum, orchestra_checksum, 'train', temporal_order, batch_size, generation_length, binary_unit, skip_sample,logger_load)
+                    unit_type=True, skip_sample=1,logger_load=None):
+    return load_data(data_folder, piano_checksum, orchestra_checksum, 'train', temporal_order, batch_size, generation_length, unit_type, skip_sample,logger_load)
 
 def load_data_valid(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100,
-                    binary_unit=True, skip_sample=1,logger_load=None):
-    return load_data(data_folder, piano_checksum, orchestra_checksum, 'valid', temporal_order, batch_size, generation_length, binary_unit, skip_sample,logger_load)
+                    unit_type=True, skip_sample=1,logger_load=None):
+    return load_data(data_folder, piano_checksum, orchestra_checksum, 'valid', temporal_order, batch_size, generation_length, unit_type, skip_sample,logger_load)
 
 def load_data_test(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100,
-                   binary_unit=True, skip_sample=1,logger_load=None):
-    return load_data(data_folder, piano_checksum, orchestra_checksum, 'test', temporal_order, batch_size, generation_length, binary_unit, skip_sample,logger_load)
+                   unit_type=True, skip_sample=1,logger_load=None):
+    return load_data(data_folder, piano_checksum, orchestra_checksum, 'test', temporal_order, batch_size, generation_length, unit_type, skip_sample,logger_load)

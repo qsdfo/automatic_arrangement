@@ -11,6 +11,7 @@ import cPickle as pkl
 import subprocess
 import glob
 import time
+import re
 # Build data
 from build_data import build_data
 # Clean Script
@@ -24,24 +25,24 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 100
+N_HP_CONFIG = 1
 LOCAL = True
 BUILD_DATABASE = False
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
     RESULT_ROOT = os.getcwd() + '/../'
-    # DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
-    DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/Orchestration_checked'
+    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
+    # DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/Orchestration_checked'
 else:
     RESULT_ROOT = "/sb/project/ymd-084-aa/leo/"
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'FGcLstmRbm',
+    'cLstmRbm',
     'gradient_descent',
     'event_level',
-    'discrete_units',
+    'binary',
     '100'
 ]
 
@@ -129,12 +130,7 @@ if script_param['temporal_granularity'] not in ['frame_level', 'event_level']:
 
 # Unit type
 unit_type = commands[3]
-if unit_type == 'continuous_units':
-    script_param['binary_unit'] = False
-elif unit_type == 'discrete_units':
-    script_param['binary_unit'] = True
-else:
-    raise ValueError("Wrong units type")
+script_param['unit_type'] = unit_type
 
 # Quantization
 try:
@@ -195,10 +191,12 @@ logging.info((u'WITH HYPERPARAMETER OPTIMIZATION').encode('utf8'))
 logging.info((u'**** Model : ' + Model_class.name()).encode('utf8'))
 logging.info((u'**** Optimization technic : ' + Optimization_method.name()).encode('utf8'))
 logging.info((u'**** Temporal granularity : ' + script_param['temporal_granularity']).encode('utf8'))
-if script_param['binary_unit']:
+if script_param['unit_type'] == 'binary':
     logging.info((u'**** Binary unit (intensity discarded)').encode('utf8'))
-else:
+elif script_param['unit_type'] == 'continuous':
     logging.info((u'**** Real valued unit (intensity taken into consideration)').encode('utf8'))
+elif re.search('categorical', script_param['unit_type']):
+    logging.info((u'**** Categorical units (discrete intensities)').encode('utf8'))
 logging.info((u'**** Quantization : ' + str(script_param['quantization'])).encode('utf8'))
 logging.info((u'**** Result folder : ' + str(script_param['result_folder'])).encode('utf8'))
 

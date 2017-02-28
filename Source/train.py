@@ -95,7 +95,7 @@ def run_wrapper(params, config_folder, start_time_train):
                           None, None,
                           model_param['temporal_order'],
                           model_param['batch_size'],
-                          binary_unit=script_param['binary_unit'],
+                          unit_type=script_param['unit_type'],
                           skip_sample=script_param['skip_sample'],
                           logger_load=logger_run)
     piano_valid, orchestra_valid, valid_index \
@@ -103,7 +103,7 @@ def run_wrapper(params, config_folder, start_time_train):
                           None, None,
                           model_param['temporal_order'],
                           model_param['batch_size'],
-                          binary_unit=script_param['binary_unit'],
+                          unit_type=script_param['unit_type'],
                           skip_sample=script_param['skip_sample'],
                           logger_load=logger_run)
     # This load is only for sanity check purposes
@@ -112,7 +112,7 @@ def run_wrapper(params, config_folder, start_time_train):
                          None, None,
                          model_param['temporal_order'],
                          model_param['batch_size'],
-                         binary_unit=script_param['binary_unit'],
+                         unit_type=script_param['unit_type'],
                          skip_sample=script_param['skip_sample'],
                          logger_load=logger_run)
     time_load_1 = time.time()

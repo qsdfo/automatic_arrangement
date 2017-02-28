@@ -159,7 +159,7 @@ The remainder of this paper is organized as follows. The section 2 is dedicated 
 They all rely on the same training process that we describe at the beginning of the section. Then, the application of this training process to the different models is detailed, with an emphasis on the model we designed.
 The projective orchestration task is presented in the section 3 along with an evaluation framework based on an event-level accuracy measure. The results of the introduced models along with their interpretation is proposed. Then (section 4), we introduce \textit{LOP}, the real-time projective orchestration system. Finally, we provide our conclusions and directions of future work.
 
-\section{A training procedure for projective orchestration}
+\section{Orchestral inference}
 % Automatic orchestration ?
 % On s'intéresse à des modèles par apprentissage.
 % Quelle données ?
@@ -167,7 +167,7 @@ The projective orchestration task is presented in the section 3 along with an ev
 % Quelles architecture ?
 The objective of this paper is to investigate the ability of a set of neural networks models to perform a projective orchestrations of a piano score. 
 Neural networks are parametric models. These parameters need to be \textit{tuned} through a learning procedure.
-A training procedure essentially consists in two things : data, which can be decomposed in a dataset and a data representation, and a error function. Then, tuning a neural networks means finding the set of parameters for which this error function is the lowest. Defining an error criterion in the context of projective orchestration is a sensitive question. We detail the predictive criterion we decided to use at the end of this section.
+A training procedure essentially consists in two things : data, which can be decomposed in a dataset and a data representation, and an error function. Then, tuning a neural networks means finding the set of parameters for which this error function is the lowest. Defining an error criterion in the context of projective orchestration is a sensitive question. We detail the predictive criterion we decided to use at the end of this section.
 
 \subsection{Database}
 We use a \textit{MIDI} database of piano scores and their orchestration by famous composers. A total of 223 pairs of piano score and corresponding orchestration have been collected and \textbf{??} different instruments are represented. 
@@ -205,7 +205,7 @@ In the result section, we discuss the impact of both representation over the per
 Finally, the velocity information is discarded. Indeed, we use binary units which solely indicate if a note is on or off. We know that the velocity information is crucial in order to perform orchestration, since it can impact for instance the number of played instruments. However, we believe that the relative rank of the different architectures would not be deeply affected by considering intensities. Thus, the binary framework is a first step to discriminate relevant features amongst the different models.
 
 \subsection{Training objective}
-\subsubsection{Error function}
+\subsubsection{Orchestral inference function}
 For each orchestral piece, we define $O$ and $P$ as the sequences of column vectors from the \textit{piano-roll} of the orchestra and piano parts, with $t \in \left[ 1,N_{T} \right]$ where $N_{T}$ is the length of the musical piece, given a particular quantization.
 
 The objective is to design a function that is able to infer the present orchestral frame knowing the recent past of the orchestra sequence and both the past and present of the piano sequence. Mathematically, it consists in designing an \textit{inference function} $f$ where
@@ -234,30 +234,45 @@ In this work, we used four different optimization methods for each model : gradi
 Neural networks can be introduced in a probabilistic framework. The vectors $O(t)$ and $P(t)$ extracted from the piano-roll representation are modelled by sequences of random variables.
 The models we explore express the conditional dependencies between the present orchestral vector $O(t)$, the present piano vector $P(t)$ and the past orchestral vectors $O(t-N),...,O(t-1)$. \textit{Hidden units} are introduced to model the co-activation of these variables and are often considered as an higher-level representation encoding the regularities of the raw data.
 
-% Description générale : RBM, conditional, recurrent
-Given the large number of models that recently flourished in the machine learning field, we decided to restrict the benchmark to models based on the Restricted Boltzmann Machine (\textit{RBM}).
-The \textit{RBM} is the building block of many complex architectures. It is a generative models, which means that the model tries to reconstruct the hypothetical probability distribution of the data observed in the training database.
+We propose an investigation of several models based on the Restricted Boltzmann Machine (\textit{RBM}), and which implement a notion of context. These models and their application to the orchestral inference problem are detailed in the following section.
 
-We further reduce the number of model by considering only those which implement a notion of conditional dependence or temporal recurrence. The recurrences model the temporal structure of the orchestral score (influence of $O(t-N),...,O(t-1)$ on $O(t)$. Ideally, the conditional dependences represent the influence of the piano score over the orchestral score ($P(t)$ over $O(t)$), but also the temporal dependencies in some models.
-
-Those architectures are quickly introduced in the following section and we insist on the application of those models to the case of projective orchestration. For detailed descriptions, references to the original papers are provided. The names of the models are : Restricted Boltzmann Machine (\textit{RBM}), conditional RBM (\textit{cRBM}), Factor Gated cRBM (\textit{FGcRBM}), recurrent network with Long short-term memory units (\textit{LSTM}) and Recurrent neural network RBM (\textit{RnnRBM}).
-We also propose and detail two hybrid architectures called conditional RnnRBM (\textit{cRnnRbm}) and Factored Gated cRnnRBM (\textit{FGcRnnRbm}).
+%% Description générale : RBM, conditional, recurrent
+%Given the large number of models that recently flourished in the machine learning field, we decided to restrict the benchmark to models based on the Restricted Boltzmann Machine (\textit{RBM}).
+%The \textit{RBM} is the building block of many complex architectures. It is a generative models, which means that the model tries to reconstruct the hypothetical probability distribution of the data observed in the training database.
+%
+%We further reduce the number of model by considering only those which implement a notion of conditional dependence or temporal recurrence. The recurrences model the temporal structure of the orchestral score (influence of $O(t-N),...,O(t-1)$ on $O(t)$. Ideally, the conditional dependences represent the influence of the piano score over the orchestral score ($P(t)$ over $O(t)$), but also the temporal dependencies in some models.
+%
+%Those architectures are quickly introduced in the following section and we insist on the application of those models to the case of projective orchestration. For detailed descriptions, references to the original papers are provided. The names of the models are : Restricted Boltzmann Machine (\textit{RBM}), conditional RBM (\textit{cRBM}), Factor Gated cRBM (\textit{FGcRBM}), recurrent network with Long short-term memory units (\textit{LSTM}) and Recurrent neural network RBM (\textit{RnnRBM}).
+%We also propose and detail two hybrid architectures called conditional RnnRBM (\textit{cRnnRbm}) and Factored Gated cRnnRBM (\textit{FGcRnnRbm}).
 
 \subsection{Restricted Boltzmann Machine}
 \subsubsection{An energy based model}
 % Energy -> probability
-A RBM models the joint probability of visible and hidden random variables by $p_{model}(\bm{v},\bm{h}) = \frac{\exp^{-E(\bm{v},\bm{h})}}{Z}$ where
+The restricted Boltzmann Machine (\textit{RBM}) is a graphical probabilistic model. Stochastic binary-valued 
+visible units $\bm{v} = \{ v_1, .., v_{n_v} \}$ and hidden units $\bm{h} = \{ h_1, .., h_{n_h} \}$ , where $n_h$ and $n_v$ is the number of hidden and visible unit, are tied together through the weights $\bm{W}$ by conditional probabilities
+\begin{align}
+\label{eq:conditional_rbm}
+p(v_i=1|\bm{h}) = \sigma(b_i^v + \sum_{j=1}^{n_h} W_ij h_j)\\
+p(v_i=1|\bm{h}) = \sigma(b_i^v + \sum_{j=1}^{n_h} W_ij h_j)
+\end{align}
+where $\sigma(x) = \frac{1}{1 + exp(-x)}$ is the sigmoid function
+
+The joint probability of the visible and hidden variables is given by
+\begin{equation}
+p_{model}(\bm{v},\bm{h}) =  \frac{\exp^{-E(\bm{v},\bm{h})}}{Z}
+\end{equation}
+ where
 \begin{equation}
 \label{eq:energy}
-E(\bm{v},\bm{h}) = - \sum_{i=1}^{m} a_{i} v_{i}  - \sum_{i=1}^{m} \sum_{j=1}^{n} v_{i} W_{ij} h_{j} - \sum_{j = 1}^{n} b_{j} h_{j}
+E(\bm{v},\bm{h}) = - \sum_{i=1}^{n_{v}} b_i^v v_{i}  - \sum_{i=1}^{n_v} \sum_{j=1}^{n_h} v_{i} W_{ij} h_{j} - \sum_{j = 1}^{n_h} b_j^h h_{j}
 \end{equation}
 with $\Theta = \left\{W,b,a\right\}$ the parameters of the network.
-In the case of projective orchestration, the visible units are defined as the concatenation of the past and present orchestra and the present piano 
+
+In the case of projective orchestration, the visible units are defined as the concatenation of the past and present orchestra vector and the present piano vector
 \begin{equation}
 \label{eq:visible_rbm}
 \bm{v} = \left[P(t),O(t-N),...,O(t)\right]
 \end{equation}
-
 \begin{figure}[h]
 \centering
 \includegraphics[scale=0.6]{RBM}
@@ -265,6 +280,7 @@ In the case of projective orchestration, the visible units are defined as the co
 The \textit{Restricted Boltzmann Machine} (RBM) is defined by a set of visible ($v_{i}$) and hidden ($h_{j}$) units. Symmetric weights ($W_{ij}$) connect a hidden unit to a visible unit which altogether define an energy function $E_{W}(v,h)$. Training an \textit{RBM} consists in modifying the weights $W$ to lower the energy function around the points observed in the training set.}
 \label{fig:RBM}
 \end{figure}
+
 \subsubsection{Training in a RBM}
 % A typical cost function = likelihood
 A popular and well suited error function to train probabilistic models is the negative log-likelihood 
@@ -278,9 +294,10 @@ where $\mathcal{D}$ is the training dataset, $N_{\mathcal{D}}$ its size. The siz
 Ideally, the training procedure consists in modifying the parameters $\Theta$ of the model along the gradient of the error function.
 However, the gradient of the negative log-likelihood is intractable.
 % Contrastive divergence
-The contrastive divergence (\textit{CD}) algorithm \cite{fischer2012introduction,hinton2010practical} resort to an approximation of this quantity and ensure a training procedure that decreases a lower bound on the log-likelihood.
+The contrastive divergence (\textit{CD}) algorithm \cite{fischer2012introduction,hinton2010practical} resort to an approximation of this quantity obtained through running a Gibbs sampling chain thanks to the conditional distributions described in equations \ref{eq:conditional_rbm}.
+\textit{CD} guarantees that the Kullback-Leibler divergence between the model and data distribution is reduced after each iteration\cite{hinton2002training}, and an acceptable approximation should be found after large number of \textit{CD} steps.
 
-\subsubsection{Generating}
+\subsubsection{Generating orchestration}
 % Computing p(x) ?
 After a model has been trained, the generation steps consists in producing a sample $\hat{O}(t)$ knowing $O(t-N),...,O(t-1)$ and $P(t)$, which corresponds to the inference function defined in equation \prettyref{eq:inference_function}.
 
@@ -292,44 +309,79 @@ According to the visible unit definition in the case of orchestral inference \re
 However, the past orchestral and current piano frames are already known when generating samples.
 
 Thus, it is possible to infer the negative samples of the CD algorithm while clamping $O(t-N), ..., O(t-1)$ and $P(t)$ to their known values. This technique is known as \textit{inpainting} \cite{Fischer2012}.
+% SCHEMA
 
 % Mais du coup, c'est un peu con de modéliser le piano pour pas l'utiliser non ?
 Note, however, that extensive efforts are made during the training phase to infer values that are finally clamped during the generation phase. Conditional models offer a way to separate the context (past orchestra and present piano) from the data we actually want to generate (present orchestra).
 
 \subsection{Conditional models}
-We introduce two conditional models that implement a notion of conditional dependency of the visible units given context units (denoted $\bm{x}$) :  the \textit{cRBM} and \textit{FGcRBM}.
+We introduce two conditional models that implement a notion of conditional dependency of the visible units given context units (denoted $\bm{x}$) :  the \textit{cRBM} and \textit{FGcRBM}. More details can be found in the original paper \cite{taylor2009factored}.
 
-\subsubsection{Conditional RBM)}
-In the \textit{cRBM} model, the influence of the context units is implemented by an additive term on the bias of both visible and hidden units. Through the modification of the bias term, context units can stimulate or inhibit the activation of the hidden an visible units.
-Hence, the \textit{cRBM} model keeps exactly the same.
-% SCHEMA
-
-
-The idea is to separate the current orchestral frame $O(t)$ from the past orchestral frames and piano frame $[O(t-N),...,O(t-1), P(t)]$.
-Then, in the application to orchestral inference, $O(t)$ is modelled by the visible units $v$ and is the vector we want to generate, and $[O(t-N),...,O(t-1), P(t)$ is modelled by the context units $x$.
-% Schéma sigmoid avec biais ?
-
-
+\subsubsection{Conditional RBM}
+In the \textit{cRBM} model, the influence of the context units is implemented by an additive term on the bias of both visible and hidden units.
+\begin{align}
+\tilde{b}_i^v = b_i^v + \sum_{k=1}^{n_x} A_{ki} x_k\\
+\tilde{b}_i^h = b_j^h + \sum_{k=1}^{n_x} B_{kj} x_k
+\end{align}
+$\tilde{\bm{b}}$ are called dynamic biases, by opposition to static biases $\bm{b}$. The additive term is a linear combination of a third set of random variables called context units $\bm{x} = \{ x_1, .., x_k, .., x_{n_x} \}$.
+Through matrices of parameters $\bm{A}$ and $\bm{B}$, the context units can stimulate or inhibit the hidden or visible units by translating the activation function along the input axis. By replacing static biases by dynamic biases in the conditional distribution (\ref{eq:conditional_rbm}) and energy function (\ref{eq:energy}) equations, the training procedure remains the same as for the \textit{RBM} model.
 
 \subsubsection{Factored Gated cRBM}
-% Gated = dissocier la contribution du passé et l'influence du piano
-% Factor = Solve computations problèmes (tensor mega huge)
-% Mais est-ce qu'on a pas des modèles temporels plus adaptés ?
+The Factored Gated cRBM (\textit{FGcRBM}) model  \cite{taylor2009factored} proposes to extend the cRBM model by adding a layer of feature units $\bm{z}$ which modulates the weights of the conditional architecture in a multiplicative way (see \prettyref{fig:FGcRBM}). Hence, the parameters of the model become $\bm{\theta} = \left\lbrace \bm{W} , \bm{A} , \bm{B} , \bm{a} , \bm{b} \right\rbrace$, where $\bm{W} = (W)_{ijl}$, $\bm{A}=(A)_{ikl}$ and $\bm{B}=(B)_{jkl}$ are three-dimensional tensors.
 
-\subsection{Recurrent networks}
-% Et que si
-\subsubsection{LSTM}
-\subsubsection{RnnRbm}
-% Même des modèles génératifs
+This multiplicative influence can be interpreted as a modification of the energy function of the model depending on latent variables. For a fixed configuration of feature units, a new energy function is defined by the \textit{cRBM} ($\bm{v}$, $\bm{h}$, and $\bm{x}$). The number of parameters grows cubically with the number of units. To reduce the computation load, the three dimensional tensors can be factorized into a product of three matrices by including factor units indexed by $f$ such that $W_{ijl} = W_{if} . W_{jf} . W_{lf}$.
 
-\subsection{Conditional recurrent architectures}
-\subsubsection{cRnnRbm}
-\subsubsection{FGcRnnRbm}
+The dynamic biases of the visible and hidden units are defined by
+\begin{align}
+\hat{b}_{i}^v(t) = b_{i}^v + \sum_{f} \sum_{kl}A_{if}A_{kf}A_{lf}x_{k}(t)z_{l}(t)\\
+\hat{b}_{j}^h(t) = b_{j}^h + \sum_{f} \sum_{kl}B_{jf}B_{kf}B_{lf}x_{k}(t)z_{l}(t)
+\end{align}
 
-\section{Evaluation framework}
-In this section, we introduce and formalize the automatic projective orchestration task presented in \prettyref{fig:orch}. In particular, we detail the database and data representation used, evaluation framework, and discuss the results obtained by different models.
+\subsubsection{Application to projective orchestration}
+% Application orchestration
+In the case of projective orchestration, the \textit{cRBM} units' are defined as
+\begin{align*}
+\bm{v} &= O(t) \\
+\bm{x} &= \left[P(t), O(t-N), ..., O(t-1)\right]
+\end{align*}
+and the \textit{FGcRBM} units' as
+\begin{align*}
+\bm{v} &= O(t) \\
+\bm{x} &= \left[O(t-N), ..., O(t-1)\right]\\
+\bm{z} &= \left[P(t)\right]
+\end{align*}
+% SCHEMA
+% Application orchestration
+
+Since the visible units of the \textit{cRBM} and \textit{FGcRBM} models directly represent the present orchestral frame, generating from these two models is straightforward : 
+\begin{itemize}
+\item the context units (and latent units in the case of the \textit{FGcRBM}) are set to their known values
+\item the visible units are randomly initialize with a uniform distribution on the segment $[0,1]$
+\item several steps of Gibbs sampling are performed
+\item the visible units sample obtained at the end the Gibbs chain is the vector $\hat{O}(t)$ generated by the model
+\end{itemize}
+Even if visible units represent binaries values, real values can be used during alternate Gibbs sampling \cite{hinton2010practical}. We observed that initializing visible units with a uniform distribution on $[0,1]$ rather than with a Bernouilli distribution leads to slightly better generations. Our guess is that it avoid the model to be stuck in a certain configuration at an early step of the alternate Gibbs sampling process.
+
+%The \textit{cRBM} can efficiently model the influence of each note in the context vector $\left[P(t), O(t-N), ..., O(t-1)\right]$ over the each note in the visible vector $O(t)$. 
+%However, considering the influence of pairs of units $(x,z)$ from respectively $P(t)$ and $\left[ O(t-N), ..., O(t-1)\right]$ over the visible units $O(t)$ could provide a more powerful model. This is done in the Gated conditional RBM, by introducing latent variables $\bm{z}=\{z_1,.., z_l, ..,z_{n_z}\}$, and tying together variables $\bm{v}$ (respectively $\bm{h}$), $\bm{x}$ and $\bm{z}$ through a three dimensional tensor $\bm{B}^v = (B_{ikl})^v$ (respectively $\bm{B}^h$).
+%The number of parameters rapidly explodes with the dimension of the visible, context and latent vectors and the model consequently become impossible to train. A solution consists in factorizing the three dimensional tensors through a set of factor units $\bm{f} = (f_1,.., f_f,.., f_{n_f})$ as $\bm{B}^v = (\bm{B}_{if}^v . \bm{B}_{kf}^v .  \bm{B}_{lf}^v)$.
+
+%\subsection{Recurrent networks}
+%% Et que si
+%\subsubsection{LSTM}
+%\subsubsection{RnnRbm}
+%% Même des modèles génératifs
+%
+%\subsection{Conditional recurrent architectures}
+%\subsubsection{cRnnRbm}
+%\subsubsection{FGcRnnRbm}
+
+\section{Results}
+In this section, we introduce an evaluation framework for the orchestral inference task presented in \prettyref{fig:orch}. Then, the performances of the \textit{RBM}, \textit{cRBM} and \textit{FGcRBM} models are presented and discussed. Examples of projective orchestrations inferred by the different models can be listened to at this address \url{}.
 
 \subsection{Evaluation framework}
+
+
 We introduce an \textit{event-level orchestral inference} task to evaluate our models. To our best knowledge, this is the first attempt to define a quantitative evaluation framework for automatic projective orchestration.
 
 In order to evaluate the models, the data used to train and those used to assess the performances must be different \cite{bishop2006pattern}. Hence, the dataset is usually split between a train and test set.

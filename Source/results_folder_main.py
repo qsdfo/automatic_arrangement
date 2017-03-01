@@ -67,7 +67,7 @@ def processing_results(configurations_path, data_folder, track_paths, generation
         generate_midi(configuration, data_folder, generation_length, seed_size, quantization_write, None, logger_generate)
         for track_path in track_paths:
             generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, quantization_write, number_of_version, logger_generate)
-        generate_corrupted_results(configuration, data_folder, generation_length, seed_size)
+        generate_corrupted_results(configuration, data_folder, generation_length, seed_size, quantization_write)
         plot_weights(configuration, logger_plot)
         id_result_list.append(get_results_and_id(configuration))
 

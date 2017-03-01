@@ -14,11 +14,11 @@ import logging
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger('generate')
 
-def generate_corrupted_results(config_folder, data_folder, generation_length, seed_size):
+def generate_corrupted_results(config_folder, data_folder, generation_length, seed_size, quantization_write):
     # Generation
     # generate_midi(config_folder, data_folder, generation_length, seed_size, 4, None, None)
-    generate_midi(config_folder, data_folder, generation_length, seed_size, 4, 'piano', None)
-    generate_midi(config_folder, data_folder, generation_length, seed_size, 4, 'orchestra', None)
+    generate_midi(config_folder, data_folder, generation_length, seed_size, quantization_write, 'piano', None)
+    generate_midi(config_folder, data_folder, generation_length, seed_size, quantization_write, 'orchestra', None)
     # generate_midi(config_folder, data_folder, generation_length, seed_size, 4, 'orchestra_and_piano', None)
 
     # Create result folder

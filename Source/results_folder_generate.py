@@ -76,7 +76,7 @@ def generate_midi(config_folder, data_folder, generation_length, seed_size, quan
 
     generate(model,
              piano_test, orchestra_test, generation_index, metadata_path,
-             generation_length, seed_size, quantization_write,
+             generation_length, seed_size, quantization_write, script_param['temporal_granularity'],
              generated_folder, logger_generate)
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
@@ -150,7 +150,7 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     time_generate_0 = time.time()
     generate(model,
              pr_piano_shared, pr_orchestra_shared, generation_index, metadata_path,
-             generation_length, seed_size, quantization_write,
+             generation_length, seed_size, quantization_write, script_param['temporal_granularity'],
              generated_folder, logger_generate)
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))

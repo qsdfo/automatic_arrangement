@@ -102,7 +102,7 @@ if __name__ == '__main__':
     #################################
     # Generate the results for all the configs of a model
     #################################
-    for nn in ['cRBM', 'cRnnRbm', 'FGcRBM', 'FGcRnnRbm', 'LSTM', 'RBM_inpainting', 'RnnRbm_inpainting']:
+    for nn in ['cRBM', 'FGcRBM', 'RBM_inpainting']:
         model_path_this = model_path + '/' + nn
         clean(model_path_this)
         processing_results(model_path_this, data_folder, track_paths)

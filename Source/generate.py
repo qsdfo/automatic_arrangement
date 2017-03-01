@@ -8,7 +8,7 @@ from acidano.data_processing.midi.write_midi import write_midi
 
 def generate(model,
              piano, orchestra, indices, metadata_path,
-             generation_length, seed_size, quantization_write,
+             generation_length, seed_size, quantization_write, temporal_granularity,
              generated_folder, logger_generate):
     # Generate sequences from a trained model
     # piano, orchestra and index are data used to seed the generation
@@ -35,6 +35,18 @@ def generate(model,
     orchestra_original = model.build_seed(orchestra.get_value(), indices, len(indices), generation_length)
     if generated_folder is not None:
         for write_counter in xrange(generated_sequence.shape[0]):
+
+            ###############################################################
+            ###############################################################
+            ###############################################################
+            ###############################################################
+            if temporal_granularity == 'event_level':
+                quantization_write = 1
+            ###############################################################
+            ###############################################################
+            ###############################################################
+            ###############################################################
+
             # Write generated midi
             pr_orchestra = reconstruct_pr(generated_sequence[write_counter], instru_mapping)
             write_path = generated_folder + '/' + str(write_counter) + '_generated.mid'

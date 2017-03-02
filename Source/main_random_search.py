@@ -25,7 +25,7 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 1
+N_HP_CONFIG = 10
 LOCAL = True
 BUILD_DATABASE = False
 
@@ -39,11 +39,11 @@ else:
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'cLstmRbm',
+    'random',
     'gradient_descent',
-    'event_level',
+    'frame_level',
     'binary',
-    '100'
+    '8'
 ]
 
 ############################################################
@@ -81,6 +81,8 @@ script_param = {}
 script_param['model_class'] = commands[0]
 if commands[0] == "random":
     from acidano.models.lop.binary.random import Random as Model_class
+elif commands[0] == "repeat":
+    from acidano.models.lop.binary.repeat import Repeat as Model_class
 elif commands[0] == "RBM":
     from acidano.models.lop.binary.RBM import RBM as Model_class
 elif commands[0] == "cRBM":
@@ -166,7 +168,7 @@ script_param['skip_sample'] = 1
 ############################################################
 train_param = {}
 # Fixed hyper parameter
-train_param['max_iter'] = 200  # nb max of iterations when training 1 configuration of hparams
+train_param['max_iter'] = 1  # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 train_param['walltime'] = 11  # in hours
 

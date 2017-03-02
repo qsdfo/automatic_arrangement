@@ -33,6 +33,8 @@ def run_wrapper(params, config_folder, start_time_train):
     ############################################################
     if script_param['model_class'] == "random":
         from acidano.models.lop.binary.random import Random as Model_class
+    elif script_param['model_class'] == "repeat":
+        from acidano.models.lop.binary.repeat import Repeat as Model_class
     elif script_param['model_class'] == "RBM":
         from acidano.models.lop.binary.RBM import RBM as Model_class
     elif script_param['model_class'] == "cRBM":

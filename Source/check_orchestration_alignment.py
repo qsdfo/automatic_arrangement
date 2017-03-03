@@ -15,10 +15,13 @@ from acidano.data_processing.midi.write_midi import write_midi
 from acidano.data_processing.utils.event_level import get_event_ind_dict
 # from acidano.data_processing.midi.read_midi import Read_midi
 
+import acidano.data_processing.utils.unit_type as Unit_type
 
-def check_orchestration_alignment(path_db, subfolder_names, quantization, gapopen, gapextend):
+
+def check_orchestration_alignment(path_db, subfolder_names, quantization, unit_type, gapopen, gapextend):
 
     output_dir = 'Grid_search_database_alignment/' + str(quantization) +\
+                 '_' + unit_type +\
                  '_' + str(gapopen) +\
                  '_' + str(gapextend)
 
@@ -44,6 +47,10 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, gapope
 
             # Get instrus and prs from a folder name name
             pr0, instru0, _, name0, pr1, instru1, _, name1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization)
+
+            # Unit type
+            pr0 = Unit_type.type_conversion(pr0, unit_type)
+            pr1 = Unit_type.type_conversion(pr1, unit_type)
 
             # Temporal granularity ## HACKYY
             if quantization == 100:
@@ -136,7 +143,7 @@ if __name__ == '__main__':
     ]
 
     grid_search = {}
-    grid_search['gapopen'] = [1, 2, 3, 4, 5]
+    grid_search['gapopen'] = [3]
     # grid_search['quantization'] = [4, 8, 12]
     grid_search['quantization'] = [100]
 
@@ -146,4 +153,4 @@ if __name__ == '__main__':
         grid_search['quantization'])
     ):
         for gapextend in range(gapopen):
-            check_orchestration_alignment(folder_path, subfolder_names, quantization, gapopen, gapextend)
+            check_orchestration_alignment(folder_path, subfolder_names, quantization, 'binary', gapopen, gapextend)

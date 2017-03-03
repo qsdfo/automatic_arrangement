@@ -105,7 +105,7 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     ############################################################
     # Get dictionnary representing the aligned midi tracks
     piano_test_dict, instru_piano, name_piano, orchestra_test_dict, instru_orchestra, name_orchestra, duration\
-        = build_data_aux.process_folder(track_path, quantization_write, script_param['temporal_granularity'], logger_generate)
+        = build_data_aux.process_folder(track_path, quantization_write, script_param['unit_type'], script_param['temporal_granularity'], logger_generate)
 
     # Get the instrument mapping used for training
     metadata = pkl.load(open(metadata_path, 'rb'))
@@ -120,11 +120,6 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     # Fill them with the dictionnary representation of the track, respecting the instrument mapping
     pr_piano = build_data_aux.cast_small_pr_into_big_pr(piano_test_dict, {}, 0, duration, instru_mapping, pr_piano)
     pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(orchestra_test_dict, instru_orchestra, 0, duration, instru_mapping, pr_orchestra)
-
-    # Unit type
-    unit_type = script_param['unit_type']
-    pr_piano = Unit_type.type_conversion(pr_piano, unit_type)
-    pr_orchestra = Unit_type.type_conversion(pr_orchestra, unit_type)
 
     # Push them on the GPU
     pr_piano_shared = theano.shared(pr_piano, name='piano_generation', borrow=True)

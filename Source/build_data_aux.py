@@ -11,7 +11,7 @@ from acidano.data_processing.utils.pianoroll_processing import clip_pr, get_pian
 from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
 from acidano.data_processing.utils.event_level import get_event_ind_dict
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
-
+import acidano.data_processing.utils.unit_type as Unit_type
 
 def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
     # There should be 2 files
@@ -97,9 +97,13 @@ def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from
     return instru_mapping
 
 
-def process_folder(folder_path, quantization, temporal_granularity, logging):
+def process_folder(folder_path, quantization, unit_type, temporal_granularity, logging):
     # Get instrus and prs from a folder name name
     pr0, instru0, _, name0, pr1, instru1, _, name1 = get_instru_and_pr_from_folder_path(folder_path, quantization)
+
+    # Unit type
+    pr0 = Unit_type.type_conversion(pr0, unit_type)
+    pr1 = Unit_type.type_conversion(pr1, unit_type)
 
     # Temporal granularity
     if temporal_granularity == 'event_level':

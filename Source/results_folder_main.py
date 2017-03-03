@@ -64,14 +64,15 @@ def processing_results(configurations_path, data_folder, track_paths, generation
     number_of_version = 5
 
     for configuration in configurations:
-        generate_midi(configuration, data_folder, generation_length, seed_size, quantization_write, None, logger_generate)
+        # generate_midi(configuration, data_folder, generation_length, seed_size, quantization_write, None, logger_generate)
         for track_path in track_paths:
             generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, quantization_write, number_of_version, logger_generate)
-        generate_corrupted_results(configuration, data_folder, generation_length, seed_size, quantization_write)
-        plot_weights(configuration, logger_plot)
-        id_result_list.append(get_results_and_id(configuration))
+        # generate_corrupted_results(configuration, data_folder, generation_length, seed_size, quantization_write)
+        # plot_weights(configuration, logger_plot)
+        # id_result_list.append(get_results_and_id(configuration))
 
-    write_csv_results(configurations_path, id_result_list, configurations[0])
+    # write_csv_results(configurations_path, id_result_list, configurations[0])
+    # plot_hparam_curves(configurations_path)
 
 if __name__ == '__main__':
     ####################################################################################
@@ -85,11 +86,12 @@ if __name__ == '__main__':
     ####################################################################################
     ####################################################################################
 
-    data_folder = '/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/27_02_17/Data'
-    model_path = '/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/27_02_17/Results/event_level/discrete_units/quantization_100/gradient_descent'
+    data_folder = '/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/27_02_17/Results/event_level/binary/quantization_100/Data'
+    model_path = '/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/27_02_17/Results/event_level/binary/quantization_100/gradient_descent'
     track_paths = [
         '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/liszt_classical_archives/16',
         '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/bouliane/22',
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/bouliane/0',  # This one is in train set
     ]
 
     # data_folder = "/home/crestel/lop/Data"

@@ -25,9 +25,9 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 10
+N_HP_CONFIG = 5
 LOCAL = True
-BUILD_DATABASE = False
+BUILD_DATABASE = True
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
@@ -39,7 +39,7 @@ else:
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'random',
+    'cRBM',
     'gradient_descent',
     'frame_level',
     'binary',
@@ -168,7 +168,7 @@ script_param['skip_sample'] = 1
 ############################################################
 train_param = {}
 # Fixed hyper parameter
-train_param['max_iter'] = 1  # nb max of iterations when training 1 configuration of hparams
+train_param['max_iter'] = 200  # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 train_param['walltime'] = 11  # in hours
 
@@ -231,6 +231,7 @@ if BUILD_DATABASE:
                index_files_dict=index_files_dict,
                meta_info_path=data_folder + '/temp.p',
                quantization=script_param['quantization'],
+               unit_type=script_param['unit_type'],
                temporal_granularity=script_param['temporal_granularity'],
                store_folder=data_folder,
                logging=logging)

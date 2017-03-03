@@ -131,7 +131,7 @@ def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, du
     pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, start_time, duration, instru_mapping, pr_piano)
 
 
-def build_data(root_dir, index_files_dict, meta_info_path='temp.p',quantization=12, temporal_granularity='frame_level', store_folder='../Data', logging=None):
+def build_data(root_dir, index_files_dict, meta_info_path='temp.p',quantization=12, unit_type='binary', temporal_granularity='frame_level', store_folder='../Data', logging=None):
     # Get dimensions
     instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
 
@@ -169,9 +169,9 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p',quantization=
                     if not os.path.isdir(folder_path):
                         continue
 
-                    # Get pr warped and duration
+                    # Get pr, warped and duration
                     new_pr_piano, new_instru_piano, name_piano, new_pr_orchestra, new_instru_orchestra, name_orchestra, duration\
-                        = build_data_aux.process_folder(folder_path, quantization, temporal_granularity, logging)
+                        = build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, logging)
 
                     # SKip shitty files
                     if new_pr_piano is None:

@@ -1,23 +1,15 @@
 # LOP
-## MongoDB
-- test en local
-- portage Guilllimin
 
-## Run tests
+## Training
+### Initialization Gibbs chain
+Choice : Random uniform
+#### Previous frame
+Gibbs chain will stay in the init value
+#### Bernoulli p = 0.5
+Stuck early in the init state
+#### Random uniform [0,1]
 
-# Observe results and learning process
-locally, on good configurations
-
-
-"--exp-key"
-                  help="identifier for this workers's jobs")
-"--last-job-timeout"
-                  help="Do not reserve a job after T seconds have passed")
-"--max-consecutive-failures"
-                  help="stop if N consecutive jobs fail (default: 4)")
-"--max-jobs"
-                  help="check work queue every 1 < T < N seconds (default: 5")
-"--reserve-timeout"
-                  help="poll database for up to T seconds to reserve a job")
-"--workdir"kdir (default: load from mongo)",
-                  metavar="DIR")
+## Generation
+### Threshold on the output probability ?
+Probabilities < 0.5 are set to 0
+Actually not the case. High number of sampling steps should make this useless.

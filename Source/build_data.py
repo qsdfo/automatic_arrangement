@@ -22,7 +22,7 @@ import numpy as np
 from acidano.data_processing.utils.build_dico import build_dico
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
 from acidano.data_processing.utils.event_level import get_event_ind_dict
-from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_pr_aux
+from acidano.data_processing.utils.time_warping import warp_pr_aux
 import build_data_aux
 import cPickle as pickle
 
@@ -64,7 +64,8 @@ def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantiza
                         continue
 
                     # Read pr
-                    pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra, duration = build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, logging)
+                    pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra, duration =\
+                        build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, logging, gapopen=3, gapextend=1)
 
                     if duration is None:
                         # Files that could not be aligned
@@ -164,13 +165,13 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p',quantization=
 
                     # Get pr, warped and duration
                     new_pr_piano, new_instru_piano, name_piano, new_pr_orchestra, new_instru_orchestra, name_orchestra, duration\
-                        = build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, logging)
+                        = build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, logging, gapopen=3, gapextend=1)
 
                     # SKip shitty files
                     if new_pr_piano is None:
                         # It's definitely not a match...
                         # Check for the files : are they really a piano score and its orchestration ??
-                        with(open('log.txt', 'a')) as f:
+                        with(open('log_build_db.txt', 'a')) as f:
                             f.write(folder_path + '\n')
                         continue
 

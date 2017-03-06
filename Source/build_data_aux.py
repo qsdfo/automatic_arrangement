@@ -99,13 +99,13 @@ def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from
     return instru_mapping
 
 
-def process_folder(folder_path, quantization, unit_type, temporal_granularity, logging):
+def process_folder(folder_path, quantization, unit_type, temporal_granularity, logging, gapopen=3, gapextend=1):
     # Get instrus and prs from a folder name name
     pr0, instru0, _, name0, pr1, instru1, _, name1 = get_instru_and_pr_from_folder_path(folder_path, quantization)
 
     # Unit type
-    pr0 = Unit_type.type_conversion(pr0, unit_type)
-    pr1 = Unit_type.type_conversion(pr1, unit_type)
+    pr0 = Unit_type.from_rawpr_to_type(pr0, unit_type)
+    pr1 = Unit_type.from_rawpr_to_type(pr1, unit_type)
 
     # Temporal granularity
     if temporal_granularity == 'event_level':
@@ -113,22 +113,22 @@ def process_folder(folder_path, quantization, unit_type, temporal_granularity, l
         pr1 = warp_pr_aux(pr1, get_event_ind_dict(pr1))
 
     # Get trace from needleman_wunsch algorithm
+    # Traces are computed from binaries matrices
     # Traces are binary lists, 0 meaning a gap is inserted
-    trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1), 3, 1)
+    pr0_trace = sum_along_instru_dim(Unit_type.from_type_to_binary(pr0, unit_type))
+    pr1_trace = sum_along_instru_dim(Unit_type.from_type_to_binary(pr1, unit_type))
+    trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(pr0_trace, pr1_trace, gapopen, gapextend)
 
-    # Wrap dictionnaries according to the traces
+    # Get pr warped and duration
+    # In fact we just discard 0 in traces for both pr
     assert(len(trace_0) == len(trace_1)), "size mismatch"
-    pr0_warp = warp_dictionnary_trace(pr0, trace_0)
-    pr1_warp = warp_dictionnary_trace(pr1, trace_1)
-
-    # Get pr warped and duration# In fact we just discard 0 in traces for both pr
     trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
-
     duration = sum(trace_prod)
     if duration == 0:
         return [None]*7
-    pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
-    pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
+    # Wrap dictionnaries according to the traces
+    pr0_aligned = warp_dictionnary_trace(pr0, trace_prod)
+    pr1_aligned = warp_dictionnary_trace(pr1, trace_prod)
 
     # Find which pr is orchestra, which one is piano
     if len(set(instru0.keys())) > len(set(instru1.keys())):

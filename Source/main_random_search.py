@@ -25,7 +25,7 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 5
+N_HP_CONFIG = 1
 LOCAL = True
 BUILD_DATABASE = True
 
@@ -39,11 +39,11 @@ else:
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'cRBM',
+    'repeat',
     'gradient_descent',
-    'frame_level',
+    'event_level',
     'binary',
-    '8'
+    '4'
 ]
 
 ############################################################
@@ -75,34 +75,64 @@ logging.info('Script paramaters')
 # Store script parameters
 script_param = {}
 
+# Unit type
+unit_type = commands[3]
+script_param['unit_type'] = unit_type
+
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the optimization method
 ################### DISCRETE
 script_param['model_class'] = commands[0]
-if commands[0] == "random":
-    from acidano.models.lop.binary.random import Random as Model_class
-elif commands[0] == "repeat":
-    from acidano.models.lop.binary.repeat import Repeat as Model_class
-elif commands[0] == "RBM":
-    from acidano.models.lop.binary.RBM import RBM as Model_class
-elif commands[0] == "cRBM":
-    from acidano.models.lop.binary.cRBM import cRBM as Model_class
-elif commands[0] == "FGcRBM":
-    from acidano.models.lop.binary.FGcRBM import FGcRBM as Model_class
-elif commands[0] == "FGcRnnRbm":
-    from acidano.models.lop.binary.FGcRnnRbm import FGcRnnRbm as Model_class
-elif commands[0] == "LSTM":
-    from acidano.models.lop.binary.LSTM import LSTM as Model_class
-elif commands[0] == "RnnRbm":
-    from acidano.models.lop.binary.RnnRbm import RnnRbm as Model_class
-elif commands[0] == "cRnnRbm":
-    from acidano.models.lop.binary.cRnnRbm import cRnnRbm as Model_class
-elif commands[0] == "LstmRbm":
-    from acidano.models.lop.binary.LstmRbm import LstmRbm as Model_class
-elif commands[0] == "cLstmRbm":
-    from acidano.models.lop.binary.cLstmRbm import cLstmRbm as Model_class
-elif commands[0] == "FGcLstmRbm":
-    from acidano.models.lop.binary.FGcLstmRbm import FGcLstmRbm as Model_class
+if unit_type == 'binary':
+    if commands[0] == "random":
+        from acidano.models.lop.binary.random import Random as Model_class
+    elif commands[0] == "repeat":
+        from acidano.models.lop.binary.repeat import Repeat as Model_class
+    elif commands[0] == "RBM":
+        from acidano.models.lop.binary.RBM import RBM as Model_class
+    elif commands[0] == "cRBM":
+        from acidano.models.lop.binary.cRBM import cRBM as Model_class
+    elif commands[0] == "FGcRBM":
+        from acidano.models.lop.binary.FGcRBM import FGcRBM as Model_class
+    elif commands[0] == "FGcRnnRbm":
+        from acidano.models.lop.binary.FGcRnnRbm import FGcRnnRbm as Model_class
+    elif commands[0] == "LSTM":
+        from acidano.models.lop.binary.LSTM import LSTM as Model_class
+    elif commands[0] == "RnnRbm":
+        from acidano.models.lop.binary.RnnRbm import RnnRbm as Model_class
+    elif commands[0] == "cRnnRbm":
+        from acidano.models.lop.binary.cRnnRbm import cRnnRbm as Model_class
+    elif commands[0] == "LstmRbm":
+        from acidano.models.lop.binary.LstmRbm import LstmRbm as Model_class
+    elif commands[0] == "cLstmRbm":
+        from acidano.models.lop.binary.cLstmRbm import cLstmRbm as Model_class
+    elif commands[0] == "FGcLstmRbm":
+        from acidano.models.lop.binary.FGcLstmRbm import FGcLstmRbm as Model_class
+elif re.search(ur"categorical", unit_type):
+    if commands[0] == "random":
+        from acidano.models.lop.categorical.random import Random as Model_class
+    elif commands[0] == "repeat":
+        from acidano.models.lop.categorical.repeat import Repeat as Model_class
+    elif commands[0] == "RBM":
+        from acidano.models.lop.categorical.RBM import RBM as Model_class
+    elif commands[0] == "cRBM":
+        from acidano.models.lop.categorical.cRBM import cRBM as Model_class
+    elif commands[0] == "FGcRBM":
+        from acidano.models.lop.categorical.FGcRBM import FGcRBM as Model_class
+    elif commands[0] == "FGcRnnRbm":
+        from acidano.models.lop.categorical.FGcRnnRbm import FGcRnnRbm as Model_class
+    elif commands[0] == "LSTM":
+        from acidano.models.lop.categorical.LSTM import LSTM as Model_class
+    elif commands[0] == "RnnRbm":
+        from acidano.models.lop.categorical.RnnRbm import RnnRbm as Model_class
+    elif commands[0] == "cRnnRbm":
+        from acidano.models.lop.categorical.cRnnRbm import cRnnRbm as Model_class
+    elif commands[0] == "LstmRbm":
+        from acidano.models.lop.categorical.LstmRbm import LstmRbm as Model_class
+    elif commands[0] == "cLstmRbm":
+        from acidano.models.lop.categorical.cLstmRbm import cLstmRbm as Model_class
+    elif commands[0] == "FGcLstmRbm":
+        from acidano.models.lop.categorical.FGcLstmRbm import FGcLstmRbm as Model_class
 ###################  REAL
 elif commands[0] == "LSTM_gaussian_mixture":
     from acidano.models.lop.real.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
@@ -129,10 +159,6 @@ else:
 script_param['temporal_granularity'] = commands[2]
 if script_param['temporal_granularity'] not in ['frame_level', 'event_level']:
     raise ValueError(commands[2] + " is not temporal_granularity")
-
-# Unit type
-unit_type = commands[3]
-script_param['unit_type'] = unit_type
 
 # Quantization
 try:
@@ -215,10 +241,10 @@ if BUILD_DATABASE:
         DATABASE_PATH + "/liszt_classical_archives_train.txt"
     ]
     index_files_dict['valid'] = [
-        # DATABASE_PATH + "/debug_valid.txt",
-        DATABASE_PATH + "/bouliane_valid.txt",
-        DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
-        DATABASE_PATH + "/liszt_classical_archives_valid.txt"
+        DATABASE_PATH + "/debug_valid.txt",
+        # DATABASE_PATH + "/bouliane_valid.txt",
+        # DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
+        # DATABASE_PATH + "/liszt_classical_archives_valid.txt"
     ]
     index_files_dict['test'] = [
         # DATABASE_PATH + "/debug_test.txt",
@@ -235,6 +261,7 @@ if BUILD_DATABASE:
                temporal_granularity=script_param['temporal_granularity'],
                store_folder=data_folder,
                logging=logging)
+import pdb; pdb.set_trace()
 
 ############################################################
 # Hyper parameter space

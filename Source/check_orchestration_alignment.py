@@ -7,6 +7,7 @@ import os
 import numpy as np
 
 import itertools
+import build_data_aux
 
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
 from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
@@ -18,12 +19,18 @@ from acidano.data_processing.utils.event_level import get_event_ind_dict
 import acidano.data_processing.utils.unit_type as Unit_type
 
 
-def check_orchestration_alignment(path_db, subfolder_names, quantization, unit_type, gapopen, gapextend):
+def check_orchestration_alignment(path_db, subfolder_names, temporal_granularity, quantization, unit_type, gapopen, gapextend):
 
     output_dir = 'Grid_search_database_alignment/' + str(quantization) +\
+                 '_' + temporal_granularity +\
                  '_' + unit_type +\
                  '_' + str(gapopen) +\
                  '_' + str(gapextend)
+
+    if temporal_granularity == "event_level":
+        quantization_write = 1
+    else:
+        quantization_write = quantization
 
     counter = 0
     sum_score = 0
@@ -45,55 +52,25 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, unit_t
             if not os.path.isdir(folder_path):
                 continue
 
-            # Get instrus and prs from a folder name name
-            pr0, instru0, _, name0, pr1, instru1, _, name1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization)
+            pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra, duration =\
+                build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, None, gapopen, gapextend)
 
-            # Unit type
-            pr0 = Unit_type.type_conversion(pr0, unit_type)
-            pr1 = Unit_type.type_conversion(pr1, unit_type)
-
-            # Temporal granularity ## HACKYY
-            if quantization == 100:
-                pr0 = warp_pr_aux(pr0, get_event_ind_dict(pr0))
-                pr1 = warp_pr_aux(pr1, get_event_ind_dict(pr1))
-
-            # Get trace from needleman_wunsch algorithm
-            # Traces are binary lists, 0 meaning a gap is inserted
-            trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1), 3, 1)
-
-            # Wrap dictionnaries according to the traces
-            assert(len(trace_0) == len(trace_1)), "size mismatch"
-            pr0_warp = warp_dictionnary_trace(pr0, trace_0)
-            pr1_warp = warp_dictionnary_trace(pr1, trace_1)
-
-            # Get pr warped and duration# In fact we just discard 0 in traces for both pr
-            trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
-
-            duration = sum(trace_prod)
-            if duration == 0:
-                pr0_aligned = {'rien': np.zeros((5,128))}
-                pr1_aligned = {'rien': np.zeros((5,128))}
-            else:
-                pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
-                pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
+            if duration is None:
+                continue
 
             # Sum all instrument
-            AAA_warp = sum_along_instru_dim(pr0_warp)
-            BBB_warp = sum_along_instru_dim(pr1_warp)
-            OOO_warp = np.zeros((BBB_warp.shape[0], 30), dtype=np.int16)
-            CCC_warp = np.concatenate((AAA_warp, OOO_warp, BBB_warp), axis=1)
-            AAA_aligned = sum_along_instru_dim(pr0_aligned)
-            BBB_aligned = sum_along_instru_dim(pr1_aligned)
-            OOO_aligned = np.zeros((BBB_aligned.shape[0], 30), dtype=np.int16)
-            CCC_aligned = np.concatenate((AAA_aligned, OOO_aligned, BBB_aligned), axis=1)
+            piano_aligned = sum_along_instru_dim(pr_piano)
+            orchestra_aligned = sum_along_instru_dim(pr_orchestra)
+            OOO_aligned = np.zeros((duration, 30), dtype=np.int16)
+            CCC_aligned = np.concatenate((piano_aligned, OOO_aligned, orchestra_aligned), axis=1)
 
             # Update statistics
-            nbFrame += len(trace_0)
-            sum_score += this_sum_score
-            nbId += this_nbId
-            nbDiffs += this_nbDiffs
+            # nbFrame += duration
+            # sum_score += this_sum_score
+            # nbId += this_nbId
+            # nbDiffs += this_nbDiffs
 
-            counter = counter + 1
+            # counter = counter + 1
 
             # Save every 100 example
             # if counter % 10 == 0:
@@ -105,33 +82,29 @@ def check_orchestration_alignment(path_db, subfolder_names, quantization, unit_t
             if not os.path.isdir(save_folder_name):
                 os.makedirs(save_folder_name)
 
-            visualize_mat(CCC_warp, save_folder_name, 'warp')
             visualize_mat(CCC_aligned, save_folder_name, 'aligned')
             # write_midi(pr={'piano1': sum_along_instru_dim(pr0)}, quantization=quantization, write_path=save_folder_name + '/0.mid', tempo=80)
             # write_midi(pr={'piano1': sum_along_instru_dim(pr1)}, quantization=quantization, write_path=save_folder_name + '/1.mid', tempo=80)
-            write_midi(pr=pr0, quantization=quantization, write_path=save_folder_name + '/0.mid', tempo=80)
-            write_midi(pr=pr1, quantization=quantization, write_path=save_folder_name + '/1.mid', tempo=80)
-            write_midi(pr={'piano1': AAA_warp, 'piano2': BBB_warp}, quantization=quantization, write_path=save_folder_name + '/both__warp.mid', tempo=80)
-            write_midi(pr={'piano1': AAA_aligned, 'piano2': BBB_aligned}, quantization=quantization, write_path=save_folder_name + '/both__aligned.mid', tempo=80)
+            write_midi(pr=pr_piano, quantization=quantization_write, write_path=save_folder_name + '/0.mid', tempo=80)
+            write_midi(pr=pr_orchestra, quantization=quantization_write, write_path=save_folder_name + '/1.mid', tempo=80)
+            write_midi(pr={'piano': piano_aligned, 'violin': orchestra_aligned}, quantization=quantization_write, write_path=save_folder_name + '/both_aligned.mid', tempo=80)
+            # write_midi(pr={'piano1': AAA_aligned, 'piano2': BBB_aligned}, quantization=quantization_write, write_path=save_folder_name + '/both__aligned.mid', tempo=80)
 
-    # Write statistics
-    mean_score = float(sum_score) / max(1,nbFrame)
-    nbId_norm = nbId / quantization
-    nbDiffs_norm = nbDiffs / quantization
-
-    with open(output_dir + '/log.txt', 'wb') as f:
-        f.write("##########################\n" +
-                "quantization = %d\n" % quantization +
-                "Gapopen = %d\n" % gapopen +
-                "Gapextend = %d\n" % gapextend +
-                "Number frame = %d\n" % nbFrame +
-                "\n\n\n" +
-                "Sum score = %d\n" % sum_score+
-                "Mean score = %f\n" % mean_score+
-                "Number id = %d\n" % nbId +
-                "Number id / quantization = %d\n" % nbId_norm+
-                "Number diffs = %d\n" % nbDiffs+
-                "Number diffs / quantization = %d\n" % nbDiffs_norm)
+    # # Write statistics
+    # mean_score = float(sum_score) / max(1,nbFrame)
+    # nbId_norm = nbId / quantization
+    # nbDiffs_norm = nbDiffs / quantizationfolder_path
+    #             "quantization = %d\n" % quantization +
+    #             "Gapopen = %d\n" % gapopen +
+    #             "Gapextend = %d\n" % gapextend +
+    #             "Number frame = %d\n" % nbFrame +
+    #             "\n\n\n" +
+    #             "Sum score = %d\n" % sum_score+
+    #             "Mean score = %f\n" % mean_score+
+    #             "Number id = %d\n" % nbId +
+    #             "Number id / quantization = %d\n" % nbId_norm+
+    #             "Number diffs = %d\n" % nbDiffs+
+    #             "Number diffs / quantization = %d\n" % nbDiffs_norm)
 
 
 if __name__ == '__main__':
@@ -142,15 +115,17 @@ if __name__ == '__main__':
         'liszt_classical_archives',
     ]
 
-    grid_search = {}
-    grid_search['gapopen'] = [3]
-    # grid_search['quantization'] = [4, 8, 12]
-    grid_search['quantization'] = [100]
+    # grid_search = {}
+    # grid_search['gapopen'] = [3]
+    # # grid_search['quantization'] = [4, 8, 12]
+    # grid_search['quantization'] = [100]
+    #
+    # # Build all possible values
+    # for gapopen, quantization in list(itertools.product(
+    #     grid_search['gapopen'],
+    #     grid_search['quantization'])
+    # ):
+    #     for gapextend in range(gapopen):
+    #         check_orchestration_alignment(folder_path, subfolder_names, 'event_level', quantization, 'binary', gapopen, gapextend)
 
-    # Build all possible values
-    for gapopen, quantization in list(itertools.product(
-        grid_search['gapopen'],
-        grid_search['quantization'])
-    ):
-        for gapextend in range(gapopen):
-            check_orchestration_alignment(folder_path, subfolder_names, quantization, 'binary', gapopen, gapextend)
+    check_orchestration_alignment(folder_path, subfolder_names, 'event_level', 100, 'binary', 3, 1)

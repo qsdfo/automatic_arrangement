@@ -37,7 +37,7 @@ def aux(var, name, csv_path, html_path):
     return
 
 
-def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, temporal_granularity='frame_level', logging=None):
+def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, unit_type='binary', temporal_granularity='frame_level', logging=None):
     # Determine the temporal size of the matrices
     # If the two files have different sizes, we use the shortest (to limit the use of memory,
     # we better contract files instead of expanding them).
@@ -64,22 +64,16 @@ def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantiza
                         continue
 
                     # Read pr
-                    pr0, instru0, T0, name0, pr1, instru1, T1, name1 = build_data_aux.get_instru_and_pr_from_folder_path(folder_path, quantization)
+                    pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra, duration = build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, logging)
 
-                    # Temporal granularity
-                    if temporal_granularity == 'event_level':
-                        new_event_0 = get_event_ind_dict(pr0)
-                        pr0 = warp_pr_aux(pr0, new_event_0)
-                        new_event_1 = get_event_ind_dict(pr1)
-                        pr1 = warp_pr_aux(pr1, new_event_1)
+                    if duration is None:
+                        # Files that could not be aligned
+                        continue
+                    T += duration
 
-                    # Get T
-                    trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(sum_along_instru_dim(pr0), sum_along_instru_dim(pr1), 3, 1)
-                    trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
-                    T += sum(trace_prod)
                     # Modify the mapping from instrument to indices in pianorolls and pitch bounds
-                    instru_mapping = build_data_aux.instru_pitch_range(instrumentation=instru0,
-                                                                       pr=pr0,
+                    instru_mapping = build_data_aux.instru_pitch_range(instrumentation=instru_piano,
+                                                                       pr=pr_piano,
                                                                        instru_mapping=instru_mapping,
                                                                        instrument_list_from_dico=instrument_list_from_dico,
                                                                        )
@@ -89,13 +83,12 @@ def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantiza
                     #                   a = f(a) with f returning the modified value of a.
                     # Does it change anything for computation speed ? (Python pass by reference,
                     # but a slightly different version of it, not clear to me)
-                    instru_mapping = build_data_aux.instru_pitch_range(instrumentation=instru1,
-                                                                       pr=pr1,
+                    instru_mapping = build_data_aux.instru_pitch_range(instrumentation=instru_orchestra,
+                                                                       pr=pr_orchestra,
                                                                        instru_mapping=instru_mapping,
                                                                        instrument_list_from_dico=instrument_list_from_dico
                                                                        )
-                    # Delete prs
-                    del pr0, pr1, instru0, instru1
+
         T_dict[set_identifier] = T
 
     # Build the index_min and index_max in the instru_mapping dictionary
@@ -133,7 +126,7 @@ def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, du
 
 def build_data(root_dir, index_files_dict, meta_info_path='temp.p',quantization=12, unit_type='binary', temporal_granularity='frame_level', store_folder='../Data', logging=None):
     # Get dimensions
-    instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
+    instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, unit_type=unit_type, temporal_granularity=temporal_granularity, logging=logging)
 
     statistics = {}
 

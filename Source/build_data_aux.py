@@ -74,6 +74,8 @@ def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from
             continue
         # Corresponding pianoroll
         pr_instru = pr[k]
+        if pr_instru.sum() == 0:
+            continue
         for instru_name in instru_names:
             if instru_name in instru_mapping.keys():
                 ### ???

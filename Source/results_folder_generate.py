@@ -46,7 +46,6 @@ def generate_midi(config_folder, data_folder, generation_length, seed_size, quan
                          piano_checksum, orchestra_checksum,
                          model_param['temporal_order'],
                          model_param['batch_size'],
-                         unit_type=script_param['unit_type'],
                          skip_sample=script_param['skip_sample'],
                          logger_load=logger_generate)
     time_load_1 = time.time()

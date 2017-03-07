@@ -81,19 +81,19 @@ def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from
                 ### ???
                 # v_no_suffix = re.split(ur'\s', instru_name)[0]
                 #######
-                old_min = instru_mapping[instru_name]['pitch_min']
                 old_max = instru_mapping[instru_name]['pitch_max']
+                old_min = instru_mapping[instru_name]['pitch_min']
                 # Get the min :
                 #   - sum along time dimension
                 #   - get the first non-zero index
                 this_min = min(np.nonzero(np.sum(pr_instru, axis=0))[0])
-                this_max = max(np.nonzero(np.sum(pr_instru, axis=0))[0])
+                this_max = max(np.nonzero(np.sum(pr_instru, axis=0))[0]) + 1
                 instru_mapping[instru_name]['pitch_min'] = min(old_min, this_min)
                 instru_mapping[instru_name]['pitch_max'] = max(old_max, this_max)
             else:
                 instru_mapping[instru_name] = {}
                 this_min = min(np.nonzero(np.sum(pr_instru, axis=0))[0])
-                this_max = max(np.nonzero(np.sum(pr_instru, axis=0))[0])
+                this_max = max(np.nonzero(np.sum(pr_instru, axis=0))[0]) + 1
                 instru_mapping[instru_name]['pitch_min'] = this_min
                 instru_mapping[instru_name]['pitch_max'] = this_max
     return instru_mapping
@@ -119,16 +119,18 @@ def process_folder(folder_path, quantization, unit_type, temporal_granularity, l
     pr1_trace = sum_along_instru_dim(Unit_type.from_type_to_binary(pr1, unit_type))
     trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(pr0_trace, pr1_trace, gapopen, gapextend)
 
-    # Get pr warped and duration
-    # In fact we just discard 0 in traces for both pr
+    # Wrap dictionnaries according to the traces
     assert(len(trace_0) == len(trace_1)), "size mismatch"
+    pr0_warp = warp_dictionnary_trace(pr0, trace_0)
+    pr1_warp = warp_dictionnary_trace(pr1, trace_1)
+    # Get pr warped and duration# In fact we just discard 0 in traces for both pr
+
     trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
     duration = sum(trace_prod)
     if duration == 0:
         return [None]*7
-    # Wrap dictionnaries according to the traces
-    pr0_aligned = warp_dictionnary_trace(pr0, trace_prod)
-    pr1_aligned = warp_dictionnary_trace(pr1, trace_prod)
+    pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
+    pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 
     # Find which pr is orchestra, which one is piano
     if len(set(instru0.keys())) > len(set(instru1.keys())):

@@ -48,7 +48,11 @@ def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
     instru0_simple = {k:simplify_instrumentation(v) for k,v in instru0.iteritems()}
     instru1_simple = {k:simplify_instrumentation(v) for k,v in instru1.iteritems()}
 
-    return pianoroll_0, instru0_simple, T0, mid_files[0], pianoroll_1, instru1_simple, T1, mid_files[1]
+    # Files name, no extensions
+    mid_file_0 = re.sub('\.mid', '', mid_files[0])
+    mid_file_1 = re.sub('\.mid', '', mid_files[1])
+
+    return pianoroll_0, instru0_simple, T0, mid_file_0, pianoroll_1, instru1_simple, T1, mid_file_1
 
 
 def unmixed_instru(instru_string):
@@ -133,7 +137,7 @@ def process_folder(folder_path, quantization, unit_type, temporal_granularity, l
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 
     # Find which pr is orchestra, which one is piano
-    if len(set(instru0.keys())) > len(set(instru1.keys())):
+    if len(set(instru0.values())) > len(set(instru1.values())):
 
         pr_orchestra = pr0_aligned
         instru_orchestra = instru0
@@ -143,7 +147,7 @@ def process_folder(folder_path, quantization, unit_type, temporal_granularity, l
         instru_piano = instru1
         name_piano = name1
 
-    elif len(set(instru0.keys())) < len(set(instru1.keys())):
+    elif len(set(instru0.values())) < len(set(instru1.values())):
 
         pr_orchestra = pr1_aligned
         instru_orchestra = instru1

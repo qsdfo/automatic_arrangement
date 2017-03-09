@@ -2,17 +2,20 @@
 # -*- coding: utf8 -*-
 
 import cPickle as pkl
-from reconstruct_pr import reconstruct_pr, reconstruct_piano
+import reconstruct_pr
 from acidano.data_processing.midi.write_midi import write_midi
 
 
 def generate(model,
              piano, orchestra, indices, metadata_path,
-             generation_length, seed_size, quantization_write, temporal_granularity,
+             generation_length, seed_size, quantization_write,
+             temporal_granularity, event_indices,
              generated_folder, logger_generate):
     # Generate sequences from a trained model
     # piano, orchestra and index are data used to seed the generation
     # Note that generation length is fixed by the length of the piano input
+    #
+    # generation_length : length of the sequence generated, seed included
     logger_generate.info("# Generating")
 
     generate_sequence = model.get_generate_function(
@@ -35,31 +38,30 @@ def generate(model,
     orchestra_original = model.build_seed(orchestra.get_value(), indices, len(indices), generation_length)
     if generated_folder is not None:
         for write_counter in xrange(generated_sequence.shape[0]):
-
-            ###############################################################
-            ###############################################################
-            ###############################################################
-            ###############################################################
-            if temporal_granularity == 'event_level':
-                quantization_write = 1
-            ###############################################################
-            ###############################################################
-            ###############################################################
-            ###############################################################
-
             # Write generated midi
-            pr_orchestra = reconstruct_pr(generated_sequence[write_counter], instru_mapping)
+            pr_orchestra = reconstruct_pr.reconstruct_pr(generated_sequence[write_counter], instru_mapping)
+            if temporal_granularity == 'event_level':
+                # Place the generated vectors at the time indices in event_indices
+                pr_orchestra_frame = reconstruct_pr.place_event_level(pr_orchestra, event_indices)
             write_path = generated_folder + '/' + str(write_counter) + '_generated.mid'
-            write_midi(pr_orchestra, quantization_write, write_path, tempo=80)
+            write_midi(pr_orchestra_frame, quantization_write, write_path, tempo=80)
 
             # Write original piano
-            pr_piano_seed = reconstruct_piano(piano_seed[write_counter], instru_mapping)
+            pr_piano_seed = reconstruct_pr.reconstruct_piano(piano_seed[write_counter], instru_mapping)
+            if temporal_granularity == 'event_level':
+                # Place the generated vectors at the time indices in event_indices
+                piano_seed_frame = reconstruct_pr.place_event_level(pr_piano_seed, event_indices)
             write_path = generated_folder + '/' + str(write_counter) + '_piano_seed.mid'
-            write_midi(pr_piano_seed, quantization_write, write_path, tempo=80)
+            write_midi(piano_seed_frame, quantization_write, write_path, tempo=80)
 
             # Write original orchestra
-            pr_orchestra_original = reconstruct_pr(orchestra_original[write_counter], instru_mapping)
+            pr_orchestra_original = reconstruct_pr.reconstruct_pr(orchestra_original[write_counter], instru_mapping)
+            if temporal_granularity == 'event_level':
+                # Place the generated vectors at the time indices in event_indices
+                pr_orchestra_original_frame = reconstruct_pr.place_event_level(pr_orchestra_original, event_indices)
+                import pdb; pdb.set_trace()
             write_path = generated_folder + '/' + str(write_counter) + '_orchestra_original.mid'
-            write_midi(pr_orchestra_original, quantization_write, write_path, tempo=80)
+            write_midi(pr_orchestra_original_frame, quantization_write, write_path, tempo=80)
+            import pdb; pdb.set_trace()
 
     return

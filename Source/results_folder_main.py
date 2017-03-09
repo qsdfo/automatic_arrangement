@@ -51,7 +51,7 @@ logger_generate = logging.getLogger('generate')
 logger_plot = logging.getLogger('plot_weights')
 
 
-def processing_results(configurations_path, data_folder, track_paths, generation_length=200, seed_size=20, quantization_write=None):
+def processing_results(configurations_path, data_folder, track_paths, generation_length=200, seed_size=20):
     # path has to be the roots of the results folders
     # e.g. : /home/aciditeam-leo/Aciditeam/lop/Results/event_level/discrete_units/quantization_4/gradient_descent/LSTM
 
@@ -64,10 +64,10 @@ def processing_results(configurations_path, data_folder, track_paths, generation
     number_of_version = 5
 
     for configuration in configurations:
-        # generate_midi(configuration, data_folder, generation_length, seed_size, quantization_write, None, logger_generate)
-        for track_path in track_paths:
-            generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, quantization_write, number_of_version, logger_generate)
-        # generate_corrupted_results(configuration, data_folder, generation_length, seed_size, quantization_write)
+        # generate_midi(configuration, data_folder, generation_length, seed_size, None, logger_generate)
+        # for track_path in track_paths:
+        #     generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logger_generate)
+        # generate_corrupted_results(configuration, data_folder, generation_length, seed_size)
         # plot_weights(configuration, logger_plot)
         # id_result_list.append(get_results_and_id(configuration))
 
@@ -104,19 +104,20 @@ if __name__ == '__main__':
     #################################
     # Generate the results for all the configs of a model
     #################################
-    for nn in ['cRBM', 'FGcRBM', 'RBM_inpainting']:
-        model_path_this = model_path + '/' + nn
-        clean(model_path_this)
-        processing_results(model_path_this, data_folder, track_paths)
+    # for nn in ['cRBM', 'FGcRBM', 'RBM_inpainting']:
+    #     model_path_this = model_path + '/' + nn
+    #     clean(model_path_this)
+    #     processing_results(model_path_this, data_folder, track_paths)
 
     #################################
     # Or just generate or plot weight of a specific configuration
     #################################
-    # configuration = '/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/gradient_descent/cLstmRbm/4873249/'
-    # data_folder = "/home/aciditeam-leo/Aciditeam/lop/Data"
-    # generation_length = 50
-    # seed_size = 20
-    # quantization_write = 4
-    # logger_generate = logger_generate
-    # corruption_flag = None
-    # generate_midi(configuration, data_folder, generation_length, seed_size, quantization_write, corruption_flag, logger_generate)
+    configuration = '/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/27_02_17/Results/event_level/binary/quantization_100/gradient_descent/FGcRBM'
+    data_folder = "/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/27_02_17/Results/event_level/binary/quantization_100/Data"
+    generation_length = 50
+    seed_size = 20
+    logger_generate = logger_generate
+    corruption_flag = None
+    number_of_version = 5
+    for track_path in track_paths:
+        generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logger_generate)

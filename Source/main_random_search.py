@@ -27,7 +27,7 @@ import train
 
 N_HP_CONFIG = 1
 LOCAL = True
-BUILD_DATABASE = True
+BUILD_DATABASE = False
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
@@ -39,11 +39,11 @@ else:
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'repeat',
+    'FGcRBM',
     'gradient_descent',
     'event_level',
     'binary',
-    '4'
+    '100'
 ]
 
 ############################################################
@@ -241,10 +241,10 @@ if BUILD_DATABASE:
         DATABASE_PATH + "/liszt_classical_archives_train.txt"
     ]
     index_files_dict['valid'] = [
-        DATABASE_PATH + "/debug_valid.txt",
-        # DATABASE_PATH + "/bouliane_valid.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_valid.txt"
+        # DATABASE_PATH + "/debug_valid.txt",
+        DATABASE_PATH + "/bouliane_valid.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
+        DATABASE_PATH + "/liszt_classical_archives_valid.txt"
     ]
     index_files_dict['test'] = [
         # DATABASE_PATH + "/debug_test.txt",
@@ -261,7 +261,6 @@ if BUILD_DATABASE:
                temporal_granularity=script_param['temporal_granularity'],
                store_folder=data_folder,
                logging=logging)
-import pdb; pdb.set_trace()
 
 ############################################################
 # Hyper parameter space

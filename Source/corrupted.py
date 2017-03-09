@@ -14,7 +14,7 @@ import logging
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger('generate')
 
-def generate_corrupted_results(config_folder, data_folder, generation_length, seed_size, quantization_write):
+def generate_corrupted_results(config_folder, data_folder, generation_length, seed_size):
     # Create result folder
     corrupted_folder = config_folder + '/corrupted_accuracy/'
     if not os.path.isdir(corrupted_folder):
@@ -43,8 +43,8 @@ def generate_corrupted_results(config_folder, data_folder, generation_length, se
 
     # Generation
     # generate_midi(config_folder, data_folder, generation_length, seed_size, 4, None, None)
-    generate_midi(config_folder, data_folder, generation_length, seed_size, quantization_write, 'piano', None)
-    generate_midi(config_folder, data_folder, generation_length, seed_size, quantization_write, 'orchestra', None)
+    generate_midi(config_folder, data_folder, generation_length, seed_size, 'piano', None)
+    generate_midi(config_folder, data_folder, generation_length, seed_size, 'orchestra', None)
     # generate_midi(config_folder, data_folder, generation_length, seed_size, 4, 'orchestra_and_piano', None)
 
     # Accuracy normal (just to compare)

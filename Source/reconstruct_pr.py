@@ -2,6 +2,7 @@
 # -*- coding: utf8 -*-
 
 import numpy as np
+import acidano.data_processing.utils.pianoroll_processing as pianoroll_processing
 from acidano.visualization.numpy_array.write_numpy_array_html import write_numpy_array_html
 from acidano.visualization.numpy_array.dumped_numpy_to_csv import dump_to_csv
 
@@ -58,6 +59,20 @@ def reconstruct_piano(matrix, mapping):
     pr_instru[instrument_name] = this_pr
 
     return pr_instru
+
+
+def place_event_level(pr, event_indices):
+    T_reconstruct = np.max(event_indices)
+    N = pianoroll_processing.get_pitch_dim(pr)
+    pr_reconstruct = {}
+    for k,v in pr.iteritems():
+        mat = np.zeros((T_reconstruct, N))
+        for ind in range(len(event_indices)-1):
+            start_ind = event_indices[ind]
+            end_ind = event_indices[ind+1]
+            mat[start_ind:end_ind,:] = v[ind,:]
+        pr_reconstruct[k] = mat
+    return pr_reconstruct
 
 
 if __name__ == '__main__':

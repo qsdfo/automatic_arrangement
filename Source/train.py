@@ -372,6 +372,15 @@ def train_keras(model, optimizer,
 
 if __name__ == '__main__':
     start_time_train = time.time()
-    config_folder = sys.argv[1]
+    config_folder = 'DEBUG/0_25'
     params = pkl.load(open(config_folder + '/config.pkl', "rb"))
+
+    #####################################################
+    ##### Perhaps you need to change some paths variables
+    params['script']['result_folder'] = 'DEBUG/0_25'
+    params['script']['data_folder'] = '../Data'
+    params['train']['walltime'] = 11
+    #####################################################
+    #####################################################
+
     run_wrapper(params, config_folder, start_time_train)

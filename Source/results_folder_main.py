@@ -65,8 +65,8 @@ def processing_results(configurations_path, data_folder, track_paths, generation
 
     for configuration in configurations:
         # generate_midi(configuration, data_folder, generation_length, seed_size, None, logger_generate)
-        # for track_path in track_paths:
-        #     generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logger_generate)
+        for track_path in track_paths:
+            generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logger_generate)
         # generate_corrupted_results(configuration, data_folder, generation_length, seed_size)
         # plot_weights(configuration, logger_plot)
         # id_result_list.append(get_results_and_id(configuration))
@@ -112,12 +112,13 @@ if __name__ == '__main__':
     #################################
     # Or just generate or plot weight of a specific configuration
     #################################
-    configuration = '/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/27_02_17/Results/event_level/binary/quantization_100/gradient_descent/FGcRBM'
-    data_folder = "/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/27_02_17/Results/event_level/binary/quantization_100/Data"
+    configuration = "/home/aciditeam-leo/Aciditeam/lop/Source/DEBUG/0_25"
+    data_folder = "/home/aciditeam-leo/Aciditeam/lop/Data"
     generation_length = 50
     seed_size = 20
     logger_generate = logger_generate
     corruption_flag = None
     number_of_version = 5
+    generate_midi(configuration, data_folder, generation_length, seed_size, 1, corruption_flag, logger_generate)
     for track_path in track_paths:
         generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logger_generate)

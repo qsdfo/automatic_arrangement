@@ -103,19 +103,7 @@ def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from
     return instru_mapping
 
 
-def process_folder(folder_path, quantization, unit_type, temporal_granularity, logging, gapopen=3, gapextend=1):
-    # Get instrus and prs from a folder name name
-    pr0, instru0, _, name0, pr1, instru1, _, name1 = get_instru_and_pr_from_folder_path(folder_path, quantization)
-
-    # Unit type
-    pr0 = Unit_type.from_rawpr_to_type(pr0, unit_type)
-    pr1 = Unit_type.from_rawpr_to_type(pr1, unit_type)
-
-    # Temporal granularity
-    if temporal_granularity == 'event_level':
-        pr0 = warp_pr_aux(pr0, get_event_ind_dict(pr0))
-        pr1 = warp_pr_aux(pr1, get_event_ind_dict(pr1))
-
+def align_tracks(pr0, pr1, unit_type, gapopen, gapextend):
     # Get trace from needleman_wunsch algorithm
     # Traces are computed from binaries matrices
     # Traces are binary lists, 0 meaning a gap is inserted
@@ -132,33 +120,51 @@ def process_folder(folder_path, quantization, unit_type, temporal_granularity, l
     trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
     duration = sum(trace_prod)
     if duration == 0:
-        return [None]*7
+        return [None]*2
     pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 
-    # Find which pr is orchestra, which one is piano
-    if len(set(instru0.values())) > len(set(instru1.values())):
+    return pr0_aligned, trace_0, pr1_aligned, trace_1, trace_prod, duration
 
-        pr_orchestra = pr0_aligned
+def discriminate_between_piano_and_orchestra(pr0, instru0, name0, pr1, instru1, name1):
+    if len(set(instru0.values())) > len(set(instru1.values())):
+        pr_orchestra = pr0
         instru_orchestra = instru0
         name_orchestra = name0
-
-        pr_piano = pr1_aligned
+        pr_piano = pr1
         instru_piano = instru1
         name_piano = name1
-
     elif len(set(instru0.values())) < len(set(instru1.values())):
-
-        pr_orchestra = pr1_aligned
+        pr_orchestra = pr1
         instru_orchestra = instru1
         name_orchestra = name1
-
-        pr_piano = pr0_aligned
+        pr_piano = pr0
         instru_piano = instru0
         name_piano = name0
-
     else:
         logging.info('The two midi files have the same number of instruments')
+    return pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra
+
+def process_folder(folder_path, quantization, unit_type, temporal_granularity, logging, gapopen=3, gapextend=1):
+    # Get instrus and prs from a folder name name
+    pr0, instru0, _, name0, pr1, instru1, _, name1 = get_instru_and_pr_from_folder_path(folder_path, quantization)
+
+    # Unit type
+    pr0 = Unit_type.from_rawpr_to_type(pr0, unit_type)
+    pr1 = Unit_type.from_rawpr_to_type(pr1, unit_type)
+
+    # Temporal granularity
+    if temporal_granularity == 'event_level':
+        pr0 = warp_pr_aux(pr0, get_event_ind_dict(pr0))
+        pr1 = warp_pr_aux(pr1, get_event_ind_dict(pr1))
+
+    # Align tracks
+    pr0_aligned, _, pr1_aligned, _, _, duration = align_tracks(pr0, pr1, unit_type, gapopen, gapextend)
+
+    # Find which pr is orchestra, which one is piano
+    pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra =\
+        discriminate_between_piano_and_orchestra(pr0_aligned, instru0, name0, pr1_aligned, instru1, name1)
+
     return pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra, duration
 
 

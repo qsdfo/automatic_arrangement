@@ -64,4 +64,4 @@ def plot_hparam(path):
     save(grid)
 
 if __name__ == "__main__":
-    plot_hparam("/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/27_02_17/Results/event_level/binary/quantization_100/gradient_descent/cRBM/")
+    plot_hparam("/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/27_02_17/Results/event_level/binary/quantization_100/gradient_descent/RBM_inpainting/")

@@ -40,28 +40,31 @@ def generate(model,
         for write_counter in xrange(generated_sequence.shape[0]):
             # Write generated midi
             pr_orchestra = reconstruct_pr.reconstruct_pr(generated_sequence[write_counter], instru_mapping)
-            if temporal_granularity == 'event_level':
+            if (temporal_granularity == 'event_level') and (event_indices != None):
                 # Place the generated vectors at the time indices in event_indices
-                pr_orchestra_frame = reconstruct_pr.place_event_level(pr_orchestra, event_indices)
+                pr_orchestra = reconstruct_pr.place_event_level(pr_orchestra, event_indices)
+            elif temporal_granularity == "event_level":
+                quantization_write = 1
             write_path = generated_folder + '/' + str(write_counter) + '_generated.mid'
-            write_midi(pr_orchestra_frame, quantization_write, write_path, tempo=80)
+            write_midi(pr_orchestra, quantization_write, write_path, tempo=80)
 
             # Write original piano
             pr_piano_seed = reconstruct_pr.reconstruct_piano(piano_seed[write_counter], instru_mapping)
-            if temporal_granularity == 'event_level':
+            if (temporal_granularity == 'event_level') and (event_indices != None):
                 # Place the generated vectors at the time indices in event_indices
-                piano_seed_frame = reconstruct_pr.place_event_level(pr_piano_seed, event_indices)
+                pr_piano_seed = reconstruct_pr.place_event_level(pr_piano_seed, event_indices)
+            elif temporal_granularity == "event_level":
+                quantization_write = 1
             write_path = generated_folder + '/' + str(write_counter) + '_piano_seed.mid'
-            write_midi(piano_seed_frame, quantization_write, write_path, tempo=80)
+            write_midi(pr_piano_seed, quantization_write, write_path, tempo=80)
 
             # Write original orchestra
             pr_orchestra_original = reconstruct_pr.reconstruct_pr(orchestra_original[write_counter], instru_mapping)
-            if temporal_granularity == 'event_level':
+            if (temporal_granularity == 'event_level') and (event_indices != None):
                 # Place the generated vectors at the time indices in event_indices
-                pr_orchestra_original_frame = reconstruct_pr.place_event_level(pr_orchestra_original, event_indices)
-                import pdb; pdb.set_trace()
+                pr_orchestra_original = reconstruct_pr.place_event_level(pr_orchestra_original, event_indices)
+            elif temporal_granularity == "event_level":
+                quantization_write = 1
             write_path = generated_folder + '/' + str(write_counter) + '_orchestra_original.mid'
-            write_midi(pr_orchestra_original_frame, quantization_write, write_path, tempo=80)
-            import pdb; pdb.set_trace()
-
+            write_midi(pr_orchestra_original, quantization_write, write_path, tempo=80)
     return

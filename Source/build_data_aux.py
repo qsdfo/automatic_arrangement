@@ -120,7 +120,7 @@ def align_tracks(pr0, pr1, unit_type, gapopen, gapextend):
     trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
     duration = sum(trace_prod)
     if duration == 0:
-        return [None]*2
+        return [None]*6
     pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 

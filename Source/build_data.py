@@ -23,21 +23,12 @@ from acidano.data_processing.utils.build_dico import build_dico
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
 from acidano.data_processing.utils.event_level import get_event_ind_dict
 from acidano.data_processing.utils.time_warping import warp_pr_aux
+import acidano.data_processing.utils.data_augmentation as data_augmentation
 import build_data_aux
 import cPickle as pickle
 
-from acidano.visualization.numpy_array.write_numpy_array_html import write_numpy_array_html
-from acidano.visualization.numpy_array.dumped_numpy_to_csv import dump_to_csv
 
-
-def aux(var, name, csv_path, html_path):
-    np.savetxt(csv_path, var, delimiter=',')
-    dump_to_csv(csv_path, csv_path)
-    write_numpy_array_html(html_path, name)
-    return
-
-
-def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, unit_type='binary', temporal_granularity='frame_level', logging=None):
+def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, unit_type='binary', temporal_granularity='frame_level', pitch_translation_augmentations=[0], logging=None):
     # Determine the temporal size of the matrices
     # If the two files have different sizes, we use the shortest (to limit the use of memory,
     # we better contract files instead of expanding them).
@@ -90,7 +81,12 @@ def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantiza
                                                                        instrument_list_from_dico=instrument_list_from_dico
                                                                        )
 
-        T_dict[set_identifier] = T
+        T_dict[set_identifier] = T * len(pitch_translation_augmentations)
+
+    # Take data augmentation into consideration
+    for k, v in instru_mapping.iteritems():
+        instru_mapping[k]['pitch_min'] = v['pitch_min'] + min(pitch_translation_augmentations + [0])
+        instru_mapping[k]['pitch_max'] = v['pitch_max'] + max(pitch_translation_augmentations + [0])
 
     # Build the index_min and index_max in the instru_mapping dictionary
     counter = 0
@@ -125,9 +121,9 @@ def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, du
     pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, start_time, duration, instru_mapping, pr_piano)
 
 
-def build_data(root_dir, index_files_dict, meta_info_path='temp.p',quantization=12, unit_type='binary', temporal_granularity='frame_level', store_folder='../Data', logging=None):
+def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, unit_type='binary', temporal_granularity='frame_level', store_folder='../Data', pitch_translation_augmentations=[0], logging=None):
     # Get dimensions
-    instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, unit_type=unit_type, temporal_granularity=temporal_granularity, logging=logging)
+    instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, unit_type=unit_type, temporal_granularity=temporal_granularity, pitch_translation_augmentations=pitch_translation_augmentations, logging=logging)
 
     statistics = {}
 
@@ -175,28 +171,36 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p',quantization=
                             f.write(folder_path + '\n')
                         continue
 
-                    # and cast them in the appropriate bigger structure
-                    cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, time,
-                            duration, instru_mapping, pr_orchestra, pr_piano, logging)
+                    for pitch_translation in pitch_translation_augmentations:
+                        # Translation augmentations
+                        new_pr_piano_shifted = data_augmentation.pitch_transposition(new_pr_piano, pitch_translation)
+                        new_pr_orchestra_shifted = data_augmentation.pitch_transposition(new_pr_orchestra, pitch_translation)
+                        from acidano.visualization.numpy_array.visualize_numpy import visualize_dict
+                        visualize_dict(new_pr_orchestra_shifted, 'DEBUG/data_augmentations', 'orch_' + str(pitch_translation))
+                        visualize_dict(new_pr_piano_shifted, 'DEBUG/data_augmentations', 'piano_' + str(pitch_translation))
 
-                    # Store beginning and end of this track
-                    tracks_start_end[folder_path] = (time, time+duration)
+                        # and cast them in the appropriate bigger structure
+                        cast_pr(new_pr_orchestra_shifted, new_instru_orchestra, new_pr_piano_shifted, time,
+                                duration, instru_mapping, pr_orchestra, pr_piano, logging)
 
-                    # Increment time counter
-                    time += duration
+                        # Store beginning and end of this track
+                        tracks_start_end[folder_path] = (time, time+duration)
 
-                    # Compute statistics
-                    for track_name, instrument_name in new_instru_orchestra.iteritems():
-                        # Number of note played by this instru
-                        n_note_played = (new_pr_orchestra[track_name] > 0).sum()
-                        if instrument_name in statistics:
-                            # Track appearance
-                            statistics[instrument_name]['n_track_present'] = statistics[instrument_name]['n_track_present'] + 1
-                            statistics[instrument_name]['n_note_played'] = statistics[instrument_name]['n_note_played'] + n_note_played
-                        else:
-                            statistics[instrument_name] = {}
-                            statistics[instrument_name]['n_track_present'] = 1
-                            statistics[instrument_name]['n_note_played'] = n_note_played
+                        # Increment time counter
+                        time += duration
+
+                        # Compute statistics
+                        for track_name, instrument_name in new_instru_orchestra.iteritems():
+                            # Number of note played by this instru
+                            n_note_played = (new_pr_orchestra[track_name] > 0).sum()
+                            if instrument_name in statistics:
+                                # Track appearance
+                                statistics[instrument_name]['n_track_present'] = statistics[instrument_name]['n_track_present'] + 1
+                                statistics[instrument_name]['n_note_played'] = statistics[instrument_name]['n_note_played'] + n_note_played
+                            else:
+                                statistics[instrument_name] = {}
+                                statistics[instrument_name]['n_track_present'] = 1
+                                statistics[instrument_name]['n_note_played'] = n_note_played
 
         with open(store_folder + '/orchestra_' + set_identifier + '.csv', 'wb') as outfile:
             np.save(outfile, pr_orchestra)

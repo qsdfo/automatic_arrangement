@@ -15,7 +15,10 @@ import theano
 # theano.config.optimizer = 'fast_compile'
 # theano.config.mode = 'FAST_COMPILE'
 # theano.config.exception_verbosity = 'high'
-theano.config.compute_test_value = 'off'
+theano.config.compute_test_value = 'warn'
+
+
+DEBUG = True
 
 
 def run_wrapper(params, config_folder, start_time_train):
@@ -254,6 +257,15 @@ def train(model, optimizer,
             _, _, accuracy_batch = validation_error(valid_index[batch_index])
             accuracy += [accuracy_batch]
         mean_accuracy = 100 * np.mean(accuracy)
+
+        #######################################
+        # DEBUG : plot weights
+        #######################################
+        if DEBUG:
+            plot_folder = config_folder + '/DEBUG/plot_' + str(epochs)
+            if not os.isdir(plot_folder):
+                os.makedirs(plot_folder)
+            model.save_weights(plot_folder)
 
         #######################################
         # OLD VERSION

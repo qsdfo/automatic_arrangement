@@ -263,10 +263,17 @@ if __name__ == '__main__':
         DATABASE_PATH + "/liszt_classical_archives_test.txt"
     ]
 
+    # Dictionary with None if the data augmentation is not used, else the value for this data augmentation
+    # Pitch translation. Write [0] for no translation
+    max_translation = 1
+    pitch_translations = range(-max_translation,max_translation+1)
+
     build_data(root_dir=DATABASE_PATH,
                index_files_dict=index_files_dict,
                meta_info_path=data_folder + '/temp.p',
-               quantization=4,
-               temporal_granularity='frame_level',
+               quantization=100,
+               unit_type='binary',
+               temporal_granularity='event_level',
                store_folder=data_folder,
+               pitch_translation_augmentations=pitch_translations,
                logging=logging)

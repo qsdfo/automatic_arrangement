@@ -39,8 +39,8 @@ else:
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
 commands = [
-    'FGcRBM',
-    'gradient_descent',
+    'LSTM',
+    'rmsprop',
     'event_level',
     'binary',
     '100'
@@ -235,23 +235,28 @@ if BUILD_DATABASE:
     logging.info('# ** BUILD DATABASE **')
     index_files_dict = {}
     index_files_dict['train'] = [
-        # DATABASE_PATH + "/debug_train.txt",
-        DATABASE_PATH + "/bouliane_train.txt",
-        DATABASE_PATH + "/hand_picked_Spotify_train.txt",
-        DATABASE_PATH + "/liszt_classical_archives_train.txt"
+        DATABASE_PATH + "/debug_train.txt",
+        # DATABASE_PATH + "/bouliane_train.txt",
+        # DATABASE_PATH + "/hand_picked_Spotify_train.txt",
+        # DATABASE_PATH + "/liszt_classical_archives_train.txt"
     ]
     index_files_dict['valid'] = [
-        # DATABASE_PATH + "/debug_valid.txt",
-        DATABASE_PATH + "/bouliane_valid.txt",
-        DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
-        DATABASE_PATH + "/liszt_classical_archives_valid.txt"
+        DATABASE_PATH + "/debug_valid.txt",
+        # DATABASE_PATH + "/bouliane_valid.txt",
+        # DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
+        # DATABASE_PATH + "/liszt_classical_archives_valid.txt"
     ]
     index_files_dict['test'] = [
-        # DATABASE_PATH + "/debug_test.txt",
-        DATABASE_PATH + "/bouliane_test.txt",
-        DATABASE_PATH + "/hand_picked_Spotify_test.txt",
-        DATABASE_PATH + "/liszt_classical_archives_test.txt"
+        DATABASE_PATH + "/debug_test.txt",
+        # DATABASE_PATH + "/bouliane_test.txt",
+        # DATABASE_PATH + "/hand_picked_Spotify_test.txt",
+        # DATABASE_PATH + "/liszt_classical_archives_test.txt"
     ]
+
+    # Dictionary with None if the data augmentation is not used, else the value for this data augmentation
+    # Pitch translation. Write [0] for no translation
+    max_translation = 0
+    pitch_translations = range(-max_translation,max_translation+1)
 
     build_data(root_dir=DATABASE_PATH,
                index_files_dict=index_files_dict,
@@ -260,6 +265,7 @@ if BUILD_DATABASE:
                unit_type=script_param['unit_type'],
                temporal_granularity=script_param['temporal_granularity'],
                store_folder=data_folder,
+               pitch_translation_augmentations=pitch_translations,
                logging=logging)
 
 ############################################################

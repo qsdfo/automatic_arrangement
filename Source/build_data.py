@@ -175,9 +175,6 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization
                         # Translation augmentations
                         new_pr_piano_shifted = data_augmentation.pitch_transposition(new_pr_piano, pitch_translation)
                         new_pr_orchestra_shifted = data_augmentation.pitch_transposition(new_pr_orchestra, pitch_translation)
-                        from acidano.visualization.numpy_array.visualize_numpy import visualize_dict
-                        visualize_dict(new_pr_orchestra_shifted, 'DEBUG/data_augmentations', 'orch_' + str(pitch_translation))
-                        visualize_dict(new_pr_piano_shifted, 'DEBUG/data_augmentations', 'piano_' + str(pitch_translation))
 
                         # and cast them in the appropriate bigger structure
                         cast_pr(new_pr_orchestra_shifted, new_instru_orchestra, new_pr_piano_shifted, time,

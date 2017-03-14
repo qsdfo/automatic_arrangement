@@ -6,7 +6,6 @@ import time
 import logging
 import numpy as np
 import cPickle as pkl
-import time
 # Perso
 from load_data import load_data_train, load_data_valid, load_data_test
 
@@ -372,15 +371,19 @@ def train_keras(model, optimizer,
 
 if __name__ == '__main__':
     start_time_train = time.time()
-    config_folder = 'DEBUG/0_25'
+    config_folder = sys.argv[1]
     params = pkl.load(open(config_folder + '/config.pkl', "rb"))
-
-    #####################################################
-    ##### Perhaps you need to change some paths variables
-    params['script']['result_folder'] = 'DEBUG/0_25'
-    params['script']['data_folder'] = '../Data'
-    params['train']['walltime'] = 11
-    #####################################################
-    #####################################################
-
     run_wrapper(params, config_folder, start_time_train)
+
+    #####################################################
+    ##### Local tests
+    # start_time_train = time.time()
+    # config_folder = 'DEBUG/0_25'
+    # params = pkl.load(open(config_folder + '/config.pkl', "rb"))
+    ##### Perhaps you need to change some paths variables
+    # params['script']['result_folder'] = 'DEBUG/0_25'
+    # params['script']['data_folder'] = '../Data'
+    # params['train']['walltime'] = 11
+    # run_wrapper(params, config_folder, start_time_train)
+    #####################################################
+    #####################################################

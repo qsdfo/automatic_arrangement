@@ -29,6 +29,8 @@ import cPickle as pickle
 
 
 def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, unit_type='binary', temporal_granularity='frame_level', pitch_translation_augmentations=[0], logging=None):
+    logging.info("##########")
+    logging.info("Get dimension informations")
     # Determine the temporal size of the matrices
     # If the two files have different sizes, we use the shortest (to limit the use of memory,
     # we better contract files instead of expanding them).
@@ -80,9 +82,11 @@ def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantiza
                                                                        instru_mapping=instru_mapping,
                                                                        instrument_list_from_dico=instrument_list_from_dico
                                                                        )
-
-        T_dict[set_identifier] = T * len(pitch_translation_augmentations)
-
+        # Take data augmentation into consideration, but only for train set
+        if set_identifier == 'train':
+            T_dict[set_identifier] = T * len(pitch_translation_augmentations)
+        elif set_identifier in ['test', 'valid']:
+            T_dict[set_identifier] = T
     # Take data augmentation into consideration
     for k, v in instru_mapping.iteritems():
         instru_mapping[k]['pitch_min'] = v['pitch_min'] + min(pitch_translation_augmentations + [0])
@@ -124,6 +128,9 @@ def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, du
 def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, unit_type='binary', temporal_granularity='frame_level', store_folder='../Data', pitch_translation_augmentations=[0], logging=None):
     # Get dimensions
     instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, unit_type=unit_type, temporal_granularity=temporal_granularity, pitch_translation_augmentations=pitch_translation_augmentations, logging=logging)
+
+    logging.info("##########")
+    logging.info("Build data")
 
     statistics = {}
 
@@ -171,7 +178,13 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization
                             f.write(folder_path + '\n')
                         continue
 
-                    for pitch_translation in pitch_translation_augmentations:
+                    # Don't do data augmentations for test and valid sets
+                    if set_identifier == 'train':
+                        set_pitch_translation_augmentations = pitch_translation_augmentations
+                    else:
+                        set_pitch_translation_augmentations = [0]
+
+                    for pitch_translation in set_pitch_translation_augmentations:
                         # Translation augmentations
                         new_pr_piano_shifted = data_augmentation.pitch_transposition(new_pr_piano, pitch_translation)
                         new_pr_orchestra_shifted = data_augmentation.pitch_transposition(new_pr_orchestra, pitch_translation)
@@ -226,6 +239,11 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization
     metadata['quantization'] = quantization
     metadata['N_orchestra'] = N_orchestra
     metadata['instru_mapping'] = instru_mapping
+    metadata['quantization'] = quantization
+    metadata['unit_type'] = unit_type
+    metadata['temporal_granularity'] = temporal_granularity
+    metadata['store_folder'] = store_folder
+    metadata['max_translation'] = max_translation
     with open(store_folder + '/metadata.pkl', 'wb') as outfile:
         pickle.dump(metadata, outfile)
 
@@ -241,8 +259,26 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization
 
 if __name__ == '__main__':
     import logging
+    # log file
+    log_file_path = 'log/main_log'
+    # set up logging to file - see previous section for more details
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                        datefmt='%m-%d %H:%M',
+                        filename=log_file_path,
+                        filemode='w')
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+
     DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
-    data_folder = 'DEBUG'
+    data_folder = '../Data'
     index_files_dict = {}
     index_files_dict['train'] = [
         # DATABASE_PATH + "/debug_train.txt",
@@ -265,7 +301,7 @@ if __name__ == '__main__':
 
     # Dictionary with None if the data augmentation is not used, else the value for this data augmentation
     # Pitch translation. Write [0] for no translation
-    max_translation = 1
+    max_translation = 2
     pitch_translations = range(-max_translation,max_translation+1)
 
     build_data(root_dir=DATABASE_PATH,

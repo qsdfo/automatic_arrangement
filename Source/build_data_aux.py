@@ -141,6 +141,10 @@ def discriminate_between_piano_and_orchestra(pr0, instru0, name0, pr1, instru1, 
         pr_piano = pr0
         instru_piano = instru0
         name_piano = name0
+    else:
+        # Both tracks have the same number of instruments
+        import pdb; pdb.set_trace()
+        return [None] * 6
     return pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra
 
 def process_folder(folder_path, quantization, unit_type, temporal_granularity, logging, gapopen=3, gapextend=1):

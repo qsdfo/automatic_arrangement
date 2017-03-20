@@ -6,6 +6,7 @@ import time
 import logging
 import numpy as np
 import cPickle as pkl
+import os
 # Perso
 from load_data import load_data_train, load_data_valid, load_data_test
 
@@ -15,10 +16,7 @@ import theano
 # theano.config.optimizer = 'fast_compile'
 # theano.config.mode = 'FAST_COMPILE'
 # theano.config.exception_verbosity = 'high'
-theano.config.compute_test_value = 'warn'
-
-
-DEBUG = True
+theano.config.compute_test_value = 'off'
 
 
 def run_wrapper(params, config_folder, start_time_train):
@@ -85,7 +83,6 @@ def run_wrapper(params, config_folder, start_time_train):
                         datefmt='%m-%d %H:%M',
                         filename=log_file_path,
                         filemode='w')
-
     logger_run = logging.getLogger('run')
     logger_run.info(('\n').encode('utf8'))
     logger_run.info((u'#'*40).encode('utf8'))
@@ -178,7 +175,7 @@ def run_wrapper(params, config_folder, start_time_train):
     loss, accuracy = train(model, optimizer,
                            piano_train, orchestra_train, train_index,
                            piano_valid, orchestra_valid, valid_index,
-                           train_param, logger_run)
+                           train_param, config_folder, logger_run)
     time_train_1 = time.time()
     training_time = time_train_1-time_train_0
     logger_run.info('TTT : Training data took {} seconds'.format(training_time))
@@ -205,7 +202,7 @@ def run_wrapper(params, config_folder, start_time_train):
 def train(model, optimizer,
           piano_train, orchestra_train, train_index,
           piano_valid, orchestra_valid, valid_index,
-          train_param, logger_train):
+          train_param, config_folder, logger_train):
     ############################################################
     # Time information used
     ############################################################
@@ -238,11 +235,21 @@ def train(model, optimizer,
         #######################################
         train_cost_epoch = []
         train_monitor_epoch = []
+        ##    ###     # # # # # ## # ## ## #  # 
+        from random import randint
+        ind_activation = np.random.randint(model.batch_size, size=(train_param['n_train_batches']))
+        random_choice_mean_activation = np.zeros((model.k, model.n_v, train_param['n_train_batches']))
+        mean_activation = np.zeros((model.k, model.n_v, train_param['n_train_batches']))
+        ##    ###     # # # # # ## # ## ## #  # 
         for batch_index in xrange(train_param['n_train_batches']):
-            this_cost, this_monitor = train_iteration(train_index[batch_index])
+            this_cost, this_monitor, mean_chain = train_iteration(train_index[batch_index])
             # Keep track of cost
             train_cost_epoch.append(this_cost)
             train_monitor_epoch.append(this_monitor)
+            # Plot a random mean_chain
+            random_choice_mean_activation[:,:,batch_index] = mean_chain[:,ind_activation[batch_index],:]
+            # mean along batch axis
+            mean_activation[:,:,batch_index] = mean_chain.mean(axis=1)
 
         mean_loss = np.mean(train_cost_epoch)
         loss_tab[epoch] = mean_loss
@@ -261,9 +268,21 @@ def train(model, optimizer,
         #######################################
         # DEBUG : plot weights
         #######################################
-        if DEBUG:
-            plot_folder = config_folder + '/DEBUG/plot_' + str(epochs)
-            if not os.isdir(plot_folder):
+        if train_param['DEBUG']:
+            from acidano.visualization.numpy_array.visualize_numpy import visualize_mat_proba
+            # Visible activations
+            path_activation = config_folder + '/DEBUG/' + str(epoch) + '/activations'
+            if not os.path.isdir(path_activation):
+                os.makedirs(path_activation)
+            mean_activation = mean_activation.mean(axis=2)
+            visualize_mat_proba(mean_activation, path_activation, 'mean_activations')
+            # Do not plot every random activation...
+            for i in np.linspace(0,10,random_choice_mean_activation.shape[2]):
+                ind = int(i)
+                visualize_mat_proba(random_choice_mean_activation[:,:,ind], path_activation, 'random_act_' + str(ind))
+            # Weights
+            plot_folder = config_folder + '/DEBUG/' + str(epoch) + '/weights'
+            if not os.path.isdir(plot_folder):
                 os.makedirs(plot_folder)
             model.save_weights(plot_folder)
 
@@ -343,59 +362,28 @@ def train(model, optimizer,
     return best_loss, best_accuracy
 
 
-def train_keras(model, optimizer,
-                piano_train, orchestra_train, train_index,
-                piano_valid, orchestra_valid, valid_index,
-                train_param, logger_train):
-    ############################################################
-    # Compile theano functions
-    # Compilation of the training function is encapsulated in the class since the 'givens'
-    # can vary with the model
-    ############################################################
-    from keras.models import Sequential
-    from keras.layers import Dense, Dropout, Activation
-    from keras.optimizers import SGD
-
-    model = Sequential()
-    # Dense(64) is a fully-connected layer with 64 hidden units.
-    # in the first layer, you must specify the expected input data shape:
-    # here, 20-dimensional vectors.
-    model.add(Dense(64, input_dim=20, init='uniform'))
-    model.add(Activation('tanh'))
-    model.add(Dropout(0.5))
-    model.add(Dense(64, init='uniform'))
-    model.add(Activation('tanh'))
-    model.add(Dropout(0.5))
-    model.add(Dense(10, init='uniform'))
-    model.add(Activation('softmax'))
-
-    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(loss='binary_crossentropy',
-                  optimizer=sgd,
-                  metrics=['accuracy'])
-
-    model.fit(piano_train, orchestra_train,
-              nb_epoch=200,
-              batch_size=100)
-    score = model.evaluate(piano_valid, orchestra_valid, batch_size=100)
-
-    return score, score
-
 if __name__ == '__main__':
-    start_time_train = time.time()
-    config_folder = sys.argv[1]
-    params = pkl.load(open(config_folder + '/config.pkl', "rb"))
-    run_wrapper(params, config_folder, start_time_train)
+    # start_time_train = time.time()
+    # config_folder = sys.argv[1]
+    # params = pkl.load(open(config_folder + '/config.pkl', "rb"))
+    # run_wrapper(params, config_folder, start_time_train)
 
     #####################################################
     ##### Local tests
-    # start_time_train = time.time()
-    # config_folder = 'DEBUG/0_25'
-    # params = pkl.load(open(config_folder + '/config.pkl', "rb"))
-    ##### Perhaps you need to change some paths variables
-    # params['script']['result_folder'] = 'DEBUG/0_25'
-    # params['script']['data_folder'] = '../Data'
-    # params['train']['walltime'] = 11
-    # run_wrapper(params, config_folder, start_time_train)
+    start_time_train = time.time()
+    config_folder = "DEBUG/Detailed_FGcRBM_2/"
+    ####################################################
+
+    ####################################################
+    #### Perhaps you need to change some paths variables
+    params = pkl.load(open(config_folder + '/config.pkl', "rb"))
+    params['script']['result_folder'] = config_folder
+    params['script']['data_folder'] = "DEBUG/Detailed_FGcRBM_2/Data"
+    params['train']['walltime'] = 16
+    params['train']['DEBUG'] = True
+    pkl.dump(params, open(config_folder + '/config.pkl', "wb"))
+    ####################################################
+
+    run_wrapper(params, config_folder, start_time_train)
     #####################################################
     #####################################################

@@ -21,7 +21,7 @@ import train
 
 
 N_HP_CONFIG = 1
-LOCAL = True
+LOCAL = False
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
     RESULT_ROOT = os.getcwd() + '/../'
@@ -66,11 +66,11 @@ script_param["data_folder"] = DATA_DIR
 script_param['temporal_granularity'] = 'event_level' # event_level, frame_level
 script_param['quantization'] = 100
 script_param['unit_type'] = 'binary'
-script_param["max_translation"] = 2
+script_param["max_translation"] = 3
 script_param['skip_sample'] = 1
 # train
 script_param["optimizer"] = 'rmsprop'
-script_param["max_iter"] = 1
+script_param["max_iter"] = 200
 script_param["validation_order"] = 5
 script_param["number_strips"] = 6
 script_param["min_number_iteration"] = 30
@@ -178,9 +178,9 @@ for hp_config in range(number_hp_config):
 
 #PBS -l nodes=1:ppn=2:gpus=1
 #PBS -l pmem=4000m
-#PBS -l walltime=""" + str(train_param['walltime']) + """:00:00
+#PBS -l walltime=""" + str(script_param['time_limit']) + """:00:00
 
-module load iomkl/2015b Python/2.7.10 CUDA cuDNN
+module load foss/2015b Tensorflow/1.0.0-Python-2.7.12
 export OMPI_MCA_mtl=^psm
 
 SRC=$HOME/lop/Source

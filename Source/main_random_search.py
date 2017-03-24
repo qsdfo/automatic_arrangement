@@ -28,6 +28,8 @@ import train
 N_HP_CONFIG = 1
 LOCAL = True
 BUILD_DATABASE = False
+DEBUG = True
+DEFINED_CONFIG = True
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
@@ -38,8 +40,9 @@ else:
     RESULT_ROOT = "/sb/project/ymd-084-aa/leo/"
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
+
 commands = [
-    'LSTM',
+    'FGcRBM_no_bv',
     'rmsprop',
     'event_level',
     'binary',
@@ -81,7 +84,8 @@ script_param['unit_type'] = unit_type
 
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the optimization method
-################### DISCRETE
+# ################## DISCRETE
+
 script_param['model_class'] = commands[0]
 if unit_type == 'binary':
     if commands[0] == "random":
@@ -94,6 +98,8 @@ if unit_type == 'binary':
         from acidano.models.lop.binary.cRBM import cRBM as Model_class
     elif commands[0] == "FGcRBM":
         from acidano.models.lop.binary.FGcRBM import FGcRBM as Model_class
+    elif commands[0] == "FGcRBM_no_bv":
+        from acidano.models.lop.binary.FGcRBM_no_bv import FGcRBM_no_bv as Model_class
     elif commands[0] == "FGcRnnRbm":
         from acidano.models.lop.binary.FGcRnnRbm import FGcRnnRbm as Model_class
     elif commands[0] == "LSTM":
@@ -133,7 +139,7 @@ elif re.search(ur"categorical", unit_type):
         from acidano.models.lop.categorical.cLstmRbm import cLstmRbm as Model_class
     elif commands[0] == "FGcLstmRbm":
         from acidano.models.lop.categorical.FGcLstmRbm import FGcLstmRbm as Model_class
-###################  REAL
+# ##################  REAL
 elif commands[0] == "LSTM_gaussian_mixture":
     from acidano.models.lop.real.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
 elif commands[0] == "LSTM_gaussian_mixture_2":
@@ -172,6 +178,7 @@ except ValueError:
 ############################################################
 logging.info('System paths')
 SOURCE_DIR = os.getcwd()
+
 result_folder = RESULT_ROOT + u'Results/' + script_param['temporal_granularity'] + '/' + unit_type + '/' +\
     'quantization_' + str(script_param['quantization']) + '/' + Optimization_method.name() + '/' + Model_class.name()
 
@@ -198,10 +205,13 @@ train_param['max_iter'] = 200  # nb max of iterations when training 1 configurat
 # Config is set now, no need to modify source below for standard use
 train_param['walltime'] = 11  # in hours
 
+#  DEBUG flags
+train_param['DEBUG'] = DEBUG
+
 # Validation
-train_param['validation_order'] = 5
-train_param['number_strips'] = 6
-train_param['min_number_iteration'] = 50
+train_param['validation_order'] = 2
+train_param['number_strips'] = 3
+train_param['min_number_iteration'] = 10
 # train_param['initial_derivative_length'] = 20
 # train_param['check_derivative_length'] = 5
 
@@ -235,28 +245,28 @@ if BUILD_DATABASE:
     logging.info('# ** BUILD DATABASE **')
     index_files_dict = {}
     index_files_dict['train'] = [
-        DATABASE_PATH + "/debug_train.txt",
-        # DATABASE_PATH + "/bouliane_train.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_train.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_train.txt"
+        # DATABASE_PATH + "/debug_train.txt",
+        DATABASE_PATH + "/bouliane_train.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_train.txt",
+        DATABASE_PATH + "/liszt_classical_archives_train.txt"
     ]
     index_files_dict['valid'] = [
-        DATABASE_PATH + "/debug_valid.txt",
-        # DATABASE_PATH + "/bouliane_valid.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_valid.txt"
+        # DATABASE_PATH + "/debug_valid.txt",
+        DATABASE_PATH + "/bouliane_valid.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
+        DATABASE_PATH + "/liszt_classical_archives_valid.txt"
     ]
     index_files_dict['test'] = [
-        DATABASE_PATH + "/debug_test.txt",
-        # DATABASE_PATH + "/bouliane_test.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_test.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_test.txt"
+        # DATABASE_PATH + "/debug_test.txt",
+        DATABASE_PATH + "/bouliane_test.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_test.txt",
+        DATABASE_PATH + "/liszt_classical_archives_test.txt"
     ]
 
     # Dictionary with None if the data augmentation is not used, else the value for this data augmentation
     # Pitch translation. Write [0] for no translation
     max_translation = 0
-    pitch_translations = range(-max_translation,max_translation+1)
+    pitch_translations = range(-max_translation, max_translation+1)
 
     build_data(root_dir=DATABASE_PATH,
                index_files_dict=index_files_dict,
@@ -284,66 +294,89 @@ optim_space = Optimization_method.get_hp_space()
 #    - a result.txt file with the result
 # The result.csv file containing id;result is created from the directory, rebuilt from time to time
 
-# Already tested configs
-list_config_folders = glob.glob(result_folder + '/*')
+if DEFINED_CONFIG:
+    model_space['n_hidden'] = 160
+    model_space['n_factor'] = 740
+    model_space['gibbs_steps'] = 22
+    model_space['batch_size'] = 150
+    model_space['temporal_order'] = 17
+    model_space['dropout_probability'] = 0.0
+    model_space['weight_decay_coeff'] = 1e-3
+    optim_space['lr'] = 0.012
 
-number_hp_config = max(0, N_HP_CONFIG - len(list_config_folders))
-for hp_config in range(number_hp_config):
-    # Give a random ID and create folder
-    ID_SET = False
-    while not ID_SET:
-        ID_config = str(random.randint(0, 2**25))
-        config_folder = script_param['result_folder'] + '/' + ID_config
-        if not config_folder in list_config_folders:
-            ID_SET = True
-    os.mkdir(config_folder)
-
-    # Find a point in space that has never been tested
-    UNTESTED_POINT_FOUND = False
-    while not UNTESTED_POINT_FOUND:
-        model_space_config = hyperopt.pyll.stochastic.sample(model_space)
-        optim_space_config = hyperopt.pyll.stochastic.sample(optim_space)
-        space = {'model': model_space_config, 'optim': optim_space_config, 'train': train_param, 'script': script_param}
-        # Check that this point in space has never been tested
-        # By looking in all directories and reading the config.pkl file
-        UNTESTED_POINT_FOUND = True
-        for dirname in list_config_folders:
-            this_config = pkl.load(open(dirname + '/config.pkl', 'rb'))
-            if space == this_config:
-                UNTESTED_POINT_FOUND = False
-                break
+    config_folder = script_param['result_folder'] + '/DEFINED_CONFIG'
+    if not os.path.isdir(config_folder):
+        os.mkdir(config_folder)
     # Pickle the space in the config folder
+    space = {'model': model_space, 'optim': optim_space, 'train': train_param, 'script': script_param}
     pkl.dump(space, open(config_folder + '/config.pkl', 'wb'))
-
-    if LOCAL:
+    if not LOCAL:
+        raise Exception()
+    else:
         start_time_train = time.time()
         config_folder = config_folder
         params = pkl.load(open(config_folder + '/config.pkl', "rb"))
         train.run_wrapper(params, config_folder, start_time_train)
-    else:
-        # Write pbs script
-        file_pbs = config_folder + '/submit.pbs'
-        text_pbs = """#!/bin/bash
+else:
+    # Already tested configs
+    list_config_folders = glob.glob(result_folder + '/*')
+    number_hp_config = max(0, N_HP_CONFIG - len(list_config_folders))
+    for hp_config in range(number_hp_config):
+        # Give a random ID and create folder
+        ID_SET = False
+        while not ID_SET:
+            ID_config = str(random.randint(0, 2**25))
+            config_folder = script_param['result_folder'] + '/' + ID_config
+            if config_folder not in list_config_folders:
+                ID_SET = True
+        os.mkdir(config_folder)
 
-#PBS -l nodes=1:ppn=2:gpus=1
-#PBS -l pmem=4000m
-#PBS -l walltime=""" + str(train_param['walltime']) + """:00:00
+        # Find a point in space that has never been tested
+        UNTESTED_POINT_FOUND = False
+        while not UNTESTED_POINT_FOUND:
+            model_space_config = hyperopt.pyll.stochastic.sample(model_space)
+            optim_space_config = hyperopt.pyll.stochastic.sample(optim_space)
+            space = {'model': model_space_config, 'optim': optim_space_config, 'train': train_param, 'script': script_param}
+            # Check that this point in space has never been tested
+            # By looking in all directories and reading the config.pkl file
+            UNTESTED_POINT_FOUND = True
+            for dirname in list_config_folders:
+                this_config = pkl.load(open(dirname + '/config.pkl', 'rb'))
+                if space == this_config:
+                    UNTESTED_POINT_FOUND = False
+                    break
+        # Pickle the space in the config folder
+        pkl.dump(space, open(config_folder + '/config.pkl', 'wb'))
 
-module load iomkl/2015b Python/2.7.10 CUDA cuDNN
-export OMPI_MCA_mtl=^psm
+        if LOCAL:
+            start_time_train = time.time()
+            config_folder = config_folder
+            params = pkl.load(open(config_folder + '/config.pkl', "rb"))
+            train.run_wrapper(params, config_folder, start_time_train)
+        else:
+            # Write pbs script
+            file_pbs = config_folder + '/submit.pbs'
+            text_pbs = """#!/bin/bash
 
-SRC=$HOME/lop/Source
-cd $SRC
-THEANO_FLAGS='device=gpu' python train.py '""" + config_folder + "'"
+    #PBS -l nodes=1:ppn=2:gpus=1
+    #PBS -l pmem=4000m
+    #PBS -l walltime=""" + str(train_param['walltime']) + """:00:00
 
-        with open(file_pbs, 'wb') as f:
-            f.write(text_pbs)
+    module load iomkl/2015b Python/2.7.10 CUDA cuDNN
+    export OMPI_MCA_mtl=^psm
 
-        # Launch script
-        subprocess.call('qsub ' + file_pbs, shell=True)
+    SRC=$HOME/lop/Source
+    cd $SRC
+    THEANO_FLAGS='device=gpu' python train.py '""" + config_folder + "'"
 
-    # Update folder list
-    list_config_folders.append(config_folder)
+            with open(file_pbs, 'wb') as f:
+                f.write(text_pbs)
+
+            # Launch script
+            subprocess.call('qsub ' + file_pbs, shell=True)
+
+        # Update folder list
+        list_config_folders.append(config_folder)
 
 # We done
 # Processing results come afterward

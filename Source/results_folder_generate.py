@@ -19,6 +19,7 @@ import re
 from acidano.utils.init import shared_zeros
 import acidano.data_processing.utils.unit_type as Unit_type
 
+
 def generate_midi(config_folder, data_folder, generation_length, seed_size, quantization_write, corruption_flag, logger_generate):
     if logger_generate is None:
         import logging
@@ -80,6 +81,7 @@ def generate_midi(config_folder, data_folder, generation_length, seed_size, quan
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 
+
 def generate_midi_full_track_reference(config_folder, data_folder, track_path, seed_size, number_of_version, logger_generate):
     # This function generate the orchestration of a full track
     if logger_generate is None:
@@ -108,7 +110,7 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
         build_data_aux.discriminate_between_piano_and_orchestra(pr0, instru0, name0, pr1, instru1, name1)
 
     # Unit type
-    pr_piano_dict_pure = Unit_type.from_rawpr_to_type(pr_piano_dict, script_param['unit_type'])
+    pr_piano_dict = Unit_type.from_rawpr_to_type(pr_piano_dict, script_param['unit_type'])
     pr_orch_dict = Unit_type.from_rawpr_to_type(pr_orch_dict, script_param['unit_type'])
 
     # Temporal granularity
@@ -123,18 +125,18 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
         build_data_aux.align_tracks(pr_piano_event, pr_orch_event, script_param['unit_type'], gapopen=3, gapextend=1)
 
     # Get seed_size frames of the aligned pr
-    piano_seed_beginning = {k:v[:seed_size] for k,v in pr_piano_aligned.iteritems()}
-    orch_seed_beginning = {k:v[:seed_size] for k,v in pr_orch_aligned.iteritems()}
+    piano_seed_beginning = {k: v[:seed_size] for k, v in pr_piano_aligned.iteritems()}
+    orch_seed_beginning = {k: v[:seed_size] for k, v in pr_orch_aligned.iteritems()}
     # Get event_part
     start_ind_event, list_seed_event = get_event_seed_reconstruction(trace_piano, trace_prod, seed_size)
-    piano_end = {k:v[start_ind_event:] for k,v in pr_piano_event.iteritems()}
+    piano_end = {k: v[start_ind_event:] for k, v in pr_piano_event.iteritems()}
 
     # Indices for the reconstruction
-    event_ind_reconstruction = np.concatenate([event_ind_piano[list_seed_event],event_ind_piano[start_ind_event:]])
+    event_ind_reconstruction = np.concatenate([event_ind_piano[list_seed_event], event_ind_piano[start_ind_event:]])
 
     # Get length of pr
     duration_end = pianoroll_processing.get_pianoroll_time(piano_end)
-    duration =  seed_size + duration_end
+    duration = seed_size + duration_end
 
     # Get the instrument mapping used for training
     metadata = pkl.load(open(metadata_path, 'rb'))
@@ -177,7 +179,7 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     generation_length = duration
     # generation_index is the last index of the track we want to generate
     # We feed several time the same index to get different proposition of orchestration
-    generation_index = np.asarray([duration-1,] * number_of_version, dtype=np.int32)
+    generation_index = np.asarray([duration-1, ] * number_of_version, dtype=np.int32)
 
     # Store folder
     string = re.split(r'/', name_piano)[-1]
@@ -203,14 +205,14 @@ def get_event_seed_reconstruction(trace_piano, trace_prod, seed_size):
     counter = 0
     counter_prod = 0
     list_ind = []
-    sum_trace = [a+b for a,b in zip(trace_piano, trace_prod)]
-    for l in sum_trace:
+    sum_trace = [a+b for a, b in zip(trace_piano, trace_prod)]
+    for ind in sum_trace:
         if counter_prod == seed_size:
             break
-        if l == 2:
+        if ind == 2:
             list_ind.append(counter)
             counter += 1
             counter_prod += 1
-        elif l == 1:
+        elif ind == 1:
             counter += 1
     return counter, list_ind

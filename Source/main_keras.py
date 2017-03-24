@@ -12,16 +12,13 @@ import subprocess
 import glob
 import time
 import re
-# Build data
-from build_data import build_data
 # Clean Script
 from clean_result_folder import clean
+from assert_database import assert_database
 
-import train
 
-
-N_HP_CONFIG = 1
-LOCAL = False
+N_HP_CONFIG = 50
+LOCAL = True
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
     RESULT_ROOT = os.getcwd() + '/../'
@@ -63,17 +60,17 @@ script_param["model_name"] = 'Lstm'
 # paths
 script_param["data_folder"] = DATA_DIR
 # data
-script_param['temporal_granularity'] = 'event_level' # event_level, frame_level
+script_param['temporal_granularity'] = 'event_level'  # event_level, frame_level
 script_param['quantization'] = 100
 script_param['unit_type'] = 'binary'
-script_param["max_translation"] = 3
+script_param["max_translation"] = 2
 script_param['skip_sample'] = 1
 # train
 script_param["optimizer"] = 'rmsprop'
 script_param["max_iter"] = 200
-script_param["validation_order"] = 5
-script_param["number_strips"] = 6
-script_param["min_number_iteration"] = 30
+script_param["validation_order"] = 2
+script_param["number_strips"] = 3
+script_param["min_number_iteration"] = 10
 script_param["time_limit"] = 11
 
 result_folder = RESULT_ROOT + u'Results/' + script_param['temporal_granularity'] + '/' + script_param["unit_type"] + '/' +\
@@ -85,17 +82,14 @@ script_param['result_folder'] = result_folder
 # Clean result folder
 clean(result_folder)
 
-for k,v in script_param.iteritems():
+for k, v in script_param.iteritems():
     logging.info(str(k) + " : " + str(v))
 
 ############################################################
 # Check that the database we plan to use fit with our requirements
 ############################################################
 metadata = pkl.load(open(DATA_DIR + '/metadata.pkl', 'rb'))
-assert metadata["temporal_granularity"] == script_param['temporal_granularity']
-assert metadata["quantization"] == script_param['quantization']
-assert metadata["max_translation"] == script_param['max_translation']
-assert metadata["unit_type"] == script_param['unit_type']
+assert_database(metadata, script_param)
 
 ############################################################
 # Load model
@@ -145,7 +139,7 @@ for hp_config in range(number_hp_config):
     while not ID_SET:
         ID_config = str(random.randint(0, 2**20))
         config_folder = script_param['result_folder'] + '/' + ID_config
-        if not config_folder in list_config_folders:
+        if config_folder not in list_config_folders:
             ID_SET = True
     os.mkdir(config_folder)
 

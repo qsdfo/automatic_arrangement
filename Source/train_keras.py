@@ -8,6 +8,7 @@ import cPickle as pkl
 import time
 
 from acidano.utils.measure import accuracy_measure_not_shared
+from acidano.utils.early_stopping import up_criterion
 
 
 def load_split_data(seq_length, set_identifier, data_folder):
@@ -34,6 +35,10 @@ def run_wrapper(params, config_folder, start_time_train):
     ############################################################
     script_param = params['script']
     model_param = params['model']
+    if script_param['unit_type'] = 'binary':
+        model_param['binary'] = True
+    else:
+        model_param['binary'] = False
 
     ############################################################
     # Log file
@@ -79,7 +84,10 @@ def run_wrapper(params, config_folder, start_time_train):
     logger_run.info('########################################################')
     logger_run.info('Training...')
     # Train
-    (model.model).compile(optimizer=script_param['optimizer'], loss='binary_crossentropy')
+    if script_param['unit_type'] = 'binary':
+        (model.model).compile(optimizer=script_param['optimizer'], loss='binary_crossentropy')
+    elif script_param['unit_type'] = 'continuous':
+        (model.model).compile(optimizer=script_param['optimizer'], loss='mean_squared_error')
     epoch = 0
     time_limit = script_param["time_limit"] * 3600 - 30*60 # walltime - 30 minutes in seconds
     OVERFITTING = False
@@ -94,22 +102,16 @@ def run_wrapper(params, config_folder, start_time_train):
 
         # Validation
         orch_predicted = model.validate(orch_past_valid, orch_t_valid, piano_past_valid, piano_t_valid)
-        accuracy = accuracy_measure_not_shared(orch_t_valid, orch_predicted)
+        if script_param['unit_type'] == 'binary':
+            accuracy = accuracy_measure_not_shared(orch_t_valid, orch_predicted)
+        elif script_param['unit_type'] == 'continuous':
+            accuracy = accuracy_measure_not_shared_continuous(orch_t_valid, orch_predicted)
         mean_accuracy = 100 * np.mean(accuracy)
 
         # Over-fitting monitor
         val_tab[epoch] = mean_accuracy
         if epoch >= script_param["min_number_iteration"]:
-            DOWN = True
-            OVERFITTING = True
-            s = 0
-            while(DOWN and s < script_param["number_strips"]):
-                t = epoch - s
-                tmk = epoch - s - script_param["validation_order"] + 1
-                DOWN = val_tab[t] < val_tab[tmk] + 0.001  # equal prevent from being stuck in Nan cost training which imply a 0 accuracy
-                s = s + 1
-                if not DOWN:
-                    OVERFITTING = False
+            OVERFITTING = up_criterion(-val_tab, epoch, script_param["number_strips"], script_param["validation_order"])
 
         if (time.time() - start_time_train) > time_limit:
             TIME_LIMIT = True
@@ -128,7 +130,17 @@ def run_wrapper(params, config_folder, start_time_train):
     ############################################################
     # Save
     ############################################################
+    # model
     (model.model).save(config_folder + '/model.h5')
+    # result
+    best_epoch = np.argmax(val_tab)
+    best_accuracy = val_tab[best_epoch]
+    result_file_path = config_folder + '/result.csv'
+    with open(result_file_path, 'wb') as f:
+        f.write("accuracy;" + str(best_accuracy))
+
+    # Remove handler
+    logger_run.removeHandler(hdlr)
 
 if __name__ == '__main__':
     start_time_train = time.time()

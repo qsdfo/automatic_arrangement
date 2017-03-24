@@ -9,6 +9,7 @@ import cPickle as pkl
 import os
 # Perso
 from load_data import load_data_train, load_data_valid, load_data_test
+from acidano.utils.early_stopping import up_criterion
 
 ####################
 # Debugging compiler flags
@@ -41,6 +42,8 @@ def run_wrapper(params, config_folder, start_time_train):
         from acidano.models.lop.binary.cRBM import cRBM as Model_class
     elif script_param['model_class'] == "FGcRBM":
         from acidano.models.lop.binary.FGcRBM import FGcRBM as Model_class
+    elif script_param['model_class'] == "FGcRBM_no_bv":
+        from acidano.models.lop.binary.FGcRBM_no_bv import FGcRBM_no_bv as Model_class
     elif script_param['model_class'] == "FGcRnnRbm":
         from acidano.models.lop.binary.FGcRnnRbm import FGcRnnRbm as Model_class
     elif script_param['model_class'] == "LSTM":
@@ -70,22 +73,14 @@ def run_wrapper(params, config_folder, start_time_train):
         from acidano.utils.optim.sgd_nesterov import Sgd_nesterov as Optimization_method
 
     ############################################################
-    # Paths
-    ############################################################
-    log_file_path = config_folder + '/' + 'log'
-
-    ############################################################
     # Logging
     ############################################################
-    # set up logging to file - see previous section for more details
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                        datefmt='%m-%d %H:%M',
-                        filename=log_file_path,
-                        filemode='w')
+    log_file_path = config_folder + '/' + 'log.txt'
+    formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
     logger_run = logging.getLogger('run')
-    logger_run.info(('\n').encode('utf8'))
-    logger_run.info((u'#'*40).encode('utf8'))
+    hdlr = logging.FileHandler(log_file_path)
+    hdlr.setFormatter(formatter)
+    logger_run.addHandler(hdlr)
 
     ############################################################
     # Load data
@@ -277,7 +272,7 @@ def train(model, optimizer,
             mean_activation = mean_activation.mean(axis=2)
             visualize_mat_proba(mean_activation, path_activation, 'mean_activations')
             # Do not plot every random activation...
-            for i in np.linspace(0,10,random_choice_mean_activation.shape[2]):
+            for i in np.linspace(0, random_choice_mean_activation.shape[2], 10, endpoint=False):
                 ind = int(i)
                 visualize_mat_proba(random_choice_mean_activation[:,:,ind], path_activation, 'random_act_' + str(ind))
             # Weights
@@ -320,16 +315,7 @@ def train(model, optimizer,
         # so it's more a DOWN criterion)
         val_tab[epoch] = mean_accuracy
         if epoch >= train_param['min_number_iteration']:
-            DOWN = True
-            OVERFITTING = True
-            s = 0
-            while(DOWN and s < train_param['number_strips']):
-                t = epoch - s
-                tmk = epoch - s - train_param['validation_order'] + 1
-                DOWN = val_tab[t] < val_tab[tmk] + 0.001  # equal prevent from being stuck in Nan cost training which imply a 0 accuracy
-                s = s + 1
-                if not DOWN:
-                    OVERFITTING = False
+            OVERFITTING = up_criterion(-val_tab, epoch, script_param["number_strips"], script_param["validation_order"])
         #######################################
 
         #######################################
@@ -356,6 +342,9 @@ def train(model, optimizer,
         #######################################
         epoch += 1
 
+    # Close handler
+    logger_run.removeHandler(hdlr)
+    # Return best accuracy
     best_epoch = np.argmax(val_tab)
     best_accuracy = val_tab[best_epoch]
     best_loss = loss_tab[best_epoch]
@@ -363,27 +352,25 @@ def train(model, optimizer,
 
 
 if __name__ == '__main__':
-    # start_time_train = time.time()
-    # config_folder = sys.argv[1]
-    # params = pkl.load(open(config_folder + '/config.pkl', "rb"))
-    # run_wrapper(params, config_folder, start_time_train)
+    start_time_train = time.time()
+
+    config_folder = sys.argv[1]
+    params = pkl.load(open(config_folder + '/config.pkl', "rb"))
+    run_wrapper(params, config_folder, start_time_train)
 
     #####################################################
-    ##### Local tests
-    start_time_train = time.time()
-    config_folder = "DEBUG/Detailed_FGcRBM_2/"
-    ####################################################
-
-    ####################################################
-    #### Perhaps you need to change some paths variables
-    params = pkl.load(open(config_folder + '/config.pkl', "rb"))
-    params['script']['result_folder'] = config_folder
-    params['script']['data_folder'] = "DEBUG/Detailed_FGcRBM_2/Data"
-    params['train']['walltime'] = 16
-    params['train']['DEBUG'] = True
-    pkl.dump(params, open(config_folder + '/config.pkl', "wb"))
-    ####################################################
-
-    run_wrapper(params, config_folder, start_time_train)
+    ##### Retrain an existing config
+    # config_folder = "DEBUG/FGcRBM_weight_decay"
+    # #### Perhaps you need to change some paths variables
+    # params = pkl.load(open(config_folder + '/config.pkl', "rb"))
+    # params['model']['weight_decay_coeff'] = 10
+    # params['script']['result_folder'] = config_folder
+    # params['script']['data_folder'] = "DEBUG/FGcRBM_weight_decay/Data"
+    # params['train']['walltime'] = 16
+    # params['train']['max_iter'] = 3
+    # import pdb; pdb.set_trace()
+    # params['train']['DEBUG'] = True
+    # pkl.dump(params, open(config_folder + '/config.pkl', "wb"))
+    # run_wrapper(params, config_folder, start_time_train)
     #####################################################
     #####################################################

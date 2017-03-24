@@ -14,7 +14,8 @@ def clean(path):
         NO_RESULT_FILE = 'result.csv' not in list_file
         NO_CONFIG_FILE = 'config.pkl' not in list_file
         NO_MODEL_FILE = 'model.pkl' not in list_file
-        if NO_CONFIG_FILE or NO_RESULT_FILE or NO_MODEL_FILE:
+        NO_MODEL_FILE_H5 = 'model.h5' not in list_file
+        if NO_CONFIG_FILE or NO_RESULT_FILE or (NO_MODEL_FILE and NO_MODEL_FILE_H5):
             shutil.rmtree(dirname)
 
 if __name__ == '__main__':

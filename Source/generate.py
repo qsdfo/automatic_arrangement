@@ -40,7 +40,7 @@ def generate(model,
         for write_counter in xrange(generated_sequence.shape[0]):
             # Write generated midi
             pr_orchestra = reconstruct_pr.reconstruct_pr(generated_sequence[write_counter], instru_mapping)
-            if (temporal_granularity == 'event_level') and (event_indices != None):
+            if (temporal_granularity == 'event_level') and (event_indices is not None):
                 # Place the generated vectors at the time indices in event_indices
                 pr_orchestra = reconstruct_pr.place_event_level(pr_orchestra, event_indices)
             elif temporal_granularity == "event_level":
@@ -50,7 +50,7 @@ def generate(model,
 
             # Write original piano
             pr_piano_seed = reconstruct_pr.reconstruct_piano(piano_seed[write_counter], instru_mapping)
-            if (temporal_granularity == 'event_level') and (event_indices != None):
+            if (temporal_granularity == 'event_level') and (event_indices is not None):
                 # Place the generated vectors at the time indices in event_indices
                 pr_piano_seed = reconstruct_pr.place_event_level(pr_piano_seed, event_indices)
             elif temporal_granularity == "event_level":
@@ -60,7 +60,7 @@ def generate(model,
 
             # Write original orchestra
             pr_orchestra_original = reconstruct_pr.reconstruct_pr(orchestra_original[write_counter], instru_mapping)
-            if (temporal_granularity == 'event_level') and (event_indices != None):
+            if (temporal_granularity == 'event_level') and (event_indices is not None):
                 # Place the generated vectors at the time indices in event_indices
                 pr_orchestra_original = reconstruct_pr.place_event_level(pr_orchestra_original, event_indices)
             elif temporal_granularity == "event_level":

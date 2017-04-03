@@ -28,7 +28,8 @@ import train
 N_HP_CONFIG = 1
 LOCAL = True
 BUILD_DATABASE = False
-DEBUG = True
+DEBUG = False
+CLEAN = True
 DEFINED_CONFIG = True
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
@@ -40,9 +41,10 @@ else:
     RESULT_ROOT = "/sb/project/ymd-084-aa/leo/"
     DATABASE_PATH = "/home/crestel/database/orchestration"
 
+DATA_DIR = '../Data'
 
 commands = [
-    'FGcRBM_no_bv',
+    'FGgru',
     'rmsprop',
     'event_level',
     'binary',
@@ -98,6 +100,8 @@ if unit_type == 'binary':
         from acidano.models.lop.binary.cRBM import cRBM as Model_class
     elif commands[0] == "FGcRBM":
         from acidano.models.lop.binary.FGcRBM import FGcRBM as Model_class
+    elif commands[0] == "FGgru":
+        from acidano.models.lop.binary.FGgru import FGgru as Model_class
     elif commands[0] == "FGcRBM_no_bv":
         from acidano.models.lop.binary.FGcRBM_no_bv import FGcRBM_no_bv as Model_class
     elif commands[0] == "FGcRnnRbm":
@@ -187,13 +191,13 @@ if not os.path.isdir(result_folder):
     os.makedirs(result_folder)
 script_param['result_folder'] = result_folder
 # Clean result folder
-clean(result_folder)
+if CLEAN:
+    clean(result_folder)
 
 # Data : .pkl files
-data_folder = SOURCE_DIR + '/../Data'
-if not os.path.isdir(data_folder):
-    os.mkdir(data_folder)
-script_param['data_folder'] = data_folder
+if not os.path.isdir(DATA_DIR):
+    os.mkdir(DATA_DIR)
+script_param['data_folder'] = DATA_DIR
 script_param['skip_sample'] = 1
 
 ############################################################
@@ -270,11 +274,11 @@ if BUILD_DATABASE:
 
     build_data(root_dir=DATABASE_PATH,
                index_files_dict=index_files_dict,
-               meta_info_path=data_folder + '/temp.p',
+               meta_info_path=DATA_DIR + '/temp.p',
                quantization=script_param['quantization'],
                unit_type=script_param['unit_type'],
                temporal_granularity=script_param['temporal_granularity'],
-               store_folder=data_folder,
+               store_folder=DATA_DIR,
                pitch_translation_augmentations=pitch_translations,
                logging=logging)
 
@@ -295,18 +299,13 @@ optim_space = Optimization_method.get_hp_space()
 # The result.csv file containing id;result is created from the directory, rebuilt from time to time
 
 if DEFINED_CONFIG:
-    model_space['n_hidden'] = 160
-    model_space['n_factor'] = 740
-    model_space['gibbs_steps'] = 22
-    model_space['batch_size'] = 150
-    model_space['temporal_order'] = 17
-    model_space['dropout_probability'] = 0.0
-    model_space['weight_decay_coeff'] = 1e-3
-    optim_space['lr'] = 0.012
-
-    config_folder = script_param['result_folder'] + '/DEFINED_CONFIG'
+    model_space = Model_class.get_static_config()
+    optim_space['lr'] = 0.001
+    config_folder = script_param['result_folder'] + '/2'
     if not os.path.isdir(config_folder):
         os.mkdir(config_folder)
+    else:
+        raise Exception("this folder already exists")
     # Pickle the space in the config folder
     space = {'model': model_space, 'optim': optim_space, 'train': train_param, 'script': script_param}
     pkl.dump(space, open(config_folder + '/config.pkl', 'wb'))

@@ -42,6 +42,8 @@ def run_wrapper(params, config_folder, start_time_train):
         from acidano.models.lop.binary.cRBM import cRBM as Model_class
     elif script_param['model_class'] == "FGcRBM":
         from acidano.models.lop.binary.FGcRBM import FGcRBM as Model_class
+    elif script_param['model_class'] == "FGgru":
+        from acidano.models.lop.binary.FGgru import FGgru as Model_class
     elif script_param['model_class'] == "FGcRBM_no_bv":
         from acidano.models.lop.binary.FGcRBM_no_bv import FGcRBM_no_bv as Model_class
     elif script_param['model_class'] == "FGcRnnRbm":
@@ -76,6 +78,8 @@ def run_wrapper(params, config_folder, start_time_train):
     # Logging
     ############################################################
     log_file_path = config_folder + '/' + 'log.txt'
+    with open(log_file_path, 'wb') as f:
+        f.close()
     formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
     logger_run = logging.getLogger('run')
     hdlr = logging.FileHandler(log_file_path)
@@ -191,6 +195,8 @@ def run_wrapper(params, config_folder, start_time_train):
     with open(result_file_path, 'wb') as f:
         f.write("accuracy;" + str(accuracy) + '\n' + "loss;" + str(loss))
 
+    # Close handler
+    logger_run.removeHandler(hdlr)
     return
 
 
@@ -201,7 +207,7 @@ def train(model, optimizer,
     ############################################################
     # Time information used
     ############################################################
-    time_limit = train_param['walltime'] * 3600 - 30*60 # walltime - 30 minutes in seconds
+    time_limit = train_param['walltime'] * 3600 - 30*60  # walltime - 30 minutes in seconds
     start_time_train = train_param['start_time_train']
 
     ############################################################
@@ -221,30 +227,29 @@ def train(model, optimizer,
     epoch = 0
     OVERFITTING = False
     TIME_LIMIT = False
-    val_tab = np.zeros(max(1,train_param['max_iter']))
-    loss_tab = np.zeros(max(1,train_param['max_iter']))
+    val_tab = np.zeros(max(1, train_param['max_iter']))
+    loss_tab = np.zeros(max(1, train_param['max_iter']))
     while (not OVERFITTING and not TIME_LIMIT
-           and epoch!=train_param['max_iter']):
+           and epoch != train_param['max_iter']):
         #######################################
         # Train
         #######################################
         train_cost_epoch = []
         train_monitor_epoch = []
-        ##    ###     # # # # # ## # ## ## #  # 
-        from random import randint
-        ind_activation = np.random.randint(model.batch_size, size=(train_param['n_train_batches']))
-        random_choice_mean_activation = np.zeros((model.k, model.n_v, train_param['n_train_batches']))
-        mean_activation = np.zeros((model.k, model.n_v, train_param['n_train_batches']))
-        ##    ###     # # # # # ## # ## ## #  # 
+        ###### # # # # ## # ## ## #  #
+        # ind_activation = np.random.randint(model.batch_size, size=(train_param['n_train_batches']))
+        # random_choice_mean_activation = np.zeros((model.k, model.n_v, train_param['n_train_batches']))
+        # mean_activation = np.zeros((model.k, model.n_v, train_param['n_train_batches']))
+        ###### # # # # ## # ## ## #  #
         for batch_index in xrange(train_param['n_train_batches']):
-            this_cost, this_monitor, mean_chain = train_iteration(train_index[batch_index])
+            this_cost, this_monitor = train_iteration(train_index[batch_index])
             # Keep track of cost
             train_cost_epoch.append(this_cost)
             train_monitor_epoch.append(this_monitor)
-            # Plot a random mean_chain
-            random_choice_mean_activation[:,:,batch_index] = mean_chain[:,ind_activation[batch_index],:]
-            # mean along batch axis
-            mean_activation[:,:,batch_index] = mean_chain.mean(axis=1)
+            # # Plot a random mean_chain
+            # random_choice_mean_activation[:, :, batch_index] = mean_chain[:, ind_activation[batch_index], :]
+            # # mean along batch axis
+            # mean_activation[:, :, batch_index] = mean_chain.mean(axis=1)
 
         mean_loss = np.mean(train_cost_epoch)
         loss_tab[epoch] = mean_loss
@@ -256,7 +261,23 @@ def train(model, optimizer,
         #######################################
         accuracy = []
         for batch_index in xrange(train_param['n_val_batches']):
-            _, _, accuracy_batch = validation_error(valid_index[batch_index])
+            _, _, accuracy_batch, true_frame, past_frame, piano_frame, predicted_frame = validation_error(valid_index[batch_index])
+            from acidano.visualization.numpy_array.visualize_numpy import visualize_mat
+            if batch_index == 0:
+                for ind in range(accuracy_batch.shape[0]):
+                    pr_viz = np.zeros((4, predicted_frame.shape[1]))
+                    # Threshold prediction
+                    orch_pred_ind = predicted_frame[ind]
+                    # Less than 1%
+                    thresh_pred = np.where(orch_pred_ind > 0.01, orch_pred_ind, 0)
+                    pr_viz[0] = thresh_pred
+                    pr_viz[1] = true_frame[ind]
+                    pr_viz[2] = past_frame[ind]
+                    pr_viz[3][:piano_frame.shape[1]] = piano_frame[ind]
+                    path_accuracy = config_folder + '/DEBUG/' + str(epoch) + '/validation'
+                    if not os.path.isdir(path_accuracy):
+                        os.makedirs(path_accuracy)
+                    visualize_mat(np.transpose(pr_viz), path_accuracy, str(ind) + '_score_' + str(accuracy_batch[ind]))
             accuracy += [accuracy_batch]
         mean_accuracy = 100 * np.mean(accuracy)
 
@@ -264,17 +285,17 @@ def train(model, optimizer,
         # DEBUG : plot weights
         #######################################
         if train_param['DEBUG']:
-            from acidano.visualization.numpy_array.visualize_numpy import visualize_mat_proba
+            # from acidano.visualization.numpy_array.visualize_numpy import visualize_mat_proba
             # Visible activations
             path_activation = config_folder + '/DEBUG/' + str(epoch) + '/activations'
             if not os.path.isdir(path_activation):
                 os.makedirs(path_activation)
-            mean_activation = mean_activation.mean(axis=2)
-            visualize_mat_proba(mean_activation, path_activation, 'mean_activations')
+            # mean_activation = mean_activation.mean(axis=2)
+            # visualize_mat_proba(mean_activation, path_activation, 'mean_activations')
             # Do not plot every random activation...
-            for i in np.linspace(0, random_choice_mean_activation.shape[2], 10, endpoint=False):
-                ind = int(i)
-                visualize_mat_proba(random_choice_mean_activation[:,:,ind], path_activation, 'random_act_' + str(ind))
+            # for i in np.linspace(0, random_choice_mean_activation.shape[2], 10, endpoint=False):
+            #     ind = int(i)
+            #     visualize_mat_proba(random_choice_mean_activation[:, :, ind], path_activation, 'random_act_' + str(ind))
             # Weights
             plot_folder = config_folder + '/DEBUG/' + str(epoch) + '/weights'
             if not os.path.isdir(plot_folder):
@@ -315,7 +336,7 @@ def train(model, optimizer,
         # so it's more a DOWN criterion)
         val_tab[epoch] = mean_accuracy
         if epoch >= train_param['min_number_iteration']:
-            OVERFITTING = up_criterion(-val_tab, epoch, script_param["number_strips"], script_param["validation_order"])
+            OVERFITTING = up_criterion(-val_tab, epoch, train_param["number_strips"], train_param["validation_order"])
         #######################################
 
         #######################################
@@ -342,8 +363,6 @@ def train(model, optimizer,
         #######################################
         epoch += 1
 
-    # Close handler
-    logger_run.removeHandler(hdlr)
     # Return best accuracy
     best_epoch = np.argmax(val_tab)
     best_accuracy = val_tab[best_epoch]

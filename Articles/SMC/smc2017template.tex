@@ -60,7 +60,7 @@ pdfstartview=XYZ % start with zoom=100% instead of full screen;
 \usepackage{amsmath,amssymb} % For including math equations, theorems, symbols, etc
 \usepackage{bm}
 \usepackage{graphicx} % Required for including images
-\graphicspath{{../Figures/}} % Set the default folder for images
+\graphicspath{{Figures/}} % Set the default folder for images
 % Makecell 
 \usepackage{makecell}
 \renewcommand\theadalign{cb}
@@ -129,7 +129,7 @@ The orchestral repertoire contains a large number of examples of projective orch
 
 \begin{figure}
 \centering
-\includegraphics[scale=0.15]{Data_representation/orch}
+\includegraphics[scale=0.15]{orch}
 \caption{\textit{Projective orchestration}. A piano score is projected on an orchestra. Even though a wide range of orchestrations exist for a given piano score, all of them will share strong relations with the original piano score. One given orchestration implicitly embeds the knowledge of the composer about timbre and orchestration.}
 \label{fig:orch}
 \end{figure}
@@ -239,7 +239,7 @@ In order to reduce the number of units, we systematically remove, for each instr
 
 \begin{figure}[ht]
 \centering
-\includegraphics[scale=0.37]{Data_representation/from_score_to_pianoroll}
+\includegraphics[scale=0.37]{from_score_to_pianoroll}
 \caption{From the score of an orchestral piece, a convenient representation for computer processing named \textit{piano-roll} is extracted. A piano-roll $pr$ is a matrix whose rows represent pitches and columns represent a time frame depending on the time quantization. A pitch $p$ at time $t$ played with an intensity $i$ is represented by $pr(p,t) = i$, $0$ being a note off. This definition is extended to an orchestra by simply concatenating the \textit{piano-rolls} of every instruments along the pitch dimension.}
 \label{fig:piano-roll}
 \end{figure}
@@ -247,7 +247,7 @@ In order to reduce the number of units, we systematically remove, for each instr
 \subsubsection{Temporal granularities}
  \begin{figure}
 \centering
-\includegraphics[scale=0.4]{Data_representation/frame_vs_event}
+\includegraphics[scale=0.4]{frame_vs_event}
 \caption{Frame level and event level granularities. By comparing the piano-rolls on the left-hand side and the middle of the figure, we can observe that, in the case of the frame-level granularity, more consecutive frames are identical as the quantization gets finer. We observe on the right-hand piano-roll how those quantization problem can be carried away with the event-level granularity.}
 \label{fig:frame_vs_event}
 \end{figure}
@@ -287,7 +287,7 @@ Note, however, that extensive efforts are made during the training phase to infe
 
  \begin{figure*}
  	\begin{centering}
- 		\includegraphics[scale=0.2]{Models/lop_models}
+ 		\includegraphics[scale=0.2]{lop_models}
  		\par\end{centering}
  	\caption{Conditional Restricted Boltzmann Machine in the context of projective orchestration. The visible units $\bm{v}$ represent the present orchestral frame $O(t)$. The context units $\bm{x}$ represents the concatenation of the past orchestral and present piano frames $[P(t), O(t-N), ..., O(t-1)]$}.
 During the generation phase, after training the model, the context units are clamped to the known values of these vectors.
@@ -469,6 +469,6 @@ The authors would like to thank Denys Bouliane for kindly providing the orchestr
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %bibliography here
-\bibliography{../Biblio/biblio}
+\bibliography{biblio}
 
 \end{document}

@@ -13,6 +13,7 @@ from acidano.data_processing.utils.event_level import get_event_ind_dict
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
 import acidano.data_processing.utils.unit_type as Unit_type
 
+
 def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
     # There should be 2 files
     mid_files = glob.glob(folder_path + '/*.mid')
@@ -45,8 +46,8 @@ def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
         instru1 = next(r1)
 
     # Simplify names
-    instru0_simple = {k:simplify_instrumentation(v) for k,v in instru0.iteritems()}
-    instru1_simple = {k:simplify_instrumentation(v) for k,v in instru1.iteritems()}
+    instru0_simple = {k: simplify_instrumentation(v) for k, v in instru0.iteritems()}
+    instru1_simple = {k: simplify_instrumentation(v) for k, v in instru1.iteritems()}
 
     # Files name, no extensions
     mid_file_0 = re.sub('\.mid', '', mid_files[0])
@@ -61,7 +62,7 @@ def unmixed_instru(instru_string):
 
 
 def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from_dico):
-    for k,v in instrumentation.iteritems():
+    for k, v in instrumentation.iteritems():
         if k not in pr.keys():
             # BAD BAD BAD
             # Shouldn't happen, but sometimes midi files contain empty tracks
@@ -82,7 +83,7 @@ def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from
             continue
         for instru_name in instru_names:
             if instru_name in instru_mapping.keys():
-                ### ???
+                # ???
                 # v_no_suffix = re.split(ur'\s', instru_name)[0]
                 #######
                 old_max = instru_mapping[instru_name]['pitch_max']
@@ -117,7 +118,7 @@ def align_tracks(pr0, pr1, unit_type, gapopen, gapextend):
     pr1_warp = warp_dictionnary_trace(pr1, trace_1)
     # Get pr warped and duration# In fact we just discard 0 in traces for both pr
 
-    trace_prod = [e1 * e2 for (e1,e2) in zip(trace_0, trace_1)]
+    trace_prod = [e1 * e2 for (e1, e2) in zip(trace_0, trace_1)]
     duration = sum(trace_prod)
     if duration == 0:
         return [None]*6
@@ -125,6 +126,7 @@ def align_tracks(pr0, pr1, unit_type, gapopen, gapextend):
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 
     return pr0_aligned, trace_0, pr1_aligned, trace_1, trace_prod, duration
+
 
 def discriminate_between_piano_and_orchestra(pr0, instru0, name0, pr1, instru1, name1):
     if len(set(instru0.values())) > len(set(instru1.values())):
@@ -143,9 +145,9 @@ def discriminate_between_piano_and_orchestra(pr0, instru0, name0, pr1, instru1, 
         name_piano = name0
     else:
         # Both tracks have the same number of instruments
-        import pdb; pdb.set_trace()
         return [None] * 6
     return pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra
+
 
 def process_folder(folder_path, quantization, unit_type, temporal_granularity, logging, gapopen=3, gapextend=1):
     # Get instrus and prs from a folder name name
@@ -269,7 +271,8 @@ def simplify_instrumentation(instru_name_complex):
     link = " and "
     return link.join(instru_name_unmixed_simple)
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     name = 'DEBUG/test.mid'
     reader = Read_midi(name, 12)
     time = reader.get_time()

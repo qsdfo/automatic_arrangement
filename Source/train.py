@@ -17,7 +17,7 @@ import theano
 # theano.config.optimizer = 'fast_compile'
 # theano.config.mode = 'FAST_COMPILE'
 # theano.config.exception_verbosity = 'high'
-theano.config.compute_test_value = 'off'
+theano.config.compute_test_value = 'warn'
 
 
 def run_wrapper(params, config_folder, start_time_train):

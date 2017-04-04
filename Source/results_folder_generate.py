@@ -148,8 +148,7 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     pr_piano = build_data_aux.cast_small_pr_into_big_pr(piano_seed_beginning, {}, 0, seed_size, instru_mapping, pr_piano)
     pr_piano = build_data_aux.cast_small_pr_into_big_pr(piano_end, {}, seed_size, duration_end, instru_mapping, pr_piano)
 
-    # Generation out of scratch
-    # Instanciate orchestra pianoroll with zeros only
+    # Instanciate orchestra pianoroll with orchestra seed
     N_orchestra = metadata['N_orchestra']
     pr_orchestra = np.zeros((duration, N_orchestra), dtype=np.float32)
     pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(orch_seed_beginning, instru_orch, 0, seed_size, instru_mapping, pr_orchestra)

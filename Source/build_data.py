@@ -279,30 +279,30 @@ if __name__ == '__main__':
     logging.getLogger('').addHandler(console)
 
     DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
-    data_folder = '../Data_debug'
+    data_folder = '../Data'
     index_files_dict = {}
     index_files_dict['train'] = [
-        DATABASE_PATH + "/debug_train.txt",
-        # DATABASE_PATH + "/bouliane_train.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_train.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_train.txt"
+        # DATABASE_PATH + "/debug_train.txt",
+        DATABASE_PATH + "/bouliane_train.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_train.txt",
+        DATABASE_PATH + "/liszt_classical_archives_train.txt"
     ]
     index_files_dict['valid'] = [
-        DATABASE_PATH + "/debug_valid.txt",
-        # DATABASE_PATH + "/bouliane_valid.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_valid.txt"
+        # DATABASE_PATH + "/debug_valid.txt",
+        DATABASE_PATH + "/bouliane_valid.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
+        DATABASE_PATH + "/liszt_classical_archives_valid.txt"
     ]
     index_files_dict['test'] = [
-        DATABASE_PATH + "/debug_test.txt",
-        # DATABASE_PATH + "/bouliane_test.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_test.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_test.txt"
+        # DATABASE_PATH + "/debug_test.txt",
+        DATABASE_PATH + "/bouliane_test.txt",
+        DATABASE_PATH + "/hand_picked_Spotify_test.txt",
+        DATABASE_PATH + "/liszt_classical_archives_test.txt"
     ]
 
     # Dictionary with None if the data augmentation is not used, else the value for this data augmentation
     # Pitch translation. Write [0] for no translation
-    max_translation = 2
+    max_translation = 3
     pitch_translations = range(-max_translation, max_translation+1)
 
     build_data(root_dir=DATABASE_PATH,

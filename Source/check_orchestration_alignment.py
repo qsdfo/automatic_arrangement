@@ -6,17 +6,40 @@ import build_data_aux
 import os
 import numpy as np
 
-import itertools
-import build_data_aux
-
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
-from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
 from acidano.visualization.numpy_array.visualize_numpy import visualize_mat
 from acidano.data_processing.midi.write_midi import write_midi
-from acidano.data_processing.utils.event_level import get_event_ind_dict
-# from acidano.data_processing.midi.read_midi import Read_midi
 
-import acidano.data_processing.utils.unit_type as Unit_type
+# from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
+# from acidano.data_processing.utils.event_level import get_event_ind_dict
+# from acidano.data_processing.midi.read_midi import Read_midi
+# import acidano.data_processing.utils.unit_type as Unit_type
+
+
+def check_zero_orchestra():
+    context_size = 100
+    data_folder = '../Data'
+    set_identifier = 'train'
+    # Load data
+    piano = np.load(data_folder + '/piano_' + set_identifier + '.csv')
+    orch = np.load(data_folder + '/orchestra_' + set_identifier + '.csv')
+
+    # Detect problems
+    flat_orch = orch.sum(axis=1)
+    flat_piano = piano.sum(axis=1)
+    ind_problems = np.where((flat_orch == 0) ^ (flat_piano == 0))[0]
+
+    for t in ind_problems:
+        min_context = max(0, t-context_size)
+        max_context = min(piano.shape[0], t+context_size)
+        zeros_mat = np.zeros((max_context-min_context, 30))
+        zeros_mat[:, 15] = 1
+        context_piano = piano[min_context:max_context]
+        context_orch = orch[min_context:max_context]
+        plot_mat = np.concatenate((context_piano, zeros_mat, context_orch), axis=1)
+        # Plot around the problem
+        visualize_mat(plot_mat, 'DEBUG/plot_problems', str(t))
+    return 0
 
 
 def check_orchestration_alignment(path_db, subfolder_names, temporal_granularity, quantization, unit_type, gapopen, gapextend):
@@ -108,6 +131,10 @@ def check_orchestration_alignment(path_db, subfolder_names, temporal_granularity
 
 
 if __name__ == '__main__':
+    check_zero_orchestra()
+    import pdb; pdb.set_trace()
+
+
     folder_path = '../../database/Orchestration/Orchestration_checked'
     subfolder_names = [
         'bouliane',

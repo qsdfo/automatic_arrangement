@@ -66,7 +66,7 @@ script_param["data_folder"] = DATA_DIR
 script_param['temporal_granularity'] = 'event_level'  # event_level, frame_level
 script_param['quantization'] = 100
 script_param['unit_type'] = 'binary'
-script_param["max_translation"] = 2
+script_param["max_translation"] = 3
 script_param['skip_sample'] = 1
 # train
 script_param["optimizer"] = 'rmsprop'
@@ -141,7 +141,7 @@ model_space = Model_class.get_hp_space()
 
 if DEFINED_CONFIG:
     model_space = Model_class.get_static_config()
-    config_folder = script_param['result_folder'] + '/4'
+    config_folder = script_param['result_folder'] + '/5'
     if not os.path.isdir(config_folder):
         os.mkdir(config_folder)
     else:

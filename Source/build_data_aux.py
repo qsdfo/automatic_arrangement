@@ -11,6 +11,7 @@ from acidano.data_processing.utils.pianoroll_processing import clip_pr, get_pian
 from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
 from acidano.data_processing.utils.event_level import get_event_ind_dict
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
+from acidano.data_processing.utils.pianoroll_reduction import remove_unmatched_silence
 import acidano.data_processing.utils.unit_type as Unit_type
 
 
@@ -119,13 +120,17 @@ def align_tracks(pr0, pr1, unit_type, gapopen, gapextend):
     # Get pr warped and duration# In fact we just discard 0 in traces for both pr
 
     trace_prod = [e1 * e2 for (e1, e2) in zip(trace_0, trace_1)]
-    duration = sum(trace_prod)
-    if duration == 0:
-        return [None]*6
+    if sum(trace_prod) == 0:
+        return [None]*3
+
+    # Remove gaps
     pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 
-    return pr0_aligned, trace_0, pr1_aligned, trace_1, trace_prod, duration
+    # Remove zeros in one score, but not in the other
+    pr0_out, pr1_out, duration = remove_unmatched_silence(pr0_aligned, pr1_aligned)
+
+    return pr0_out, pr1_out, duration
 
 
 def discriminate_between_piano_and_orchestra(pr0, instru0, name0, pr1, instru1, name1):
@@ -163,7 +168,7 @@ def process_folder(folder_path, quantization, unit_type, temporal_granularity, l
         pr1 = warp_pr_aux(pr1, get_event_ind_dict(pr1))
 
     # Align tracks
-    pr0_aligned, _, pr1_aligned, _, _, duration = align_tracks(pr0, pr1, unit_type, gapopen, gapextend)
+    pr0_aligned, pr1_aligned, duration = align_tracks(pr0, pr1, unit_type, gapopen, gapextend)
 
     # Find which pr is orchestra, which one is piano
     pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra =\

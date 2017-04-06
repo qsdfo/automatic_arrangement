@@ -11,7 +11,7 @@ from acidano.data_processing.utils.pianoroll_processing import clip_pr, get_pian
 from acidano.data_processing.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
 from acidano.data_processing.utils.event_level import get_event_ind_dict
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
-from acidano.data_processing.utils.pianoroll_reduction import remove_unmatched_silence
+from acidano.data_processing.utils.pianoroll_reduction import remove_unmatched_silence, remove_match_silence, remove_silence
 import acidano.data_processing.utils.unit_type as Unit_type
 
 
@@ -106,55 +106,107 @@ def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from
 
 
 def align_tracks(pr0, pr1, unit_type, gapopen, gapextend):
+    # Mapping_0 is a vector of size pr0, with values of the index in the new pr and -1 for a silence
+    # Remove zeros
+    pr0_no_silence, mapping_0 = remove_silence(pr0)
+    pr1_no_silence, mapping_1 = remove_silence(pr1)
+
     # Get trace from needleman_wunsch algorithm
     # Traces are computed from binaries matrices
     # Traces are binary lists, 0 meaning a gap is inserted
-    pr0_trace = sum_along_instru_dim(Unit_type.from_type_to_binary(pr0, unit_type))
-    pr1_trace = sum_along_instru_dim(Unit_type.from_type_to_binary(pr1, unit_type))
+    pr0_trace = sum_along_instru_dim(Unit_type.from_type_to_binary(pr0_no_silence, unit_type))
+    pr1_trace = sum_along_instru_dim(Unit_type.from_type_to_binary(pr1_no_silence, unit_type))
     trace_0, trace_1, this_sum_score, this_nbId, this_nbDiffs = needleman_chord_wrapper(pr0_trace, pr1_trace, gapopen, gapextend)
 
+    ####################################
+    ####################################
     # Wrap dictionnaries according to the traces
     assert(len(trace_0) == len(trace_1)), "size mismatch"
-    pr0_warp = warp_dictionnary_trace(pr0, trace_0)
-    pr1_warp = warp_dictionnary_trace(pr1, trace_1)
-    # Get pr warped and duration# In fact we just discard 0 in traces for both pr
+    pr0_warp = warp_dictionnary_trace(pr0_no_silence, trace_0)
+    pr1_warp = warp_dictionnary_trace(pr1_no_silence, trace_1)
+    ####################################
+    ####################################
 
+    ####################################
+    ####################################
+    # Trace product
     trace_prod = [e1 * e2 for (e1, e2) in zip(trace_0, trace_1)]
-    if sum(trace_prod) == 0:
-        return [None]*3
-
+    duration = sum(trace_prod)
+    if duration == 0:
+        return [None]*5
     # Remove gaps
     pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 
-    # Remove zeros in one score, but not in the other
-    pr0_out, pr1_out, duration = remove_unmatched_silence(pr0_aligned, pr1_aligned)
+    # New mapping :
+    # some element are lost, replace them by silences
+    # and decrease the indices
+    def remove_gaps_mapping(mapping, trace, trace_prod):
+        index = 0
+        counter = 0
+        for (t, t_prod) in zip(trace, trace_prod):
+            if (t == 1) and (t_prod == 0):
+                # Element lost
+                while(mapping[index] == -1):
+                    index += 1
+                # Replace i with a silence
+                mapping[index] = -1
+            elif (t == 1) and (t_prod == 1):
+                while(mapping[index] == -1):
+                    index += 1
+                mapping[index] = counter
+                counter += 1
+                index += 1
+        return mapping
+    mapping_0_aligned = remove_gaps_mapping(mapping_0, trace_0, trace_prod)
+    mapping_1_aligned = remove_gaps_mapping(mapping_1, trace_1, trace_prod)
+    # Actually it is easier to have the indices of the non silent frames in the original score :
+    non_silent_0 = np.where(mapping_0_aligned != -1)[0]
+    non_silent_1 = np.where(mapping_1_aligned != -1)[0]
+    ####################################
+    ####################################
 
-    return pr0_out, pr1_out, duration
+    # # Remove zeros in one score, but not in the other
+    # pr0_no_unmatched_silence, pr1_no_unmatched_silence, duration = remove_unmatched_silence(pr0_aligned, pr1_aligned)
+    #
+    # # Remove zeros in both piano and orchestra : we don't want to learn mapping from zero to zero
+    # pr0_out, pr1_out, duration = remove_match_silence(pr0_no_unmatched_silence, pr1_no_unmatched_silence)
+
+    return pr0_aligned, non_silent_0, pr1_aligned, non_silent_1, duration
 
 
-def discriminate_between_piano_and_orchestra(pr0, instru0, name0, pr1, instru1, name1):
+def discriminate_between_piano_and_orchestra(pr0, event0, map0, instru0, name0, pr1, event1, map1, instru1, name1, duration):
     if len(set(instru0.values())) > len(set(instru1.values())):
-        pr_orchestra = pr0
-        instru_orchestra = instru0
-        name_orchestra = name0
+        pr_orch = pr0
+        event_orch = event0
+        map_orch = map0
+        instru_orch = instru0
+        name_orch = name0
+        #
         pr_piano = pr1
+        event_piano = event1
+        map_piano = map1
         instru_piano = instru1
         name_piano = name1
     elif len(set(instru0.values())) < len(set(instru1.values())):
-        pr_orchestra = pr1
-        instru_orchestra = instru1
-        name_orchestra = name1
+        pr_orch = pr1
+        event_orch = event1
+        map_orch = map1
+        instru_orch = instru1
+        name_orch = name1
+        #
         pr_piano = pr0
+        event_piano = event0
+        map_piano = map0
         instru_piano = instru0
         name_piano = name0
     else:
         # Both tracks have the same number of instruments
-        return [None] * 6
-    return pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra
+        return [None] * 11
+    return pr_piano, event_piano, map_piano, instru_piano, name_piano, pr_orch, event_orch, map_orch, instru_orch, name_orch, duration
 
 
-def process_folder(folder_path, quantization, unit_type, temporal_granularity, logging, gapopen=3, gapextend=1):
+def process_folder(folder_path, quantization, unit_type, temporal_granularity, gapopen=3, gapextend=1):
     # Get instrus and prs from a folder name name
     pr0, instru0, _, name0, pr1, instru1, _, name1 = get_instru_and_pr_from_folder_path(folder_path, quantization)
 
@@ -164,17 +216,26 @@ def process_folder(folder_path, quantization, unit_type, temporal_granularity, l
 
     # Temporal granularity
     if temporal_granularity == 'event_level':
-        pr0 = warp_pr_aux(pr0, get_event_ind_dict(pr0))
-        pr1 = warp_pr_aux(pr1, get_event_ind_dict(pr1))
+        event_0 = get_event_ind_dict(pr0)
+        event_1 = get_event_ind_dict(pr1)
+        pr0 = warp_pr_aux(pr0, event_0)
+        pr1 = warp_pr_aux(pr1, event_1)
+    else:
+        event_0 = None
+        event_1 = None
 
     # Align tracks
-    pr0_aligned, pr1_aligned, duration = align_tracks(pr0, pr1, unit_type, gapopen, gapextend)
+    pr0_aligned, non_silent_0, pr1_aligned, non_silent_1, duration = align_tracks(pr0, pr1, unit_type, gapopen, gapextend)
 
     # Find which pr is orchestra, which one is piano
-    pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra =\
-        discriminate_between_piano_and_orchestra(pr0_aligned, instru0, name0, pr1_aligned, instru1, name1)
+    pr_piano, event_piano, non_silent_piano, instru_piano, name_piano,\
+        pr_orch, event_orch, non_silent_orch, instru_orch, name_orch,\
+        duration =\
+        discriminate_between_piano_and_orchestra(pr0_aligned, event_0, non_silent_0, instru0, name0,
+                                                 pr1_aligned, event_1, non_silent_1, instru1, name1,
+                                                 duration)
 
-    return pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra, duration
+    return pr_piano, event_piano, non_silent_piano, instru_piano, name_piano, pr_orch, event_orch, non_silent_orch, instru_orch, name_orch, duration
 
 
 def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, pr_big):

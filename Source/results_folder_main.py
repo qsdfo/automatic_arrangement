@@ -112,7 +112,7 @@ if __name__ == '__main__':
     #################################
     # Or just generate or plot weight of a specific configuration
     #################################
-    configuration = "/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/rms_prop/FGgru/6"
+    configuration = "/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/rms_prop/FGgru/8"
     data_folder = "../Data"
     generation_length = 50
     seed_size = 20

@@ -2,12 +2,10 @@
 # -*- coding: utf8 -*-
 
 import numpy as np
-import acidano.data_processing.utils.pianoroll_processing as pianoroll_processing
-from acidano.visualization.numpy_array.write_numpy_array_html import write_numpy_array_html
-from acidano.visualization.numpy_array.dumped_numpy_to_csv import dump_to_csv
+from acidano.data_processing.utils.event_level import from_event_to_frame
 
 
-def reconstruct_pr(matrix, mapping):
+def instrument_reconstruction(matrix, mapping):
     # Reconstruct an orchestral dictionnary pianoroll from
     #   - matrix : (time * pitch)
     #   - mapping : a dictionnary mapping index space of the matrix
@@ -26,14 +24,26 @@ def reconstruct_pr(matrix, mapping):
         pitch_min = ranges['pitch_min']
         pitch_max = ranges['pitch_max']
 
-        this_pr = np.zeros((T,N), dtype=np.int16)
-        this_pr[:,pitch_min:pitch_max] = matrix[:,index_min:index_max]
+        this_pr = np.zeros((T, N), dtype=np.int16)
+        this_pr[:, pitch_min:pitch_max] = matrix[:, index_min:index_max]
         this_pr = this_pr * max_velocity
         pr_instru[instrument_name] = this_pr
 
     return pr_instru
 
-def reconstruct_piano(matrix, mapping):
+
+def time_reconstruction(matrix, non_silent_ind, event_ind):
+    # Write back the zeros
+    A = np.zeros((np.max(non_silent_ind)+1, matrix.shape[1]))
+    A[non_silent_ind] = matrix
+    # Duplicate repeted event
+    if event_ind is not None:
+        return from_event_to_frame(A, event_ind)
+    else:
+        return A
+
+
+def instrument_reconstruction_piano(matrix, mapping):
     # Reconstruct an orchestral dictionnary pianoroll from
     #   - matrix : (time * pitch)
     #   - mapping : a dictionnary mapping index space of the matrix
@@ -53,38 +63,9 @@ def reconstruct_piano(matrix, mapping):
     pitch_min = ranges['pitch_min']
     pitch_max = ranges['pitch_max']
 
-    this_pr = np.zeros((T,N), dtype=np.int16)
-    this_pr[:,pitch_min:pitch_max] = matrix[:,index_min:index_max]
+    this_pr = np.zeros((T, N), dtype=np.int16)
+    this_pr[:, pitch_min:pitch_max] = matrix[:, index_min:index_max]
     this_pr = this_pr * max_velocity
     pr_instru[instrument_name] = this_pr
 
     return pr_instru
-
-
-def place_event_level(pr, event_indices):
-    T_reconstruct = np.max(event_indices)
-    N = pianoroll_processing.get_pitch_dim(pr)
-    pr_reconstruct = {}
-    for k,v in pr.iteritems():
-        mat = np.zeros((T_reconstruct, N))
-        for ind in range(len(event_indices)-1):
-            start_ind = event_indices[ind]
-            end_ind = event_indices[ind+1]
-            mat[start_ind:end_ind,:] = v[ind,:]
-        pr_reconstruct[k] = mat
-    return pr_reconstruct
-
-
-if __name__ == '__main__':
-    import cPickle as pickle
-    metadata = pickle.load(open('../Data/metadata.pkl', 'rb'))
-    instru_mapping = metadata['instru_mapping']
-    pr = np.tile(np.arange(1,590,1), (50,1))
-    pr_instru = reconstruct_pr(pr, instru_mapping, False)
-
-    # Visualisation
-    AAA = np.concatenate(pr_instru.values(), axis=1)
-    temp_csv = 'temp.csv'
-    np.savetxt(temp_csv, AAA, delimiter=',')
-    dump_to_csv(temp_csv, temp_csv)
-    write_numpy_array_html("temp.html", "temp")

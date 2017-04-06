@@ -301,7 +301,7 @@ optim_space = Optimization_method.get_hp_space()
 if DEFINED_CONFIG:
     model_space = Model_class.get_static_config()
     optim_space['lr'] = 0.001
-    config_folder = script_param['result_folder'] + '/6'
+    config_folder = script_param['result_folder'] + '/8'
     if not os.path.isdir(config_folder):
         os.mkdir(config_folder)
     else:

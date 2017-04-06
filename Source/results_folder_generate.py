@@ -9,15 +9,12 @@ from load_data import load_data_test
 from generate import generate
 import build_data_aux
 import numpy as np
-
-import acidano.data_processing.utils.pianoroll_processing as pianoroll_processing
-import acidano.data_processing.utils.event_level as event_level
-import acidano.data_processing.utils.time_warping as time_warping
 import theano
 import re
 
+import reconstruct_pr
 from acidano.utils.init import shared_zeros
-import acidano.data_processing.utils.unit_type as Unit_type
+from acidano.data_processing.midi.write_midi import write_midi
 
 
 def generate_midi(config_folder, data_folder, generation_length, seed_size, quantization_write, corruption_flag, logger_generate):
@@ -101,42 +98,8 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     ############################################################
     # Read piano midi file
     ############################################################
-    # We don't want to process alignment here !!
-    # Just compute the new event of the piano, and orchestrate the corresponding frames
-    pr0, instru0, _, name0, pr1, instru1, _, name1 = build_data_aux.get_instru_and_pr_from_folder_path(track_path, script_param['quantization'])
-
-    # Find which pr is piano which one is orchestra
-    pr_piano_dict, instru_piano, name_piano, pr_orch_dict, instru_orch, name_orch =\
-        build_data_aux.discriminate_between_piano_and_orchestra(pr0, instru0, name0, pr1, instru1, name1)
-
-    # Unit type
-    pr_piano_dict = Unit_type.from_rawpr_to_type(pr_piano_dict, script_param['unit_type'])
-    pr_orch_dict = Unit_type.from_rawpr_to_type(pr_orch_dict, script_param['unit_type'])
-
-    # Temporal granularity
-    if script_param['temporal_granularity'] == 'event_level':
-        event_ind_piano = event_level.get_event_ind_dict(pr_piano_dict)
-        pr_piano_event = time_warping.warp_pr_aux(pr_piano_dict, event_ind_piano)
-        event_ind_orch = event_level.get_event_ind_dict(pr_orch_dict)
-        pr_orch_event = time_warping.warp_pr_aux(pr_orch_dict, event_ind_orch)
-
-    # Align tracks
-    pr_piano_aligned, trace_piano, pr_orch_aligned, trace_orch, trace_prod, duration =\
-        build_data_aux.align_tracks(pr_piano_event, pr_orch_event, script_param['unit_type'], gapopen=3, gapextend=1)
-
-    # Get seed_size frames of the aligned pr
-    piano_seed_beginning = {k: v[:seed_size] for k, v in pr_piano_aligned.iteritems()}
-    orch_seed_beginning = {k: v[:seed_size] for k, v in pr_orch_aligned.iteritems()}
-    # Get event_part
-    start_ind_event, list_seed_event = get_event_seed_reconstruction(trace_piano, trace_prod, seed_size)
-    piano_end = {k: v[start_ind_event:] for k, v in pr_piano_event.iteritems()}
-
-    # Indices for the reconstruction
-    event_ind_reconstruction = np.concatenate([event_ind_piano[list_seed_event], event_ind_piano[start_ind_event:]])
-
-    # Get length of pr
-    duration_end = pianoroll_processing.get_pianoroll_time(piano_end)
-    duration = seed_size + duration_end
+    pr_piano, event_piano, non_silent_piano, instru_piano, name_piano, pr_orch, event_orch, non_silent_orch, instru_orch, name_orch, duration =\
+        build_data_aux.process_folder(track_path, script_param['quantization'], script_param['unit_type'], script_param['temporal_granularity'], gapopen=3, gapextend=1)
 
     # Get the instrument mapping used for training
     metadata = pkl.load(open(metadata_path, 'rb'))
@@ -144,14 +107,16 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
 
     # Instanciate piano pianoroll
     N_piano = instru_mapping['piano']['index_max']
-    pr_piano = np.zeros((duration, N_piano), dtype=np.float32)
-    pr_piano = build_data_aux.cast_small_pr_into_big_pr(piano_seed_beginning, {}, 0, seed_size, instru_mapping, pr_piano)
-    pr_piano = build_data_aux.cast_small_pr_into_big_pr(piano_end, {}, seed_size, duration_end, instru_mapping, pr_piano)
+    pr_piano_gen = np.zeros((duration, N_piano), dtype=np.float32)
+    pr_piano_gen = build_data_aux.cast_small_pr_into_big_pr(pr_piano, {}, 0, duration, instru_mapping, pr_piano_gen)
 
     # Instanciate orchestra pianoroll with orchestra seed
+    orch_seed_beginning = {k: v[:seed_size] for k, v in pr_orch.iteritems()}
     N_orchestra = metadata['N_orchestra']
-    pr_orchestra = np.zeros((duration, N_orchestra), dtype=np.float32)
-    pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(orch_seed_beginning, instru_orch, 0, seed_size, instru_mapping, pr_orchestra)
+    pr_orchestra_gen = np.zeros((duration, N_orchestra), dtype=np.float32)
+    pr_orchestra_gen = build_data_aux.cast_small_pr_into_big_pr(orch_seed_beginning, instru_orch, 0, seed_size, instru_mapping, pr_orchestra_gen)
+    pr_orchestra_truth = np.zeros((duration, N_orchestra), dtype=np.float32)
+    pr_orchestra_truth = build_data_aux.cast_small_pr_into_big_pr(pr_orch, instru_orch, 0, duration, instru_mapping, pr_orchestra_truth)
 
     ############################################################
     ############################################################
@@ -168,14 +133,11 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     ############################################################
     ############################################################
     ############################################################
-    ############################################################
 
     # Push them on the GPU
-    pr_piano_shared = theano.shared(pr_piano, name='piano_generation', borrow=True)
-    pr_orchestra_shared = theano.shared(pr_orchestra, name='orchestra_generation', borrow=True)
+    pr_piano_shared = theano.shared(pr_piano_gen, name='piano_generation', borrow=True)
+    pr_orchestra_shared = theano.shared(pr_orchestra_gen, name='orchestra_generation', borrow=True)
 
-    # Generation parameters
-    generation_length = duration
     # generation_index is the last index of the track we want to generate
     # We feed several time the same index to get different proposition of orchestration
     generation_index = np.asarray([duration-1, ] * number_of_version, dtype=np.int32)
@@ -192,26 +154,32 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     # Generate
     ############################################################
     time_generate_0 = time.time()
-    generate(model,
-             pr_piano_shared, pr_orchestra_shared, generation_index, metadata_path,
-             generation_length, seed_size, script_param["quantization"], script_param['temporal_granularity'], event_ind_reconstruction,
-             generated_folder, logger_generate)
+    generated_sequences = generate(model, pr_piano_shared, pr_orchestra_shared, generation_index, seed_size)
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 
+    ############################################################
+    # Reconstruct and write
+    ############################################################
+    for write_counter in xrange(generated_sequences.shape[0]):
+        # Reconstruct
+        pr_orchestra_clean = reconstruct_pr.time_reconstruction(generated_sequences[write_counter], non_silent_piano, event_piano)
+        pr_orchestra = reconstruct_pr.instrument_reconstruction(pr_orchestra_clean, instru_mapping)
+        # Write
+        write_path = generated_folder + '/' + str(write_counter) + '_generated.mid'
+        write_midi(pr_orchestra, script_param['quantization'], write_path, tempo=80)
 
-def get_event_seed_reconstruction(trace_piano, trace_prod, seed_size):
-    counter = 0
-    counter_prod = 0
-    list_ind = []
-    sum_trace = [a+b for a, b in zip(trace_piano, trace_prod)]
-    for ind in sum_trace:
-        if counter_prod == seed_size:
-            break
-        if ind == 2:
-            list_ind.append(counter)
-            counter += 1
-            counter_prod += 1
-        elif ind == 1:
-            counter += 1
-    return counter, list_ind
+    ############################################################
+    ############################################################
+    # Write original orchestration and piano scores, but reconstructed version, just to check
+    A = reconstruct_pr.time_reconstruction(pr_piano_gen, non_silent_piano, event_piano)
+    piano_reconstructed = reconstruct_pr.instrument_reconstruction_piano(A, instru_mapping)
+    write_path = generated_folder + '/piano_reconstructed.mid'
+    write_midi(piano_reconstructed, script_param['quantization'], write_path, tempo=80)
+    #
+    A = reconstruct_pr.time_reconstruction(pr_orchestra_truth, non_silent_piano, event_piano)
+    orchestra_reconstructed = reconstruct_pr.instrument_reconstruction(A, instru_mapping)
+    write_path = generated_folder + '/orchestra_reconstructed.mid'
+    write_midi(orchestra_reconstructed, script_param['quantization'], write_path, tempo=80)
+    ############################################################
+    ############################################################

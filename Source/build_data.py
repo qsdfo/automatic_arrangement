@@ -167,7 +167,7 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization
                         continue
 
                     # Get pr, warped and duration
-                    new_pr_piano, new_instru_piano, name_piano, new_pr_orchestra, new_instru_orchestra, name_orchestra, duration\
+                    new_pr_piano, _, _, _, _, new_pr_orchestra, _, _, new_instru_orchestra, _, duration\
                         = build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, logging, gapopen=3, gapextend=1)
 
                     # SKip shitty files

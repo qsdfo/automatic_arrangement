@@ -75,8 +75,8 @@ def check_orchestration_alignment(path_db, subfolder_names, temporal_granularity
             if not os.path.isdir(folder_path):
                 continue
 
-            pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra, duration =\
-                build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, None, gapopen, gapextend)
+            pr_piano, _, _, _, _, pr_orchestra, _, _, _, _, duration =\
+                build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, gapopen, gapextend)
 
             if duration is None:
                 continue
@@ -134,10 +134,9 @@ if __name__ == '__main__':
     check_zero_orchestra()
     import pdb; pdb.set_trace()
 
-
     folder_path = '../../database/Orchestration/Orchestration_checked'
     subfolder_names = [
-        'bouliane',
+        # 'bouliane',
         'hand_picked_Spotify',
         'liszt_classical_archives',
     ]

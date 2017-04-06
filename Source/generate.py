@@ -6,17 +6,14 @@ import reconstruct_pr
 from acidano.data_processing.midi.write_midi import write_midi
 
 
-def generate(model,
-             piano, orchestra, indices, metadata_path,
-             generation_length, seed_size, quantization_write,
-             temporal_granularity, event_indices,
-             generated_folder, logger_generate):
+def generate(model, piano, orchestra, indices, seed_size):
     # Generate sequences from a trained model
     # piano, orchestra and index are data used to seed the generation
     # Note that generation length is fixed by the length of the piano input
     #
     # generation_length : length of the sequence generated, seed included
-    logger_generate.info("# Generating")
+
+    generation_length = piano.get_value(borrow=True).shape[0]
 
     generate_sequence = model.get_generate_function(
         piano=piano, orchestra=orchestra,
@@ -25,46 +22,7 @@ def generate(model,
         batch_generation_size=len(indices),
         name="generate_sequence")
 
-    # Load the mapping between pitch space and instrument
-    metadata = pkl.load(open(metadata_path, 'rb'))
-    instru_mapping = metadata['instru_mapping']
-
     # Given last indices, generate a batch of sequences
-    (generated_sequence,) = generate_sequence(indices)
+    (generated_sequences,) = generate_sequence(indices)
 
-    # Get the ground-truth piano and orchestra
-    # IZY from piano, orchestra, indices, generation length and seed_size
-    piano_seed = model.build_seed(piano.get_value(), indices, len(indices), generation_length)
-    orchestra_original = model.build_seed(orchestra.get_value(), indices, len(indices), generation_length)
-    if generated_folder is not None:
-        for write_counter in xrange(generated_sequence.shape[0]):
-            # Write generated midi
-            pr_orchestra = reconstruct_pr.reconstruct_pr(generated_sequence[write_counter], instru_mapping)
-            if (temporal_granularity == 'event_level') and (event_indices is not None):
-                # Place the generated vectors at the time indices in event_indices
-                pr_orchestra = reconstruct_pr.place_event_level(pr_orchestra, event_indices)
-            elif temporal_granularity == "event_level":
-                quantization_write = 1
-            write_path = generated_folder + '/' + str(write_counter) + '_generated.mid'
-            write_midi(pr_orchestra, quantization_write, write_path, tempo=80)
-
-            # Write original piano
-            pr_piano_seed = reconstruct_pr.reconstruct_piano(piano_seed[write_counter], instru_mapping)
-            if (temporal_granularity == 'event_level') and (event_indices is not None):
-                # Place the generated vectors at the time indices in event_indices
-                pr_piano_seed = reconstruct_pr.place_event_level(pr_piano_seed, event_indices)
-            elif temporal_granularity == "event_level":
-                quantization_write = 1
-            write_path = generated_folder + '/' + str(write_counter) + '_piano_seed.mid'
-            write_midi(pr_piano_seed, quantization_write, write_path, tempo=80)
-
-            # Write original orchestra
-            pr_orchestra_original = reconstruct_pr.reconstruct_pr(orchestra_original[write_counter], instru_mapping)
-            if (temporal_granularity == 'event_level') and (event_indices is not None):
-                # Place the generated vectors at the time indices in event_indices
-                pr_orchestra_original = reconstruct_pr.place_event_level(pr_orchestra_original, event_indices)
-            elif temporal_granularity == "event_level":
-                quantization_write = 1
-            write_path = generated_folder + '/' + str(write_counter) + '_orchestra_original.mid'
-            write_midi(pr_orchestra_original, quantization_write, write_path, tempo=80)
-    return
+    return generated_sequences

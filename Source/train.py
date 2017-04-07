@@ -17,7 +17,7 @@ import theano
 # theano.config.optimizer = 'fast_compile'
 # theano.config.mode = 'FAST_COMPILE'
 # theano.config.exception_verbosity = 'high'
-theano.config.compute_test_value = 'warn'
+theano.config.compute_test_value = 'off'
 
 
 def run_wrapper(params, config_folder, start_time_train):
@@ -135,7 +135,7 @@ def run_wrapper(params, config_folder, start_time_train):
                   'orchestra_dim': orchestra_dim}
 
     ############################################################
-    # Update train_param dict with new information from load data
+    # Update train_param and model_param dicts with new information from load data
     ############################################################
     n_train_batches = len(train_index)
     n_val_batches = len(valid_index)
@@ -144,13 +144,18 @@ def run_wrapper(params, config_folder, start_time_train):
     logger_run.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
     logger_run.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
 
+    # Batches
     train_param['n_train_batches'] = n_train_batches
     train_param['n_val_batches'] = n_val_batches
 
-    ############################################################
-    # Update train_param dict with time infos
-    ############################################################
+    # Time info
     train_param['start_time_train'] = start_time_train
+
+    # Class normalization
+    notes_activation = orchestra_train.get_value(borrow=True).sum(axis=0)
+    notes_activation_norm = notes_activation.mean() / (notes_activation+1e-10)
+    class_normalization = np.maximum(1, np.minimum(5, notes_activation_norm))
+    model_param['class_normalization'] = class_normalization
 
     ############################################################
     # Instanciate model and Optimization method

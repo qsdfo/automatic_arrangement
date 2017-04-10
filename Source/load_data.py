@@ -6,14 +6,13 @@
 
 import numpy as np
 import theano
-import re
 import logging
 import random
 import cPickle as pickle
 
 
 def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, temporal_order=20, batch_size=100, generation_length=100,
-              skip_sample=1,logger_load=None):
+              skip_sample=1, logger_load=None):
 
     # If no logger, create one
     if logger_load is None:
@@ -22,7 +21,7 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
                             datefmt='%m-%d %H:%M',
                             filename='load.log',
                             filemode='w')
-        logger_load=logging.getLogger('load')
+        logger_load = logging.getLogger('load')
 
     piano = np.load(data_folder + '/piano_' + set_identifier + '.csv')
     orchestra = np.load(data_folder + '/orchestra_' + set_identifier + '.csv')
@@ -96,12 +95,15 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
     else:
         return piano_shared, orchestra_shared, np.asarray(batches, dtype=np.int32)
 
+
 # Wrappers
-def load_data_train(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100, skip_sample=1,logger_load=None):
-    return load_data(data_folder, piano_checksum, orchestra_checksum, 'train', temporal_order, batch_size, generation_length, skip_sample,logger_load)
+def load_data_train(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100, skip_sample=1, logger_load=None):
+    return load_data(data_folder, piano_checksum, orchestra_checksum, 'train', temporal_order, batch_size, generation_length, skip_sample, logger_load)
 
-def load_data_valid(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100, skip_sample=1,logger_load=None):
-    return load_data(data_folder, piano_checksum, orchestra_checksum, 'valid', temporal_order, batch_size, generation_length, skip_sample,logger_load)
 
-def load_data_test(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100, skip_sample=1,logger_load=None):
-    return load_data(data_folder, piano_checksum, orchestra_checksum, 'test', temporal_order, batch_size, generation_length, skip_sample,logger_load)
+def load_data_valid(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100, skip_sample=1, logger_load=None):
+    return load_data(data_folder, piano_checksum, orchestra_checksum, 'valid', temporal_order, batch_size, generation_length, skip_sample, logger_load)
+
+
+def load_data_test(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100, skip_sample=1, logger_load=None):
+    return load_data(data_folder, piano_checksum, orchestra_checksum, 'test', temporal_order, batch_size, generation_length, skip_sample, logger_load)

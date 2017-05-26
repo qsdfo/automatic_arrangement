@@ -252,24 +252,27 @@ if BUILD_DATABASE:
         # DATABASE_PATH + "/debug_train.txt",
         DATABASE_PATH + "/bouliane_train.txt",
         DATABASE_PATH + "/hand_picked_Spotify_train.txt",
-        DATABASE_PATH + "/liszt_classical_archives_train.txt"
+        DATABASE_PATH + "/liszt_classical_archives_train.txt",
+        DATABASE_PATH + "/imslp_train.txt"
     ]
     index_files_dict['valid'] = [
         # DATABASE_PATH + "/debug_valid.txt",
         DATABASE_PATH + "/bouliane_valid.txt",
         DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
-        DATABASE_PATH + "/liszt_classical_archives_valid.txt"
+        DATABASE_PATH + "/liszt_classical_archives_valid.txt",
+        DATABASE_PATH + "/imslp_valid.txt"
     ]
     index_files_dict['test'] = [
         # DATABASE_PATH + "/debug_test.txt",
         DATABASE_PATH + "/bouliane_test.txt",
         DATABASE_PATH + "/hand_picked_Spotify_test.txt",
-        DATABASE_PATH + "/liszt_classical_archives_test.txt"
+        DATABASE_PATH + "/liszt_classical_archives_test.txt",
+        DATABASE_PATH + "/imslp_test.txt"
     ]
 
     # Dictionary with None if the data augmentation is not used, else the value for this data augmentation
     # Pitch translation. Write [0] for no translation
-    max_translation = 0
+    max_translation = 3
     pitch_translations = range(-max_translation, max_translation+1)
 
     build_data(root_dir=DATABASE_PATH,
@@ -301,7 +304,7 @@ optim_space = Optimization_method.get_hp_space()
 if DEFINED_CONFIG:
     model_space = Model_class.get_static_config()
     optim_space['lr'] = 0.001
-    config_folder = script_param['result_folder'] + '/8'
+    config_folder = script_param['result_folder'] + '/11'
     if not os.path.isdir(config_folder):
         os.mkdir(config_folder)
     else:

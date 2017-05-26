@@ -74,6 +74,7 @@ def processing_results(configurations_path, data_folder, track_paths, generation
     # write_csv_results(configurations_path, id_result_list, configurations[0])
     # plot_hparam_curves(configurations_path)
 
+
 if __name__ == '__main__':
     ####################################################################################
     ####################################################################################
@@ -112,7 +113,7 @@ if __name__ == '__main__':
     #################################
     # Or just generate or plot weight of a specific configuration
     #################################
-    configuration = "/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/rms_prop/FGgru/8"
+    configuration = "/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/rms_prop/FGgru/11"
     data_folder = "../Data"
     generation_length = 50
     seed_size = 20

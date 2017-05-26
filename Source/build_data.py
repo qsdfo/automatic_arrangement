@@ -20,9 +20,6 @@ import os
 import numpy as np
 
 from acidano.data_processing.utils.build_dico import build_dico
-from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
-from acidano.data_processing.utils.event_level import get_event_ind_dict
-from acidano.data_processing.utils.time_warping import warp_pr_aux
 import acidano.data_processing.utils.data_augmentation as data_augmentation
 import build_data_aux
 import cPickle as pickle
@@ -57,8 +54,8 @@ def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantiza
                         continue
 
                     # Read pr
-                    pr_piano, instru_piano, name_piano, pr_orchestra, instru_orchestra, name_orchestra, duration =\
-                        build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, logging, gapopen=3, gapextend=1)
+                    pr_piano, _, _, instru_piano, _, pr_orch, _, _, instru_orch, _, duration =\
+                        build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, gapopen=3, gapextend=1)
 
                     if duration is None:
                         # Files that could not be aligned
@@ -77,8 +74,8 @@ def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantiza
                     #                   a = f(a) with f returning the modified value of a.
                     # Does it change anything for computation speed ? (Python pass by reference,
                     # but a slightly different version of it, not clear to me)
-                    instru_mapping = build_data_aux.instru_pitch_range(instrumentation=instru_orchestra,
-                                                                       pr=pr_orchestra,
+                    instru_mapping = build_data_aux.instru_pitch_range(instrumentation=instru_orch,
+                                                                       pr=pr_orch,
                                                                        instru_mapping=instru_mapping,
                                                                        instrument_list_from_dico=instrument_list_from_dico
                                                                        )
@@ -95,7 +92,7 @@ def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantiza
     # Build the index_min and index_max in the instru_mapping dictionary
     counter = 0
     for k, v in instru_mapping.iteritems():
-        if k == 'piano':
+        if k == 'Piano':
             index_min = 0
             index_max = v['pitch_max'] - v['pitch_min']
             v['index_min'] = index_min
@@ -139,7 +136,7 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization
     quantization = temp['quantization']
     T_dict = temp['T']
     N_orchestra = temp['N_orchestra']
-    N_piano = instru_mapping['piano']['index_max']
+    N_piano = instru_mapping['Piano']['index_max']
 
     for set_identifier, index_files in index_files_dict.iteritems():
         T = T_dict[set_identifier]
@@ -278,26 +275,29 @@ if __name__ == '__main__':
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
 
-    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
-    data_folder = '../Data'
+    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database'
+    data_folder = '../Data_test'
     index_files_dict = {}
     index_files_dict['train'] = [
         # DATABASE_PATH + "/debug_train.txt",
         DATABASE_PATH + "/bouliane_train.txt",
         DATABASE_PATH + "/hand_picked_Spotify_train.txt",
-        DATABASE_PATH + "/liszt_classical_archives_train.txt"
+        DATABASE_PATH + "/liszt_classical_archives_train.txt",
+        DATABASE_PATH + "/imslp_train.txt"
     ]
     index_files_dict['valid'] = [
         # DATABASE_PATH + "/debug_valid.txt",
         DATABASE_PATH + "/bouliane_valid.txt",
         DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
-        DATABASE_PATH + "/liszt_classical_archives_valid.txt"
+        DATABASE_PATH + "/liszt_classical_archives_valid.txt",
+        DATABASE_PATH + "/imslp_valid.txt"
     ]
     index_files_dict['test'] = [
         # DATABASE_PATH + "/debug_test.txt",
         DATABASE_PATH + "/bouliane_test.txt",
         DATABASE_PATH + "/hand_picked_Spotify_test.txt",
-        DATABASE_PATH + "/liszt_classical_archives_test.txt"
+        DATABASE_PATH + "/liszt_classical_archives_test.txt",
+        DATABASE_PATH + "/imslp_test.txt"
     ]
 
     # Dictionary with None if the data augmentation is not used, else the value for this data augmentation

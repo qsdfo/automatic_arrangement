@@ -106,7 +106,7 @@ def generate_keras(model_path, data_path, track_path):
         pr_orch_dict = time_warping.warp_pr_aux(pr_orch_dict, event_ind_orch)
 
     # Align tracks
-    pr_piano_aligned, trace_piano, pr_orch_aligned, trace_orch, trace_prod, duration =\
+    pr_piano_aligned, pr_orch_aligned, trace_prod, duration =\
         build_data_aux.align_tracks(pr_piano_dict, pr_orch_dict, unit_type, gapopen=3, gapextend=1)
 
     # Get seed_size frames of the aligned pr
@@ -184,7 +184,7 @@ def generate_keras(model_path, data_path, track_path):
 
 if __name__ == '__main__':
     main_path = '/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/rmsprop/Lstm'
-    data_path = '/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/rmsprop/Data'
+    data_path = '../Data'
     track_paths = [
         '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/liszt_classical_archives/16',
         '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/bouliane/22',
@@ -192,6 +192,9 @@ if __name__ == '__main__':
     ]
 
     folders = glob.glob(main_path + '/[0-9]*')
-    for folder in folders:
-        for track_path in track_paths:
-            generate_keras(folder, data_path, track_path)
+    # for folder in folders:
+    #     for track_path in track_paths:
+    #         generate_keras(folder, data_path, track_path)
+
+    for track_path in track_paths:
+        generate_keras(main_path + '/5', data_path, track_path)

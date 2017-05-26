@@ -44,7 +44,7 @@ theano.config.compute_test_value = 'off'
 #    quantization : int
 ####################
 
-REBUILD_DATABASE = False
+REBUILD_DATABASE = True
 
 ####################
 # Build data parameters :
@@ -551,13 +551,6 @@ if __name__ == "__main__":
     ######################################
 
     ######################################
-    ###### Or directly call the train function for one set of HPARAMS
-    # model_param = {
-    #     'temporal_order': 20,
-    #     'n_hidden': 150,
-    #     'n_factor': 100,
-    #     'batch_size': 2,
-    #     'gibbs_steps': 10
     # ###### Or directly call the train function for one set of HPARAMS
     # model_param = {
     #     'temporal_order': 20,

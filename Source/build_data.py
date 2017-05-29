@@ -165,7 +165,7 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization
 
                     # Get pr, warped and duration
                     new_pr_piano, _, _, _, _, new_pr_orchestra, _, _, new_instru_orchestra, _, duration\
-                        = build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, logging, gapopen=3, gapextend=1)
+                        = build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, gapopen=3, gapextend=1)
 
                     # SKip shitty files
                     if new_pr_piano is None:
@@ -275,29 +275,30 @@ if __name__ == '__main__':
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
 
-    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database'
+    DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_29_05_17'
+    INDEX_PATH = DATABASE_PATH + '/tvt_split'
     data_folder = '../Data_test'
     index_files_dict = {}
     index_files_dict['train'] = [
-        # DATABASE_PATH + "/debug_train.txt",
-        DATABASE_PATH + "/bouliane_train.txt",
-        DATABASE_PATH + "/hand_picked_Spotify_train.txt",
-        DATABASE_PATH + "/liszt_classical_archives_train.txt",
-        DATABASE_PATH + "/imslp_train.txt"
+        DATABASE_PATH + "/debug_train.txt",
+        # DATABASE_PATH + "/bouliane_train.txt",
+        # DATABASE_PATH + "/hand_picked_Spotify_train.txt",
+        # DATABASE_PATH + "/liszt_classical_archives_train.txt",
+        # DATABASE_PATH + "/imslp_train.txt"
     ]
     index_files_dict['valid'] = [
-        # DATABASE_PATH + "/debug_valid.txt",
-        DATABASE_PATH + "/bouliane_valid.txt",
-        DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
-        DATABASE_PATH + "/liszt_classical_archives_valid.txt",
-        DATABASE_PATH + "/imslp_valid.txt"
+        DATABASE_PATH + "/debug_valid.txt",
+        # DATABASE_PATH + "/bouliane_valid.txt",
+        # DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
+        # DATABASE_PATH + "/liszt_classical_archives_valid.txt",
+        # DATABASE_PATH + "/imslp_valid.txt"
     ]
     index_files_dict['test'] = [
-        # DATABASE_PATH + "/debug_test.txt",
-        DATABASE_PATH + "/bouliane_test.txt",
-        DATABASE_PATH + "/hand_picked_Spotify_test.txt",
-        DATABASE_PATH + "/liszt_classical_archives_test.txt",
-        DATABASE_PATH + "/imslp_test.txt"
+        DATABASE_PATH + "/debug_test.txt",
+        # DATABASE_PATH + "/bouliane_test.txt",
+        # DATABASE_PATH + "/hand_picked_Spotify_test.txt",
+        # DATABASE_PATH + "/liszt_classical_archives_test.txt",
+        # DATABASE_PATH + "/imslp_test.txt"
     ]
 
     # Dictionary with None if the data augmentation is not used, else the value for this data augmentation

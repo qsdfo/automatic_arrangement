@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8-unix -*-
 
 import glob
 import re
@@ -303,9 +303,9 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
             # Then this is the piano score
             instru_names = ['Piano']
         else:
-            # unmix instrus
-            instru_names = unmixed_instru(instru[track_name])
-
+            # unmix instrusi
+            instru_names = unmixed_instru(instru[track_name.rstrip('\x00')])
+        
         for instru_name in instru_names:
             # "Remove" tracks
             if instru_name == 'Remove':

@@ -104,7 +104,7 @@ def run_wrapper(params, config_folder, start_time_train):
                           model_param['temporal_order'],
                           model_param['batch_size'],
                           skip_sample=script_param['skip_sample'],
-                          avoid_silence=False,
+                          avoid_silence=True,
                           logger_load=logger_run)
     # This load is only for sanity check purposes
     piano_test, orchestra_test, _, _ \
@@ -113,7 +113,7 @@ def run_wrapper(params, config_folder, start_time_train):
                          model_param['temporal_order'],
                          model_param['batch_size'],
                          skip_sample=script_param['skip_sample'],
-                         avoid_silence=False,
+                         avoid_silence=True,
                          logger_load=logger_run)
     time_load_1 = time.time()
     logger_run.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))

@@ -11,8 +11,8 @@ import random
 import cPickle as pickle
 
 
-def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, temporal_order=20, batch_size=100, generation_length=100,
-              skip_sample=1, logger_load=None):
+def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, temporal_order=20, batch_size=100,
+              skip_sample=1, avoid_silence=True, logger_load=None, generation_length=100):
 
     # If no logger, create one
     if logger_load is None:
@@ -51,6 +51,10 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
             valid_ind.extend(range(start_track+temporal_order-1, end_track, skip_sample))
         return valid_ind
 
+    def remove_silences(indices, pr):
+        flat_pr = pr.sum(axis=1)
+        return [e for e in indices if (flat_pr[e] != 0)]
+
     def last_indices(tracks_start_end, temporal_order):
         valid_ind = []
         for (start_track, end_track) in tracks_start_end.values():
@@ -80,6 +84,8 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
         return batches
 
     indices = valid_indices(tracks_start_end, temporal_order)
+    if avoid_silence:
+        indices = remove_silences(indices, orchestra)
     batches = build_batches(indices)
 
     # Generation indices :
@@ -97,13 +103,16 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
 
 
 # Wrappers
-def load_data_train(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100, skip_sample=1, logger_load=None):
-    return load_data(data_folder, piano_checksum, orchestra_checksum, 'train', temporal_order, batch_size, generation_length, skip_sample, logger_load)
+def load_data_train(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=True, logger_load=None, generation_length=100):
+    return load_data(data_folder, piano_checksum, orchestra_checksum, 'train', temporal_order=temporal_order, batch_size=batch_size,
+                     skip_sample=skip_sample, avoid_silence=avoid_silence, logger_load=logger_load, generation_length=generation_length)
 
 
-def load_data_valid(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100, skip_sample=1, logger_load=None):
-    return load_data(data_folder, piano_checksum, orchestra_checksum, 'valid', temporal_order, batch_size, generation_length, skip_sample, logger_load)
+def load_data_valid(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=False, logger_load=None, generation_length=100):
+    return load_data(data_folder, piano_checksum, orchestra_checksum, 'valid', temporal_order=temporal_order, batch_size=batch_size,
+                     skip_sample=skip_sample, avoid_silence=avoid_silence, logger_load=logger_load, generation_length=generation_length)
 
 
-def load_data_test(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, generation_length=100, skip_sample=1, logger_load=None):
-    return load_data(data_folder, piano_checksum, orchestra_checksum, 'test', temporal_order, batch_size, generation_length, skip_sample, logger_load)
+def load_data_test(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=False, logger_load=None, generation_length=100):
+    return load_data(data_folder, piano_checksum, orchestra_checksum, 'test', temporal_order=temporal_order, batch_size=batch_size,
+                     skip_sample=skip_sample, avoid_silence=avoid_silence, logger_load=logger_load, generation_length=generation_length)

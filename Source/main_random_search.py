@@ -2,7 +2,6 @@
 # -*- coding: utf8 -*-
 
 # Main script for music generation
-
 import hyperopt
 import os
 import random
@@ -208,10 +207,8 @@ train_param = {}
 train_param['max_iter'] = 200  # nb max of iterations when training 1 configuration of hparams
 # Config is set now, no need to modify source below for standard use
 train_param['walltime'] = 11  # in hours
-
 #  DEBUG flags
 train_param['DEBUG'] = DEBUG
-
 # Validation
 train_param['validation_order'] = 2
 train_param['number_strips'] = 3
@@ -249,25 +246,25 @@ if BUILD_DATABASE:
     logging.info('# ** BUILD DATABASE **')
     index_files_dict = {}
     index_files_dict['train'] = [
-        # DATABASE_PATH + "/debug_train.txt",
-        DATABASE_PATH + "/bouliane_train.txt",
-        DATABASE_PATH + "/hand_picked_Spotify_train.txt",
-        DATABASE_PATH + "/liszt_classical_archives_train.txt",
-        DATABASE_PATH + "/imslp_train.txt"
+        DATABASE_PATH + "/debug_train.txt",
+        # DATABASE_PATH + "/bouliane_train.txt",
+        # DATABASE_PATH + "/hand_picked_Spotify_train.txt",
+        # DATABASE_PATH + "/liszt_classical_archives_train.txt",
+        # DATABASE_PATH + "/imslp_train.txt"
     ]
     index_files_dict['valid'] = [
-        # DATABASE_PATH + "/debug_valid.txt",
-        DATABASE_PATH + "/bouliane_valid.txt",
-        DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
-        DATABASE_PATH + "/liszt_classical_archives_valid.txt",
-        DATABASE_PATH + "/imslp_valid.txt"
+        DATABASE_PATH + "/debug_valid.txt",
+        # DATABASE_PATH + "/bouliane_valid.txt",
+        # DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
+        # DATABASE_PATH + "/liszt_classical_archives_valid.txt",
+        # DATABASE_PATH + "/imslp_valid.txt"
     ]
     index_files_dict['test'] = [
-        # DATABASE_PATH + "/debug_test.txt",
-        DATABASE_PATH + "/bouliane_test.txt",
-        DATABASE_PATH + "/hand_picked_Spotify_test.txt",
-        DATABASE_PATH + "/liszt_classical_archives_test.txt",
-        DATABASE_PATH + "/imslp_test.txt"
+        DATABASE_PATH + "/debug_test.txt",
+        # DATABASE_PATH + "/bouliane_test.txt",
+        # DATABASE_PATH + "/hand_picked_Spotify_test.txt",
+        # DATABASE_PATH + "/liszt_classical_archives_test.txt",
+        # DATABASE_PATH + "/imslp_test.txt"
     ]
 
     # Dictionary with None if the data augmentation is not used, else the value for this data augmentation

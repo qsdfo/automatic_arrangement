@@ -31,7 +31,10 @@ def generate_midi(config_folder, data_folder, generation_length, corruption_flag
     space = pkl.load(open(param_path, 'rb'))
     model_param = space['model']
     script_param = space['script']
-    metadata_path = data_folder + '/metadata.pkl'
+    metadata_path = data_folder + '/metadata.pkl'    
+    # Get the instrument mapping used for training
+    metadata = pkl.load(open(metadata_path, 'rb'))
+    instru_mapping = metadata['instru_mapping']
 
     ############################################################
     # Load data
@@ -73,10 +76,32 @@ def generate_midi(config_folder, data_folder, generation_length, corruption_flag
     # Generate
     ############################################################
     time_generate_0 = time.time()
-
-    generate(model, piano_test, orchestra_test, generation_index, model_param['temporal_order'])
+    generated_sequences = generate(model, piano_test, orchestra_test, generation_index, generation_length, model_param['temporal_order'])
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
+    
+    ############################################################
+    # Reconstruct and write
+    ############################################################
+    for write_counter in xrange(generated_sequences.shape[0]):
+        generated_folder_ind = generated_folder + '/' + str(write_counter)
+        if not os.path.isdir(generated_folder_ind):
+            os.makedirs(generated_folder_ind)
+        # Reconstruct
+        pr_orchestra = reconstruct_pr.instrument_reconstruction(generated_sequences[write_counter], instru_mapping)
+        # Write
+        write_path = generated_folder_ind + '/generated.mid'
+        write_midi(pr_orchestra, script_param['quantization'], write_path, tempo=80)
+        # Write original orchestration and piano scores, but reconstructed version, just to check
+        pr_piano_ref = piano_test.get_value(borrow=True)[generation_index[write_counter]-generation_length:generation_index[write_counter]]
+        piano_reconstructed = reconstruct_pr.instrument_reconstruction_piano(pr_piano_ref, instru_mapping)
+        write_path = generated_folder_ind + '/piano_reconstructed.mid'
+        write_midi(piano_reconstructed, script_param['quantization'], write_path, tempo=80)
+        #
+        pr_orch_ref = orchestra_test.get_value(borrow=True)[generation_index[write_counter]-generation_length:generation_index[write_counter]]
+        orchestra_reconstructed = reconstruct_pr.instrument_reconstruction(pr_orch_ref, instru_mapping)
+        write_path = generated_folder_ind + '/orchestra_reconstructed.mid'
+        write_midi(orchestra_reconstructed, script_param['quantization'], write_path, tempo=80)
 
 
 def generate_midi_full_track_reference(config_folder, data_folder, track_path, seed_size, number_of_version, logger_generate):
@@ -134,6 +159,9 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     ############################################################
     ############################################################
 
+    # Generation length is the duration of the piano track
+    generation_length = pr_piano_gen.shape[0]
+
     # Push them on the GPU
     pr_piano_shared = theano.shared(pr_piano_gen, name='piano_generation', borrow=True)
     pr_orchestra_shared = theano.shared(pr_orchestra_gen, name='orchestra_generation', borrow=True)
@@ -154,7 +182,7 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     # Generate
     ############################################################
     time_generate_0 = time.time()
-    generated_sequences = generate(model, pr_piano_shared, pr_orchestra_shared, generation_index, seed_size)
+    generated_sequences = generate(model, pr_piano_shared, pr_orchestra_shared, generation_index, generation_length, seed_size)
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 

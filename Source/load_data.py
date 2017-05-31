@@ -85,7 +85,9 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
 
     indices = valid_indices(tracks_start_end, temporal_order)
     if avoid_silence:
+        # Remove both... a bit brute force
         indices = remove_silences(indices, orchestra)
+        indices = remove_silences(indices, piano)
     batches = build_batches(indices)
 
     # Generation indices :

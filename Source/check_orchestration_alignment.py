@@ -44,7 +44,8 @@ def check_zero_orchestra():
 
 def check_orchestration_alignment(path_db, subfolder_names, temporal_granularity, quantization, unit_type, gapopen, gapextend):
 
-    output_dir = 'Grid_search_database_alignment/' + str(quantization) +\
+    output_dir = 'DEBUG/' +\
+                 'Grid_search_database_alignment/' + str(quantization) +\
                  '_' + temporal_granularity +\
                  '_' + unit_type +\
                  '_' + str(gapopen) +\
@@ -64,22 +65,44 @@ def check_orchestration_alignment(path_db, subfolder_names, temporal_granularity
     for sub_db in subfolder_names:
         print '#' * 30
         print sub_db
+
         sub_db_path = path_db + '/' + sub_db
         if not os.path.isdir(sub_db_path):
             continue
 
         for folder_name in os.listdir(sub_db_path):
-            print '#' * 20
-            print '#' + folder_name + '\n'
+            print '# ' + sub_db + ' : ' + folder_name
             folder_path = sub_db_path + '/' + folder_name
             if not os.path.isdir(folder_path):
                 continue
 
-            pr_piano, _, _, _, _, pr_orchestra, _, _, _, _, duration =\
+            # Skip already computed folders
+            save_folder_name = output_dir +\
+                '/' + sub_db + '_' + folder_name
+            if os.path.isdir(save_folder_name):
+                continue
+
+            pr_piano_no_map, _, _, _, _, pr_orchestra_no_map, _, _, instru_orch, _, duration =\
                 build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, gapopen, gapextend)
 
-            if duration is None:
-                continue
+            # Apply the mapping
+            pr_piano = {}
+            pr_orchestra = {}
+            for k, v in pr_piano_no_map.iteritems():
+                if 'Piano' in pr_piano:
+                    pr_piano['Piano'] = np.maximum(pr_piano['Piano'], v)
+                else:
+                    pr_piano['Piano'] = v
+
+            for k, v in pr_orchestra_no_map.iteritems():
+                # unmix instrus
+                new_k = instru_orch[k.rstrip('\x00')]
+                instru_names = build_data_aux.unmixed_instru(new_k)
+                for instru_name in instru_names:
+                    if instru_name in pr_orchestra:
+                        pr_orchestra[instru_name] = np.maximum(pr_orchestra[instru_name], v)
+                    else:
+                        pr_orchestra[instru_name] = v
 
             # Sum all instrument
             piano_aligned = sum_along_instru_dim(pr_piano)
@@ -99,9 +122,6 @@ def check_orchestration_alignment(path_db, subfolder_names, temporal_granularity
             # if counter % 10 == 0:
             #     import pdb; pdb.set_trace()
 
-            save_folder_name = output_dir +\
-                '/' + sub_db + '_' + folder_name
-
             if not os.path.isdir(save_folder_name):
                 os.makedirs(save_folder_name)
 
@@ -110,7 +130,7 @@ def check_orchestration_alignment(path_db, subfolder_names, temporal_granularity
             # write_midi(pr={'piano1': sum_along_instru_dim(pr1)}, quantization=quantization, write_path=save_folder_name + '/1.mid', tempo=80)
             write_midi(pr=pr_piano, quantization=quantization_write, write_path=save_folder_name + '/0.mid', tempo=80)
             write_midi(pr=pr_orchestra, quantization=quantization_write, write_path=save_folder_name + '/1.mid', tempo=80)
-            write_midi(pr={'piano': piano_aligned, 'violin': orchestra_aligned}, quantization=quantization_write, write_path=save_folder_name + '/both_aligned.mid', tempo=80)
+            write_midi(pr={'Piano': piano_aligned, 'Violin': orchestra_aligned}, quantization=quantization_write, write_path=save_folder_name + '/both_aligned.mid', tempo=80)
             # write_midi(pr={'piano1': AAA_aligned, 'piano2': BBB_aligned}, quantization=quantization_write, write_path=save_folder_name + '/both__aligned.mid', tempo=80)
 
     # # Write statistics
@@ -131,12 +151,10 @@ def check_orchestration_alignment(path_db, subfolder_names, temporal_granularity
 
 
 if __name__ == '__main__':
-    check_zero_orchestra()
-    import pdb; pdb.set_trace()
-
-    folder_path = '../../database/Orchestration/Orchestration_checked'
+    folder_path = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_29_05_17'
     subfolder_names = [
-        # 'bouliane',
+        'bouliane',
+        'imslp',
         'hand_picked_Spotify',
         'liszt_classical_archives',
     ]

@@ -125,10 +125,8 @@ def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, du
 def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, unit_type='binary', temporal_granularity='frame_level', store_folder='../Data', pitch_translation_augmentations=[0], logging=None):
 
     # Get dimensions
-    instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, unit_type=unit_type, temporal_granularity=temporal_granularity, pitch_translation_augmentations=pitch_translation_augmentations, logging=logging)
+   #  instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, unit_type=unit_type, temporal_granularity=temporal_granularity, pitch_translation_augmentations=pitch_translation_augmentations, logging=logging)
 
-    import pdb; pdb.set_trace()
-    
     logging.info("##########")
     logging.info("Build data")
 
@@ -202,6 +200,8 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization
                         # Compute statistics
                         for track_name, instrument_name in new_instru_orchestra.iteritems():
                             # Number of note played by this instru
+                            if track_name not in new_pr_orchestra.keys():
+                                continue
                             n_note_played = (new_pr_orchestra[track_name] > 0).sum()
                             if instrument_name in statistics:
                                 # Track appearance
@@ -278,30 +278,31 @@ if __name__ == '__main__':
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
 
-    DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_29_05_17'
+    # DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_29_05_17'
+    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_29_05_17'
     INDEX_PATH = DATABASE_PATH + '/tvt_split'
     data_folder = '../Data'
     index_files_dict = {}
     index_files_dict['train'] = [
-        INDEX_PATH + "/debug_train.txt",
-        # INDEX_PATH + "/bouliane_train.txt",
-        # INDEX_PATH + "/hand_picked_Spotify_train.txt",
-        # INDEX_PATH + "/liszt_classical_archives_train.txt",
-        # INDEX_PATH + "/imslp_train.txt"
+        # INDEX_PATH + "/debug_train.txt",
+        INDEX_PATH + "/bouliane_train.txt",
+        INDEX_PATH + "/hand_picked_Spotify_train.txt",
+        INDEX_PATH + "/liszt_classical_archives_train.txt",
+        INDEX_PATH + "/imslp_train.txt"
     ]
     index_files_dict['valid'] = [
-        INDEX_PATH + "/debug_valid.txt",
-        # INDEX_PATH + "/bouliane_valid.txt",
-        # INDEX_PATH + "/hand_picked_Spotify_valid.txt",
-        # INDEX_PATH + "/liszt_classical_archives_valid.txt",
-        # INDEX_PATH + "/imslp_valid.txt"
+        # INDEX_PATH + "/debug_valid.txt",
+        INDEX_PATH + "/bouliane_valid.txt",
+        INDEX_PATH + "/hand_picked_Spotify_valid.txt",
+        INDEX_PATH + "/liszt_classical_archives_valid.txt",
+        INDEX_PATH + "/imslp_valid.txt"
     ]
     index_files_dict['test'] = [
-        INDEX_PATH + "/debug_test.txt",
-        # INDEX_PATH + "/bouliane_test.txt",
-        # INDEX_PATH + "/hand_picked_Spotify_test.txt",
-        # INDEX_PATH + "/liszt_classical_archives_test.txt",
-        # INDEX_PATH + "/imslp_test.txt"
+        # INDEX_PATH + "/debug_test.txt",
+        INDEX_PATH + "/bouliane_test.txt",
+        INDEX_PATH + "/hand_picked_Spotify_test.txt",
+        INDEX_PATH + "/liszt_classical_archives_test.txt",
+        INDEX_PATH + "/imslp_test.txt"
     ]
 
     # Dictionary with None if the data augmentation is not used, else the value for this data augmentation

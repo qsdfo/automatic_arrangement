@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8-unix -*-
 
 # Main script for music generation
 import hyperopt
@@ -44,7 +44,7 @@ DATA_DIR = '../Data'
 
 commands = [
     'FGgru',
-    'rmsprop',
+    'adam_L2',
     'event_level',
     'binary',
     '100'
@@ -301,7 +301,7 @@ optim_space = Optimization_method.get_hp_space()
 if DEFINED_CONFIG:
     model_space = Model_class.get_static_config()
     optim_space['lr'] = 0.001
-    config_folder = script_param['result_folder'] + '/11'
+    config_folder = script_param['result_folder'] + '/1'
     if not os.path.isdir(config_folder):
         os.mkdir(config_folder)
     else:
@@ -375,7 +375,4 @@ else:
             subprocess.call('qsub ' + file_pbs, shell=True)
 
         # Update folder list
-        list_config_folders.append(config_folder)
-
-# We done
-# Processing results come afterward
+        list_config_folders.append(config_folder)    

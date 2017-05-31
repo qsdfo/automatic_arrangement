@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8-unix -*-
 
 import os
 import cPickle as pkl
@@ -17,7 +17,7 @@ from acidano.utils.init import shared_zeros
 from acidano.data_processing.midi.write_midi import write_midi
 
 
-def generate_midi(config_folder, data_folder, generation_length, seed_size, quantization_write, corruption_flag, logger_generate):
+def generate_midi(config_folder, data_folder, generation_length, corruption_flag, logger_generate):
     if logger_generate is None:
         import logging
         logging.basicConfig(level=logging.WARNING)
@@ -40,12 +40,15 @@ def generate_midi(config_folder, data_folder, generation_length, seed_size, quan
     piano_checksum = model.checksum_database['piano_test']
     orchestra_checksum = model.checksum_database['orchestra_test']
     piano_test, orchestra_test, _, generation_index \
-        = load_data_test(data_folder,
-                         piano_checksum, orchestra_checksum,
-                         model_param['temporal_order'],
-                         model_param['batch_size'],
+        = load_data_test(data_folder, 
+                         piano_checksum, 
+                         orchestra_checksum, 
+                         temporal_order=model_param['temporal_order'], 
+                         batch_size=model_param['batch_size'], 
                          skip_sample=script_param['skip_sample'],
-                         logger_load=logger_generate)
+                         avoid_silence=True, 
+                         logger_load=None, 
+                         generation_length=generation_length)
     time_load_1 = time.time()
     logger_generate.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
 
@@ -71,10 +74,7 @@ def generate_midi(config_folder, data_folder, generation_length, seed_size, quan
     ############################################################
     time_generate_0 = time.time()
 
-    generate(model,
-             piano_test, orchestra_test, generation_index, metadata_path,
-             generation_length, seed_size, script_param["quantization"], script_param['temporal_granularity'], None,
-             generated_folder, logger_generate)
+    generate(model, piano_test, orchestra_test, generation_index, model_param['temporal_order'])
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 

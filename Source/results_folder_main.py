@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8-unix -*-
 
 # Main script for processing results folders
 # Processing consists in :
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     #################################
     # Or just generate or plot weight of a specific configuration
     #################################
-    configuration = "/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/rms_prop/FGgru/11"
+    configuration = "/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/adam_L2/FGgru/1/"
     data_folder = "../Data"
     generation_length = 50
     seed_size = 20
@@ -122,5 +122,6 @@ if __name__ == '__main__':
     number_of_version = 5
     # generate_midi(configuration, data_folder, generation_length, seed_size, 1, corruption_flag, logger_generate)
     plot_weights(configuration, logger_plot)
-    for track_path in track_paths:
-        generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logger_generate)
+    for trgack_path in track_paths:
+        generate_midi(configuration, data_folder, generation_length, corruption_flag, logger_generate)
+        # generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logger_generate)

@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8-unix -*-
 
-import cPickle as pkl
-import reconstruct_pr
-from acidano.data_processing.midi.write_midi import write_midi
-
 
 def generate(model, piano, orchestra, indices, generation_length, seed_size):
     # Generate sequences from a trained model

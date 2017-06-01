@@ -31,10 +31,15 @@ def generate_midi(config_folder, data_folder, generation_length, corruption_flag
     space = pkl.load(open(param_path, 'rb'))
     model_param = space['model']
     script_param = space['script']
-    metadata_path = data_folder + '/metadata.pkl'    
+    metadata_path = data_folder + '/metadata.pkl'
     # Get the instrument mapping used for training
     metadata = pkl.load(open(metadata_path, 'rb'))
     instru_mapping = metadata['instru_mapping']
+    # Set quantization write
+    if script_param['temporal_granularity'] == 'event_level':
+        quantization_write = 1
+    else:
+        quantization_write = script_param['quantization']
 
     ############################################################
     # Load data
@@ -43,14 +48,14 @@ def generate_midi(config_folder, data_folder, generation_length, corruption_flag
     piano_checksum = model.checksum_database['piano_test']
     orchestra_checksum = model.checksum_database['orchestra_test']
     piano_test, orchestra_test, _, generation_index \
-        = load_data_test(data_folder, 
-                         piano_checksum, 
-                         orchestra_checksum, 
-                         temporal_order=model_param['temporal_order'], 
-                         batch_size=model_param['batch_size'], 
+        = load_data_test(data_folder,
+                         piano_checksum,
+                         orchestra_checksum,
+                         temporal_order=model_param['temporal_order'],
+                         batch_size=model_param['batch_size'],
                          skip_sample=script_param['skip_sample'],
-                         avoid_silence=True, 
-                         logger_load=None, 
+                         avoid_silence=True,
+                         logger_load=None,
                          generation_length=generation_length)
     time_load_1 = time.time()
     logger_generate.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
@@ -79,7 +84,7 @@ def generate_midi(config_folder, data_folder, generation_length, corruption_flag
     generated_sequences = generate(model, piano_test, orchestra_test, generation_index, generation_length, model_param['temporal_order'])
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
-    
+
     ############################################################
     # Reconstruct and write
     ############################################################
@@ -90,18 +95,19 @@ def generate_midi(config_folder, data_folder, generation_length, corruption_flag
         # Reconstruct
         pr_orchestra = reconstruct_pr.instrument_reconstruction(generated_sequences[write_counter], instru_mapping)
         # Write
+        import pdb; pdb.set_trace()
         write_path = generated_folder_ind + '/generated.mid'
-        write_midi(pr_orchestra, script_param['quantization'], write_path, tempo=80)
+        write_midi(pr_orchestra, quantization_write, write_path, tempo=80)
         # Write original orchestration and piano scores, but reconstructed version, just to check
         pr_piano_ref = piano_test.get_value(borrow=True)[generation_index[write_counter]-generation_length:generation_index[write_counter]]
         piano_reconstructed = reconstruct_pr.instrument_reconstruction_piano(pr_piano_ref, instru_mapping)
         write_path = generated_folder_ind + '/piano_reconstructed.mid'
-        write_midi(piano_reconstructed, script_param['quantization'], write_path, tempo=80)
+        write_midi(piano_reconstructed, quantization_write, write_path, tempo=80)
         #
         pr_orch_ref = orchestra_test.get_value(borrow=True)[generation_index[write_counter]-generation_length:generation_index[write_counter]]
         orchestra_reconstructed = reconstruct_pr.instrument_reconstruction(pr_orch_ref, instru_mapping)
         write_path = generated_folder_ind + '/orchestra_reconstructed.mid'
-        write_midi(orchestra_reconstructed, script_param['quantization'], write_path, tempo=80)
+        write_midi(orchestra_reconstructed, quantization_write, write_path, tempo=80)
 
 
 def generate_midi_full_track_reference(config_folder, data_folder, track_path, seed_size, number_of_version, logger_generate):

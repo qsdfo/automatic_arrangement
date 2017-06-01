@@ -111,7 +111,7 @@ if __name__ == '__main__':
     #################################
     # Or just generate or plot weight of a specific configuration
     #################################
-    configuration = "/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/adam_L2/FGgru/1"
+    configuration = "/Users/leo/TEMP/1"
     data_folder = "../Data"
     generation_length = 50
     seed_size = 20
@@ -121,4 +121,4 @@ if __name__ == '__main__':
     plot_weights(configuration, logging)
     generate_midi(configuration, data_folder, generation_length, corruption_flag, logging)
     # for track_path in track_paths:
-        # generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logging)
+    #     generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logging)

@@ -267,22 +267,23 @@ def train(model, optimizer,
         accuracy = []
         for batch_index in xrange(train_param['n_val_batches']):
             _, _, accuracy_batch, true_frame, past_frame, piano_frame, predicted_frame = validation_error(valid_index[batch_index])
-            from acidano.visualization.numpy_array.visualize_numpy import visualize_mat
-            if batch_index == 0:
-                for ind in range(accuracy_batch.shape[0]):
-                    pr_viz = np.zeros((4, predicted_frame.shape[1]))
-                    # Threshold prediction
-                    orch_pred_ind = predicted_frame[ind]
-                    # Less than 1%
-                    thresh_pred = np.where(orch_pred_ind > 0.01, orch_pred_ind, 0)
-                    pr_viz[0] = thresh_pred
-                    pr_viz[1] = true_frame[ind]
-                    pr_viz[2] = past_frame[ind]
-                    pr_viz[3][:piano_frame.shape[1]] = piano_frame[ind]
-                    path_accuracy = config_folder + '/DEBUG/' + str(epoch) + '/validation'
-                    if not os.path.isdir(path_accuracy):
-                        os.makedirs(path_accuracy)
-                    visualize_mat(np.transpose(pr_viz), path_accuracy, str(ind) + '_score_' + str(accuracy_batch[ind]))
+            if train_param['DEBUG']:
+                from acidano.visualization.numpy_array.visualize_numpy import visualize_mat
+                if batch_index == 0:
+                    for ind in range(accuracy_batch.shape[0]):
+                        pr_viz = np.zeros((4, predicted_frame.shape[1]))
+                        # Threshold prediction
+                        orch_pred_ind = predicted_frame[ind]
+                        # Less than 1%
+                        thresh_pred = np.where(orch_pred_ind > 0.01, orch_pred_ind, 0)
+                        pr_viz[0] = thresh_pred
+                        pr_viz[1] = true_frame[ind]
+                        pr_viz[2] = past_frame[ind]
+                        pr_viz[3][:piano_frame.shape[1]] = piano_frame[ind]
+                        path_accuracy = config_folder + '/DEBUG/' + str(epoch) + '/validation'
+                        if not os.path.isdir(path_accuracy):
+                            os.makedirs(path_accuracy)
+                        visualize_mat(np.transpose(pr_viz), path_accuracy, str(ind) + '_score_' + str(accuracy_batch[ind]))
             accuracy += [accuracy_batch]
         mean_accuracy = 100 * np.mean(accuracy)
 

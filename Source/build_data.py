@@ -125,7 +125,7 @@ def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, du
 def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, unit_type='binary', temporal_granularity='frame_level', store_folder='../Data', pitch_translation_augmentations=[0], logging=None):
 
     # Get dimensions
-   #  instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, unit_type=unit_type, temporal_granularity=temporal_granularity, pitch_translation_augmentations=pitch_translation_augmentations, logging=logging)
+    instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, unit_type=unit_type, temporal_granularity=temporal_granularity, pitch_translation_augmentations=pitch_translation_augmentations, logging=logging)
 
     logging.info("##########")
     logging.info("Build data")
@@ -175,6 +175,9 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization
                         with(open('log_build_db.txt', 'a')) as f:
                             f.write(folder_path + '\n')
                         continue
+
+                    if 'Piano' in new_instru_orchestra.values():
+                        import pdb; pdb.set_trace()
 
                     # Don't do data augmentations for test and valid sets
                     if set_identifier == 'train':
@@ -278,8 +281,8 @@ if __name__ == '__main__':
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
 
-    # DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_29_05_17'
-    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_29_05_17'
+    DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_29_05_17'
+    # DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_29_05_17'
     INDEX_PATH = DATABASE_PATH + '/tvt_split'
     data_folder = '../Data'
     index_files_dict = {}

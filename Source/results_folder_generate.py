@@ -35,6 +35,7 @@ def generate_midi(config_folder, data_folder, generation_length, corruption_flag
     # Get the instrument mapping used for training
     metadata = pkl.load(open(metadata_path, 'rb'))
     instru_mapping = metadata['instru_mapping']
+    seed_size = model_param['temporal_order']
     # Set quantization write
     if script_param['temporal_granularity'] == 'event_level':
         quantization_write = 1
@@ -81,7 +82,7 @@ def generate_midi(config_folder, data_folder, generation_length, corruption_flag
     # Generate
     ############################################################
     time_generate_0 = time.time()
-    generated_sequences = generate(model, piano_test, orchestra_test, generation_index, generation_length, model_param['temporal_order'])
+    generated_sequences = generate(model, piano_test, orchestra_test, generation_index, generation_length, seed_size)
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 
@@ -92,10 +93,12 @@ def generate_midi(config_folder, data_folder, generation_length, corruption_flag
         generated_folder_ind = generated_folder + '/' + str(write_counter)
         if not os.path.isdir(generated_folder_ind):
             os.makedirs(generated_folder_ind)
+        # To distinguish when seed stop, insert a sustained note
+        this_seq = generated_sequences[write_counter]
+        this_seq[:seed_size, 0] = 1
         # Reconstruct
         pr_orchestra = reconstruct_pr.instrument_reconstruction(generated_sequences[write_counter], instru_mapping)
         # Write
-        import pdb; pdb.set_trace()
         write_path = generated_folder_ind + '/generated.mid'
         write_midi(pr_orchestra, quantization_write, write_path, tempo=80)
         # Write original orchestration and piano scores, but reconstructed version, just to check

@@ -47,8 +47,6 @@ formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter)
 # add the handler to the root logger
 logging.getLogger('').addHandler(console)
-logger_generate = logging.getLogger('generate')
-logger_plot = logging.getLogger('plot_weights')
 
 
 def processing_results(configurations_path, data_folder, track_paths, generation_length=200, seed_size=20):
@@ -64,9 +62,9 @@ def processing_results(configurations_path, data_folder, track_paths, generation
     number_of_version = 5
 
     for configuration in configurations:
-        # generate_midi(configuration, data_folder, generation_length, seed_size, None, logger_generate)
+        # generate_midi(configuration, data_folder, generation_length, seed_size, None, logging)
         for track_path in track_paths:
-            generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logger_generate)
+            generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logging)
         # generate_corrupted_results(configuration, data_folder, generation_length, seed_size)
         # plot_weights(configuration, logger_plot)
         # id_result_list.append(get_results_and_id(configuration))
@@ -113,15 +111,14 @@ if __name__ == '__main__':
     #################################
     # Or just generate or plot weight of a specific configuration
     #################################
-    configuration = "/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/adam_L2/FGgru/1/"
+    configuration = "/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/adam_L2/FGgru/1"
     data_folder = "../Data"
     generation_length = 50
     seed_size = 20
-    logger_generate = logger_generate
     corruption_flag = None
     number_of_version = 5
-    # generate_midi(configuration, data_folder, generation_length, seed_size, 1, corruption_flag, logger_generate)
-    plot_weights(configuration, logger_plot)
-    for trgack_path in track_paths:
-        generate_midi(configuration, data_folder, generation_length, corruption_flag, logger_generate)
-        # generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logger_generate)
+    # generate_midi(configuration, data_folder, generation_length, seed_size, 1, corruption_flag, logging)
+    plot_weights(configuration, logging)
+    generate_midi(configuration, data_folder, generation_length, corruption_flag, logging)
+    # for track_path in track_paths:
+        # generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logging)

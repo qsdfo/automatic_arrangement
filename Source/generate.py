@@ -1,19 +1,17 @@
 #!/usr/bin/env python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8-unix -*-
 
 import cPickle as pkl
 import reconstruct_pr
 from acidano.data_processing.midi.write_midi import write_midi
 
 
-def generate(model, piano, orchestra, indices, seed_size):
+def generate(model, piano, orchestra, indices, generation_length, seed_size):
     # Generate sequences from a trained model
     # piano, orchestra and index are data used to seed the generation
     # Note that generation length is fixed by the length of the piano input
     #
     # generation_length : length of the sequence generated, seed included
-
-    generation_length = piano.get_value(borrow=True).shape[0]
 
     generate_sequence = model.get_generate_function(
         piano=piano, orchestra=orchestra,

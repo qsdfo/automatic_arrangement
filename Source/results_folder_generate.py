@@ -128,6 +128,12 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     space = pkl.load(open(param_path, 'rb'))
     script_param = space['script']
     metadata_path = data_folder + '/metadata.pkl'
+    seed_size = model_param['temporal_order']
+    # Set quantization write
+    if script_param['temporal_granularity'] == 'event_level':
+        quantization_write = 1
+    else:
+        quantization_write = script_param['quantization']
 
     ############################################################
     # Read piano midi file
@@ -204,7 +210,7 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
         pr_orchestra = reconstruct_pr.instrument_reconstruction(pr_orchestra_clean, instru_mapping)
         # Write
         write_path = generated_folder + '/' + str(write_counter) + '_generated.mid'
-        write_midi(pr_orchestra, script_param['quantization'], write_path, tempo=80)
+        write_midi(pr_orchestra, quantization_write, write_path, tempo=80)
 
     ############################################################
     ############################################################
@@ -212,11 +218,11 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     A = reconstruct_pr.time_reconstruction(pr_piano_gen, non_silent_piano, event_piano)
     piano_reconstructed = reconstruct_pr.instrument_reconstruction_piano(A, instru_mapping)
     write_path = generated_folder + '/piano_reconstructed.mid'
-    write_midi(piano_reconstructed, script_param['quantization'], write_path, tempo=80)
+    write_midi(piano_reconstructed, quantization_write, write_path, tempo=80)
     #
     A = reconstruct_pr.time_reconstruction(pr_orchestra_truth, non_silent_piano, event_piano)
     orchestra_reconstructed = reconstruct_pr.instrument_reconstruction(A, instru_mapping)
     write_path = generated_folder + '/orchestra_reconstructed.mid'
-    write_midi(orchestra_reconstructed, script_param['quantization'], write_path, tempo=80)
+    write_midi(orchestra_reconstructed, quantization_write, write_path, tempo=80)
     ############################################################
     ############################################################

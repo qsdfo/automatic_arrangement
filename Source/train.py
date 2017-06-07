@@ -17,7 +17,7 @@ import theano
 # theano.config.optimizer = 'fast_compile'
 # theano.config.mode = 'FAST_COMPILE'
 # theano.config.exception_verbosity = 'high'
-theano.config.compute_test_value = 'off'
+theano.config.compute_test_value = 'warn'
 
 
 def run_wrapper(params, config_folder, start_time_train):
@@ -156,6 +156,12 @@ def run_wrapper(params, config_folder, start_time_train):
     notes_activation_norm = notes_activation.mean() / (notes_activation+1e-10)
     class_normalization = np.maximum(1, np.minimum(5, notes_activation_norm))
     model_param['class_normalization'] = class_normalization
+
+    # Other kind of regularization
+    L_train = orchestra_train.get_value(borrow=True).shape[0]
+    mean_notes_activation = notes_activation / L_train
+    mean_notes_activation = np.where(mean_notes_activation == 0, 1. / L_train, mean_notes_activation)
+    model_param['mean_notes_activation'] = mean_notes_activation
 
     ############################################################
     # Instanciate model and Optimization method

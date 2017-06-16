@@ -23,8 +23,8 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
                             filemode='w')
         logger_load = logging.getLogger('load')
 
-    piano = np.load(data_folder + '/piano_' + set_identifier + '.csv')
-    orchestra = np.load(data_folder + '/orchestra_' + set_identifier + '.csv')
+    piano = np.load(data_folder + '/piano_' + set_identifier + '.npy')
+    orchestra = np.load(data_folder + '/orchestra_' + set_identifier + '.npy')
 
     # Shared variables : push data on GPU, memory problem for this dataset ??
     # First check type

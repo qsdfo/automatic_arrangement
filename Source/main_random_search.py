@@ -26,10 +26,10 @@ import train
 
 N_HP_CONFIG = 1
 LOCAL = True
-BUILD_DATABASE = False
 DEBUG = False
-CLEAN = True
+CLEAN = False
 DEFINED_CONFIG = True
+CONFIG_ID = '/13'
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
@@ -240,49 +240,6 @@ logging.info((u'**** Quantization : ' + str(script_param['quantization'])).enco
 logging.info((u'**** Result folder : ' + str(script_param['result_folder'])).encode('utf8'))
 
 ############################################################
-# Build data
-############################################################
-if BUILD_DATABASE:
-    logging.info('# ** BUILD DATABASE **')
-    index_files_dict = {}
-    index_files_dict['train'] = [
-        DATABASE_PATH + "/debug_train.txt",
-        # DATABASE_PATH + "/bouliane_train.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_train.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_train.txt",
-        # DATABASE_PATH + "/imslp_train.txt"
-    ]
-    index_files_dict['valid'] = [
-        DATABASE_PATH + "/debug_valid.txt",
-        # DATABASE_PATH + "/bouliane_valid.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_valid.txt",
-        # DATABASE_PATH + "/imslp_valid.txt"
-    ]
-    index_files_dict['test'] = [
-        DATABASE_PATH + "/debug_test.txt",
-        # DATABASE_PATH + "/bouliane_test.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_test.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_test.txt",
-        # DATABASE_PATH + "/imslp_test.txt"
-    ]
-
-    # Dictionary with None if the data augmentation is not used, else the value for this data augmentation
-    # Pitch translation. Write [0] for no translation
-    max_translation = 3
-    pitch_translations = range(-max_translation, max_translation+1)
-
-    build_data(root_dir=DATABASE_PATH,
-               index_files_dict=index_files_dict,
-               meta_info_path=DATA_DIR + '/temp.p',
-               quantization=script_param['quantization'],
-               unit_type=script_param['unit_type'],
-               temporal_granularity=script_param['temporal_granularity'],
-               store_folder=DATA_DIR,
-               pitch_translation_augmentations=pitch_translations,
-               logging=logging)
-
-############################################################
 # Hyper parameter space
 ############################################################
 model_space = Model_class.get_hp_space()
@@ -301,7 +258,7 @@ optim_space = Optimization_method.get_hp_space()
 if DEFINED_CONFIG:
     model_space = Model_class.get_static_config()
     optim_space['lr'] = 0.001
-    config_folder = script_param['result_folder'] + '/1'
+    config_folder = script_param['result_folder'] + CONFIG_ID
     if not os.path.isdir(config_folder):
         os.mkdir(config_folder)
     else:

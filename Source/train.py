@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8-unix -*-
 
 import sys
 import time
@@ -154,7 +154,7 @@ def run_wrapper(params, config_folder, start_time_train):
     # Class normalization
     notes_activation = orchestra_train.get_value(borrow=True).sum(axis=0)
     notes_activation_norm = notes_activation.mean() / (notes_activation+1e-10)
-    class_normalization = np.maximum(1, np.minimum(5, notes_activation_norm))
+    class_normalization = np.maximum(1, np.minimum(20, notes_activation_norm))
     model_param['class_normalization'] = class_normalization
 
     # Other kind of regularization

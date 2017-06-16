@@ -204,54 +204,46 @@ def align_tracks(pr0, pr1, unit_type, gapopen, gapextend):
     pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 
-    ####################################
-    # Actually it is easier to have the indices of the non silent frames in the original score :
-    def get_non_silent(non_silent, trace_prod):
-        counter = 0
-        out_list = []
-        for (t0, tp) in zip(non_silent, trace_prod):
-            if t0 == 1 and tp == 0:
-                counter += 1
-            elif t0 == 1 and tp == 1:
-                out_list.append(counter)
-                counter += 1
-        return out_list
-
-    non_silent_0 = get_non_silent(trace_0, trace_prod)
-    non_silent_1 = get_non_silent(trace_1, trace_prod)
-
-    return pr0_aligned, non_silent_0, pr1_aligned, non_silent_1, duration
+    return pr0_aligned, trace_0, pr1_aligned, trace_1, trace_prod, duration
 
 
-def discriminate_between_piano_and_orchestra(pr0, event0, map0, instru0, name0, pr1, event1, map1, instru1, name1, duration):
+def clean_event(event, trace, trace_prod):
+    new_event = []
+    counter = 0
+    for t, tp in zip(trace, trace_prod):
+        if t + tp == 2:
+            new_event.append(event[counter])
+            counter += 1
+        elif t != 0:
+            counter +=1
+    return new_event
+
+
+def discriminate_between_piano_and_orchestra(pr0, event0, instru0, name0, pr1, event1, instru1, name1, duration):
     if len(set(instru0.values())) > len(set(instru1.values())):
         pr_orch = pr0
         event_orch = event0
-        map_orch = map0
         instru_orch = instru0
         name_orch = name0
         #
         pr_piano = pr1
         event_piano = event1
-        map_piano = map1
         instru_piano = instru1
         name_piano = name1
     elif len(set(instru0.values())) < len(set(instru1.values())):
         pr_orch = pr1
         event_orch = event1
-        map_orch = map1
         instru_orch = instru1
         name_orch = name1
         #
         pr_piano = pr0
         event_piano = event0
-        map_piano = map0
         instru_piano = instru0
         name_piano = name0
     else:
         # Both tracks have the same number of instruments
         return [None] * 11
-    return pr_piano, event_piano, map_piano, instru_piano, name_piano, pr_orch, event_orch, map_orch, instru_orch, name_orch, duration
+    return pr_piano, event_piano, instru_piano, name_piano, pr_orch, event_orch, instru_orch, name_orch, duration
 
 
 def process_folder(folder_path, quantization, unit_type, temporal_granularity, gapopen=3, gapextend=1):
@@ -273,17 +265,21 @@ def process_folder(folder_path, quantization, unit_type, temporal_granularity, g
         event_1 = None
 
     # Align tracks
-    pr0_aligned, non_silent_0, pr1_aligned, non_silent_1, duration = align_tracks(pr0, pr1, unit_type, gapopen, gapextend)
+    pr0_aligned, trace_0, pr1_aligned, trace_1, trace_prod, duration = align_tracks(pr0, pr1, unit_type, gapopen, gapextend)
+
+    # Clean events
+    event0_aligned = clean_event(event_0, trace_0, trace_prod)
+    event1_aligned = clean_event(event_1, trace_1, trace_prod)
 
     # Find which pr is orchestra, which one is piano
-    pr_piano, event_piano, non_silent_piano, instru_piano, name_piano,\
-        pr_orch, event_orch, non_silent_orch, instru_orch, name_orch,\
+    pr_piano, event_piano, instru_piano, name_piano,\
+        pr_orch, event_orch, instru_orch, name_orch,\
         duration =\
-        discriminate_between_piano_and_orchestra(pr0_aligned, event_0, non_silent_0, instru0, name0,
-                                                 pr1_aligned, event_1, non_silent_1, instru1, name1,
+        discriminate_between_piano_and_orchestra(pr0_aligned, event0_aligned, instru0, name0,
+                                                 pr1_aligned, event1_aligned, instru1, name1,
                                                  duration)
 
-    return pr_piano, event_piano, non_silent_piano, instru_piano, name_piano, pr_orch, event_orch, non_silent_orch, instru_orch, name_orch, duration
+    return pr_piano, event_piano, instru_piano, name_piano, pr_orch, event_orch, instru_orch, name_orch, duration
 
 
 def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, pr_big):

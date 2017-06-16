@@ -15,6 +15,7 @@ import re
 import reconstruct_pr
 from acidano.utils.init import shared_zeros
 from acidano.data_processing.midi.write_midi import write_midi
+from acidano.data_processing.utils.event_level import from_event_to_frame
 
 
 def generate_midi(config_folder, data_folder, generation_length, corruption_flag, logger_generate):
@@ -113,7 +114,7 @@ def generate_midi(config_folder, data_folder, generation_length, corruption_flag
         write_midi(orchestra_reconstructed, quantization_write, write_path, tempo=80)
 
 
-def generate_midi_full_track_reference(config_folder, data_folder, track_path, seed_size, number_of_version, logger_generate):
+def generate_midi_full_track_reference(config_folder, data_folder, track_path, number_of_version, logger_generate):
     # This function generate the orchestration of a full track
     if logger_generate is None:
         import logging
@@ -128,17 +129,14 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     space = pkl.load(open(param_path, 'rb'))
     script_param = space['script']
     metadata_path = data_folder + '/metadata.pkl'
+    model_param = space['model']
     seed_size = model_param['temporal_order']
-    # Set quantization write
-    if script_param['temporal_granularity'] == 'event_level':
-        quantization_write = 1
-    else:
-        quantization_write = script_param['quantization']
+    quantization_write = script_param['quantization']
 
     ############################################################
     # Read piano midi file
     ############################################################
-    pr_piano, event_piano, non_silent_piano, instru_piano, name_piano, pr_orch, event_orch, non_silent_orch, instru_orch, name_orch, duration =\
+    pr_piano, event_piano, instru_piano, name_piano, pr_orch, event_orch, instru_orch, name_orch, duration =\
         build_data_aux.process_folder(track_path, script_param['quantization'], script_param['unit_type'], script_param['temporal_granularity'], gapopen=3, gapextend=1)
 
     # Get the instrument mapping used for training
@@ -146,7 +144,7 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     instru_mapping = metadata['instru_mapping']
 
     # Instanciate piano pianoroll
-    N_piano = instru_mapping['piano']['index_max']
+    N_piano = instru_mapping['Piano']['index_max']
     pr_piano_gen = np.zeros((duration, N_piano), dtype=np.float32)
     pr_piano_gen = build_data_aux.cast_small_pr_into_big_pr(pr_piano, {}, 0, duration, instru_mapping, pr_piano_gen)
 
@@ -205,8 +203,11 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     # Reconstruct and write
     ############################################################
     for write_counter in xrange(generated_sequences.shape[0]):
+        # To distinguish when seed stop, insert a sustained note
+        this_seq = generated_sequences[write_counter]
+        this_seq[:seed_size, 0] = 1
         # Reconstruct
-        pr_orchestra_clean = reconstruct_pr.time_reconstruction(generated_sequences[write_counter], non_silent_piano, event_piano)
+        pr_orchestra_clean = from_event_to_frame(this_seq, event_piano)
         pr_orchestra = reconstruct_pr.instrument_reconstruction(pr_orchestra_clean, instru_mapping)
         # Write
         write_path = generated_folder + '/' + str(write_counter) + '_generated.mid'
@@ -215,12 +216,12 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, s
     ############################################################
     ############################################################
     # Write original orchestration and piano scores, but reconstructed version, just to check
-    A = reconstruct_pr.time_reconstruction(pr_piano_gen, non_silent_piano, event_piano)
+    A = from_event_to_frame(pr_piano_gen, event_piano)
     piano_reconstructed = reconstruct_pr.instrument_reconstruction_piano(A, instru_mapping)
     write_path = generated_folder + '/piano_reconstructed.mid'
     write_midi(piano_reconstructed, quantization_write, write_path, tempo=80)
     #
-    A = reconstruct_pr.time_reconstruction(pr_orchestra_truth, non_silent_piano, event_piano)
+    A = from_event_to_frame(pr_orchestra_truth, event_piano)
     orchestra_reconstructed = reconstruct_pr.instrument_reconstruction(A, instru_mapping)
     write_path = generated_folder + '/orchestra_reconstructed.mid'
     write_midi(orchestra_reconstructed, quantization_write, write_path, tempo=80)

@@ -17,7 +17,7 @@ import theano
 # theano.config.optimizer = 'fast_compile'
 # theano.config.mode = 'FAST_COMPILE'
 # theano.config.exception_verbosity = 'high'
-theano.config.compute_test_value = 'warn'
+theano.config.compute_test_value = 'off'
 
 
 def run_wrapper(params, config_folder, start_time_train):
@@ -96,7 +96,7 @@ def run_wrapper(params, config_folder, start_time_train):
                           model_param['temporal_order'],
                           model_param['batch_size'],
                           skip_sample=script_param['skip_sample'],
-                          avoid_silence=True,
+                          avoid_silence=script_param['avoid_silence'],
                           logger_load=logger_run)
     piano_valid, orchestra_valid, valid_index \
         = load_data_valid(script_param['data_folder'],
@@ -104,7 +104,7 @@ def run_wrapper(params, config_folder, start_time_train):
                           model_param['temporal_order'],
                           model_param['batch_size'],
                           skip_sample=script_param['skip_sample'],
-                          avoid_silence=True,
+                          avoid_silence=script_param['avoid_silence'],
                           logger_load=logger_run)
     # This load is only for sanity check purposes
     piano_test, orchestra_test, _, _ \
@@ -113,7 +113,7 @@ def run_wrapper(params, config_folder, start_time_train):
                          model_param['temporal_order'],
                          model_param['batch_size'],
                          skip_sample=script_param['skip_sample'],
-                         avoid_silence=True,
+                         avoid_silence=script_param['avoid_silence'],
                          logger_load=logger_run)
     time_load_1 = time.time()
     logger_run.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
@@ -182,13 +182,14 @@ def run_wrapper(params, config_folder, start_time_train):
     # Train
     ############################################################
     time_train_0 = time.time()
-    loss, accuracy = train(model, optimizer,
-                           piano_train, orchestra_train, train_index,
-                           piano_valid, orchestra_valid, valid_index,
-                           train_param, config_folder, logger_run)
+    loss, accuracy, best_epoch, best_model = train(model, optimizer,
+                                    piano_train, orchestra_train, train_index,
+                                    piano_valid, orchestra_valid, valid_index,
+                                    train_param, config_folder, logger_run)
     time_train_1 = time.time()
     training_time = time_train_1-time_train_0
     logger_run.info('TTT : Training data took {} seconds'.format(training_time))
+    logger_run.info((u'# Best model obtained at epoch :  {}'.format(best_epoch)).encode('utf8'))
     logger_run.info((u'# Accuracy :  {}'.format(accuracy)).encode('utf8'))
     logger_run.info((u'###################\n').encode('utf8'))
 
@@ -197,7 +198,7 @@ def run_wrapper(params, config_folder, start_time_train):
     ############################################################
     save_model_file = config_folder + '/model.pkl'
     with open(save_model_file, 'wb') as f:
-        pkl.dump(model, f, protocol=pkl.HIGHEST_PROTOCOL)
+        pkl.dump(best_model, f, protocol=pkl.HIGHEST_PROTOCOL)
 
     ############################################################
     # Write result in a txt file
@@ -240,6 +241,8 @@ def train(model, optimizer,
     TIME_LIMIT = False
     val_tab = np.zeros(max(1, train_param['max_iter']))
     loss_tab = np.zeros(max(1, train_param['max_iter']))
+    best_model = None
+    best_epoch = None
     while (not OVERFITTING and not TIME_LIMIT
            and epoch != train_param['max_iter']):
         #######################################
@@ -272,47 +275,58 @@ def train(model, optimizer,
         #######################################
         accuracy = []
         for batch_index in xrange(train_param['n_val_batches']):
-            _, _, accuracy_batch, true_frame, past_frame, piano_frame, predicted_frame = validation_error(valid_index[batch_index])
-            if train_param['DEBUG']:
-                from acidano.visualization.numpy_array.visualize_numpy import visualize_mat
-                if batch_index == 0:
-                    for ind in range(accuracy_batch.shape[0]):
-                        pr_viz = np.zeros((4, predicted_frame.shape[1]))
-                        # Threshold prediction
-                        orch_pred_ind = predicted_frame[ind]
-                        # Less than 1%
-                        thresh_pred = np.where(orch_pred_ind > 0.01, orch_pred_ind, 0)
-                        pr_viz[0] = thresh_pred
-                        pr_viz[1] = true_frame[ind]
-                        pr_viz[2] = past_frame[ind]
-                        pr_viz[3][:piano_frame.shape[1]] = piano_frame[ind]
-                        path_accuracy = config_folder + '/DEBUG/' + str(epoch) + '/validation'
-                        if not os.path.isdir(path_accuracy):
-                            os.makedirs(path_accuracy)
-                        visualize_mat(np.transpose(pr_viz), path_accuracy, str(ind) + '_score_' + str(accuracy_batch[ind]))
+            # _, _, accuracy_batch, true_frame, past_frame, piano_frame, predicted_frame = validation_error(valid_index[batch_index])
+            _, _, accuracy_batch = validation_error(valid_index[batch_index])
             accuracy += [accuracy_batch]
+
+            # if train_param['DEBUG']:
+                # from acidano.visualization.numpy_array.visualize_numpy import visualize_mat
+                # if batch_index == 0:
+                #     for ind in range(accuracy_batch.shape[0]):
+                #         pr_viz = np.zeros((4, predicted_frame.shape[1]))
+                #         # Threshold prediction
+                #         orch_pred_ind = predicted_frame[ind]
+                #         # Less than 1%
+                #         thresh_pred = np.where(orch_pred_ind > 0.01, orch_pred_ind, 0)
+                #         pr_viz[0] = thresh_pred
+                #         pr_viz[1] = true_frame[ind]
+                #         pr_viz[2] = past_frame[ind]
+                #         pr_viz[3][:piano_frame.shape[1]] = piano_frame[ind]
+                #         path_accuracy = config_folder + '/DEBUG/' + str(epoch) + '/validation'
+                #         if not os.path.isdir(path_accuracy):
+                #             os.makedirs(path_accuracy)
+                #         visualize_mat(np.transpose(pr_viz), path_accuracy, str(ind) + '_score_' + str(accuracy_batch[ind]))
         mean_accuracy = 100 * np.mean(accuracy)
+
+        #######################################
+        # Is it the best model we have seen so far ?
+        if mean_accuracy >= np.max(val_tab):
+            best_model = model
+            best_epoch = epoch
+        #######################################
 
         #######################################
         # DEBUG : plot weights
         #######################################
         if train_param['DEBUG']:
-            # from acidano.visualization.numpy_array.visualize_numpy import visualize_mat_proba
+            from acidano.visualization.numpy_array.visualize_numpy import visualize_mat_proba
+            
             # Visible activations
-            path_activation = config_folder + '/DEBUG/' + str(epoch) + '/activations'
-            if not os.path.isdir(path_activation):
-                os.makedirs(path_activation)
+            # path_activation = config_folder + '/DEBUG/' + str(epoch) + '/activations'
+            # if not os.path.isdir(path_activation):
+            #     os.makedirs(path_activation)
             # mean_activation = mean_activation.mean(axis=2)
             # visualize_mat_proba(mean_activation, path_activation, 'mean_activations')
             # Do not plot every random activation...
             # for i in np.linspace(0, random_choice_mean_activation.shape[2], 10, endpoint=False):
             #     ind = int(i)
             #     visualize_mat_proba(random_choice_mean_activation[:, :, ind], path_activation, 'random_act_' + str(ind))
+            
             # Weights
-            plot_folder = config_folder + '/DEBUG/' + str(epoch) + '/weights'
-            if not os.path.isdir(plot_folder):
-                os.makedirs(plot_folder)
-            model.save_weights(plot_folder)
+            # plot_folder = config_folder + '/DEBUG/' + str(epoch) + '/weights'
+            # if not os.path.isdir(plot_folder):
+            #     os.makedirs(plot_folder)
+            # model.save_weights(plot_folder) 
 
         #######################################
         # OLD VERSION
@@ -345,7 +359,7 @@ def train(model, optimizer,
         # Early stopping, but when ?
         # Lutz Prechelt
         # UP criterion (except that we expect accuracy to go up in our case,
-        # so it's more a DOWN criterion)
+        # so the minus sign)
         val_tab[epoch] = mean_accuracy
         if epoch >= train_param['min_number_iteration']:
             OVERFITTING = up_criterion(-val_tab, epoch, train_param["number_strips"], train_param["validation_order"])
@@ -376,10 +390,9 @@ def train(model, optimizer,
         epoch += 1
 
     # Return best accuracy
-    best_epoch = np.argmax(val_tab)
     best_accuracy = val_tab[best_epoch]
     best_loss = loss_tab[best_epoch]
-    return best_loss, best_accuracy
+    return best_loss, best_accuracy, best_epoch, best_model
 
 
 if __name__ == '__main__':

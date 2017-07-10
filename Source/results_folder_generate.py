@@ -7,7 +7,7 @@ import time
 # Load data
 from load_data import load_data_test
 from generate import generate
-import build_data_aux
+import Database.build_data_aux as build_data_aux
 import numpy as np
 import theano
 import re

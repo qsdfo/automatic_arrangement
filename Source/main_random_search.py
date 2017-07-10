@@ -11,12 +11,15 @@ import subprocess
 import glob
 import time
 import re
-# Build data
-from build_data import build_data
 # Clean Script
 from clean_result_folder import clean
 
+# Train
 import train
+# Generate
+from results_folder_generate import generate_midi, generate_midi_full_track_reference
+from results_folder_plot_weights import plot_weights
+
 ####################
 # Reminder for plotting tools
 # import matplotlib.pyplot as plt
@@ -27,20 +30,21 @@ import train
 N_HP_CONFIG = 1
 LOCAL = True
 DEBUG = False
-CLEAN = False
+CLEAN = True
 DEFINED_CONFIG = True
-CONFIG_ID = '/13'
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
     RESULT_ROOT = os.getcwd() + '/../'
-    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
-    # DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/Orchestration_checked'
 else:
     RESULT_ROOT = "/sb/project/ymd-084-aa/leo/"
-    DATABASE_PATH = "/home/crestel/database/orchestration"
 
 DATA_DIR = '../Data'
+SUFFIX_DATABASE = '_lisztbeeth'
+
+DATA_DIR = DATA_DIR + SUFFIX_DATABASE
+RESULT_DIR = u'Results_SMC' + SUFFIX_DATABASE
+
 
 commands = [
     'FGgru',
@@ -70,6 +74,271 @@ formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter)
 # add the handler to the root logger
 logging.getLogger('').addHandler(console)
+
+
+############################################################
+# Define configs
+############################################################
+configs = {
+    '10': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0,
+        'weighted_ce' : 1
+    },
+
+    # Threshold
+    '11': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.1,
+        'weighted_ce' : 1
+    },
+
+    '12': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.25,
+        'weighted_ce' : 1
+    },
+
+    '13': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.5,
+        'weighted_ce' : 1
+    },
+
+    # Hidden layer
+    '14': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [1000, 1000, 100],
+        'threshold' : 0,
+        'weighted_ce' : 1
+    },
+
+    '20': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0,
+        'weighted_ce' : 2
+    },
+
+    # Threshold
+    '21': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.1,
+        'weighted_ce' : 2
+    },
+
+    '22': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.25,
+        'weighted_ce' : 2
+    },
+
+    '23': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.5,
+        'weighted_ce' : 2
+    },
+
+    # Hidden layer
+    '24': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [1000, 1000, 100],
+        'threshold' : 0,
+        'weighted_ce' : 2
+    },
+
+    '30': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0,
+        'weighted_ce' : 3
+    },
+
+    # Threshold
+    '31': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.1,
+        'weighted_ce' : 3
+    },
+
+    '32': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.25,
+        'weighted_ce' : 3
+    },
+
+    '33': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.5,
+        'weighted_ce' : 3
+    },
+
+    # Hidden layer
+    '34': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [1000, 1000, 100],
+        'threshold' : 0,
+        'weighted_ce' : 3
+    },
+    '40': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0,
+        'weighted_ce' : 4
+    },
+
+    # Threshold
+    '41': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.1,
+        'weighted_ce' : 4
+    },
+
+    '42': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.25,
+        'weighted_ce' : 4
+    },
+
+    '43': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.5,
+        'weighted_ce' : 4
+    },
+
+    # Hidden layer
+    '44': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [1000, 1000, 100],
+        'threshold' : 0,
+        'weighted_ce' : 4
+    },
+
+    '50': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0,
+        'weighted_ce' : 5
+    },
+
+    # Threshold
+    '51': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.1,
+        'weighted_ce' : 5
+    },
+
+    '52': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.25,
+        'weighted_ce' : 5
+    },
+
+    '53': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500, 100],
+        'threshold' : 0.5,
+        'weighted_ce' : 5
+    },
+
+    # Hidden layer
+    '54': {
+        'batch_size' : 200,
+        'temporal_order' : 10,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [1000, 1000, 100],
+        'threshold' : 0,
+        'weighted_ce' : 5
+    }
+}
 
 ############################################################
 # Script parameters
@@ -176,13 +445,16 @@ except ValueError:
     print(commands[4] + ' is not an integer')
     raise
 
+script_param['avoid_silence'] = True
+if not script_param['avoid_silence']:
+    RESULT_DIR += '_with_silence'
 ############################################################
 # System paths
 ############################################################
 logging.info('System paths')
 SOURCE_DIR = os.getcwd()
 
-result_folder = RESULT_ROOT + u'Results/' + script_param['temporal_granularity'] + '/' + unit_type + '/' +\
+result_folder = RESULT_ROOT + RESULT_DIR + '/' + script_param['temporal_granularity'] + '/' + unit_type + '/' +\
     'quantization_' + str(script_param['quantization']) + '/' + Optimization_method.name() + '/' + Model_class.name()
 
 # Check if the result folder exists
@@ -212,7 +484,7 @@ train_param['DEBUG'] = DEBUG
 # Validation
 train_param['validation_order'] = 2
 train_param['number_strips'] = 3
-train_param['min_number_iteration'] = 10
+train_param['min_number_iteration'] = 0
 # train_param['initial_derivative_length'] = 20
 # train_param['check_derivative_length'] = 5
 
@@ -245,6 +517,16 @@ logging.info((u'**** Result folder : ' + str(script_param['result_folder'])).en
 model_space = Model_class.get_hp_space()
 optim_space = Optimization_method.get_hp_space()
 
+track_paths = [
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/liszt_classical_archives/16',
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/liszt_classical_archives/17',
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/liszt_classical_archives/26',
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/liszt_classical_archives/5',
+        # '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/bouliane/22',
+        # '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/bouliane/3',
+        # '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/bouliane/0',  # This one is in train set
+]
+
 ############################################################
 # Grid search loop
 ############################################################
@@ -256,23 +538,26 @@ optim_space = Optimization_method.get_hp_space()
 # The result.csv file containing id;result is created from the directory, rebuilt from time to time
 
 if DEFINED_CONFIG:
-    model_space = Model_class.get_static_config()
-    optim_space['lr'] = 0.001
-    config_folder = script_param['result_folder'] + CONFIG_ID
-    if not os.path.isdir(config_folder):
-        os.mkdir(config_folder)
-    else:
-        raise Exception("this folder already exists")
-    # Pickle the space in the config folder
-    space = {'model': model_space, 'optim': optim_space, 'train': train_param, 'script': script_param}
-    pkl.dump(space, open(config_folder + '/config.pkl', 'wb'))
-    if not LOCAL:
-        raise Exception()
-    else:
-        start_time_train = time.time()
-        config_folder = config_folder
-        params = pkl.load(open(config_folder + '/config.pkl', "rb"))
-        train.run_wrapper(params, config_folder, start_time_train)
+    for config_id, model_space in configs.iteritems():
+        optim_space['lr'] = 0.001
+        config_folder = script_param['result_folder'] + '/' + config_id
+        if not os.path.isdir(config_folder):
+            os.mkdir(config_folder)
+        else:
+            raise Exception("this folder already exists")
+        # Pickle the space in the config folder
+        space = {'model': model_space, 'optim': optim_space, 'train': train_param, 'script': script_param}
+        pkl.dump(space, open(config_folder + '/config.pkl', 'wb'))
+        if not LOCAL:
+            raise Exception()
+        else:
+            start_time_train = time.time()
+            config_folder = config_folder
+            params = pkl.load(open(config_folder + '/config.pkl', "rb"))
+            train.run_wrapper(params, config_folder, start_time_train)
+            plot_weights(config_folder, logging)
+            for track_path in track_paths:
+                generate_midi_full_track_reference(config_folder, DATA_DIR, track_path, 5, logging)
 else:
     # Already tested configs
     list_config_folders = glob.glob(result_folder + '/*')

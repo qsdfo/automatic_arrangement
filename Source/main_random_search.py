@@ -359,63 +359,63 @@ script_param['unit_type'] = unit_type
 script_param['model_class'] = commands[0]
 if unit_type == 'binary':
     if commands[0] == "random":
-        from acidano.models.lop.binary.random import Random as Model_class
+        from Models.binary.random import Random as Model_class
     elif commands[0] == "repeat":
-        from acidano.models.lop.binary.repeat import Repeat as Model_class
+        from Models.binary.repeat import Repeat as Model_class
     elif commands[0] == "RBM":
-        from acidano.models.lop.binary.RBM import RBM as Model_class
+        from Models.binary.RBM import RBM as Model_class
     elif commands[0] == "cRBM":
-        from acidano.models.lop.binary.cRBM import cRBM as Model_class
+        from Models.binary.cRBM import cRBM as Model_class
     elif commands[0] == "FGcRBM":
-        from acidano.models.lop.binary.FGcRBM import FGcRBM as Model_class
+        from Models.binary.FGcRBM import FGcRBM as Model_class
     elif commands[0] == "FGgru":
-        from acidano.models.lop.binary.FGgru import FGgru as Model_class
+        from Models.binary.FGgru import FGgru as Model_class
     elif commands[0] == "FGcRBM_no_bv":
-        from acidano.models.lop.binary.FGcRBM_no_bv import FGcRBM_no_bv as Model_class
+        from Models.binary.FGcRBM_no_bv import FGcRBM_no_bv as Model_class
     elif commands[0] == "FGcRnnRbm":
-        from acidano.models.lop.binary.FGcRnnRbm import FGcRnnRbm as Model_class
+        from Models.binary.FGcRnnRbm import FGcRnnRbm as Model_class
     elif commands[0] == "LSTM":
-        from acidano.models.lop.binary.LSTM import LSTM as Model_class
+        from Models.binary.LSTM import LSTM as Model_class
     elif commands[0] == "RnnRbm":
-        from acidano.models.lop.binary.RnnRbm import RnnRbm as Model_class
+        from Models.binary.RnnRbm import RnnRbm as Model_class
     elif commands[0] == "cRnnRbm":
-        from acidano.models.lop.binary.cRnnRbm import cRnnRbm as Model_class
+        from Models.binary.cRnnRbm import cRnnRbm as Model_class
     elif commands[0] == "LstmRbm":
-        from acidano.models.lop.binary.LstmRbm import LstmRbm as Model_class
+        from Models.binary.LstmRbm import LstmRbm as Model_class
     elif commands[0] == "cLstmRbm":
-        from acidano.models.lop.binary.cLstmRbm import cLstmRbm as Model_class
+        from Models.binary.cLstmRbm import cLstmRbm as Model_class
     elif commands[0] == "FGcLstmRbm":
-        from acidano.models.lop.binary.FGcLstmRbm import FGcLstmRbm as Model_class
+        from Models.binary.FGcLstmRbm import FGcLstmRbm as Model_class
 elif re.search(ur"categorical", unit_type):
     if commands[0] == "random":
-        from acidano.models.lop.categorical.random import Random as Model_class
+        from Models.categorical.random import Random as Model_class
     elif commands[0] == "repeat":
-        from acidano.models.lop.categorical.repeat import Repeat as Model_class
+        from Models.categorical.repeat import Repeat as Model_class
     elif commands[0] == "RBM":
-        from acidano.models.lop.categorical.RBM import RBM as Model_class
+        from Models.categorical.RBM import RBM as Model_class
     elif commands[0] == "cRBM":
-        from acidano.models.lop.categorical.cRBM import cRBM as Model_class
+        from Models.categorical.cRBM import cRBM as Model_class
     elif commands[0] == "FGcRBM":
-        from acidano.models.lop.categorical.FGcRBM import FGcRBM as Model_class
+        from Models.categorical.FGcRBM import FGcRBM as Model_class
     elif commands[0] == "FGcRnnRbm":
-        from acidano.models.lop.categorical.FGcRnnRbm import FGcRnnRbm as Model_class
+        from Models.categorical.FGcRnnRbm import FGcRnnRbm as Model_class
     elif commands[0] == "LSTM":
-        from acidano.models.lop.categorical.LSTM import LSTM as Model_class
+        from Models.categorical.LSTM import LSTM as Model_class
     elif commands[0] == "RnnRbm":
-        from acidano.models.lop.categorical.RnnRbm import RnnRbm as Model_class
+        from Models.categorical.RnnRbm import RnnRbm as Model_class
     elif commands[0] == "cRnnRbm":
-        from acidano.models.lop.categorical.cRnnRbm import cRnnRbm as Model_class
+        from Models.categorical.cRnnRbm import cRnnRbm as Model_class
     elif commands[0] == "LstmRbm":
-        from acidano.models.lop.categorical.LstmRbm import LstmRbm as Model_class
+        from Models.categorical.LstmRbm import LstmRbm as Model_class
     elif commands[0] == "cLstmRbm":
-        from acidano.models.lop.categorical.cLstmRbm import cLstmRbm as Model_class
+        from Models.categorical.cLstmRbm import cLstmRbm as Model_class
     elif commands[0] == "FGcLstmRbm":
-        from acidano.models.lop.categorical.FGcLstmRbm import FGcLstmRbm as Model_class
+        from Models.categorical.FGcLstmRbm import FGcLstmRbm as Model_class
 # ##################  REAL
 elif commands[0] == "LSTM_gaussian_mixture":
-    from acidano.models.lop.real.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
+    from Models.real.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
 elif commands[0] == "LSTM_gaussian_mixture_2":
-    from acidano.models.lop.real.LSTM_gaussian_mixture_2 import LSTM_gaussian_mixture_2 as Model_class
+    from Models.real.LSTM_gaussian_mixture_2 import LSTM_gaussian_mixture_2 as Model_class
 ###################
 else:
     raise ValueError(commands[0] + " is not a model")

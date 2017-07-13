@@ -1,14 +1,18 @@
 # LOP
 
 ## Requirements
-You need to add <https://github.com/aciditeam/acidano> to your python path. Download or clone the repository and type in a shell
-  PYTHONPATH=”${PYTHONPATH}:/path/to/acidano/folder”
+You need to download the toolbox <https://github.com/aciditeam/acidano> and add it to your python path. To do this, you can either :
+- place the acidano folder in the lop/Source 
+- or type in a shell
+        
+        PYTHONPATH=”${PYTHONPATH}:/path/to/acidano/folder”
+
 
 ## A scenario
 ### Building the database
 The first step is to build the database, i.e. read a corpus of midi file in an orchestra and a piano matrices, split them into train/valid/test matrices and save them in a folder (for instance lop/Data) as .npy files. This is done by executing :
 
-    python build_data.py
+    cd Source/Database; python build_data.py
 
 The train/valid/test split is defined through indexing files, whose path is passed as an argument of the main function in *build_data.py*.
 A database can be found at <https://qsdfo.github.io/LOP/database/LOP_database.zip>. \
@@ -17,7 +21,7 @@ We simplify orchestrations by mapping rare instruments to more common ones throu
 ### Training
 Is made by calling
 
-    python main_random_search.py
+    cd Source; python main_random_search.py
 
 Parameters at the very beginning of the file are used for execution context and should not be touched, except DEFINED_CONFIG and CONFIG_ID
 
@@ -40,7 +44,7 @@ The training parameters (model, optim method, granularity, type of units and qua
     ]
 
 #### Defining a specific configuration for a model
-DEFINED_CONFIG allows to run a specific configuration which is defined in the *get_static_config()*. For instance, if you want to test a particular configuration for the FGgru model, you have to edit the *get_static_config()* method defined in the *acidano/acidano/models/lop/binary/FGgru.py* file.
+DEFINED_CONFIG allows to run a configurations defined in the dictionnary *configs* at the top of *main_random_search.py*.
 
 ### Generating
 Call

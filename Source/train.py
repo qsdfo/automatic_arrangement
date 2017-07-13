@@ -33,37 +33,37 @@ def run_wrapper(params, config_folder, start_time_train):
     # Load models and optim modules
     ############################################################
     if script_param['model_class'] == "random":
-        from acidano.models.lop.binary.random import Random as Model_class
+        from Models.binary.random import Random as Model_class
     elif script_param['model_class'] == "repeat":
-        from acidano.models.lop.binary.repeat import Repeat as Model_class
+        from Models.binary.repeat import Repeat as Model_class
     elif script_param['model_class'] == "RBM":
-        from acidano.models.lop.binary.RBM import RBM as Model_class
+        from Models.binary.RBM import RBM as Model_class
     elif script_param['model_class'] == "cRBM":
-        from acidano.models.lop.binary.cRBM import cRBM as Model_class
+        from Models.binary.cRBM import cRBM as Model_class
     elif script_param['model_class'] == "FGcRBM":
-        from acidano.models.lop.binary.FGcRBM import FGcRBM as Model_class
+        from Models.binary.FGcRBM import FGcRBM as Model_class
     elif script_param['model_class'] == "FGgru":
-        from acidano.models.lop.binary.FGgru import FGgru as Model_class
+        from Models.binary.FGgru import FGgru as Model_class
     elif script_param['model_class'] == "FGcRBM_no_bv":
-        from acidano.models.lop.binary.FGcRBM_no_bv import FGcRBM_no_bv as Model_class
+        from Models.binary.FGcRBM_no_bv import FGcRBM_no_bv as Model_class
     elif script_param['model_class'] == "FGcRnnRbm":
-        from acidano.models.lop.binary.FGcRnnRbm import FGcRnnRbm as Model_class
+        from Models.binary.FGcRnnRbm import FGcRnnRbm as Model_class
     elif script_param['model_class'] == "LSTM":
-        from acidano.models.lop.binary.LSTM import LSTM as Model_class
+        from Models.binary.LSTM import LSTM as Model_class
     elif script_param['model_class'] == "RnnRbm":
-        from acidano.models.lop.binary.RnnRbm import RnnRbm as Model_class
+        from Models.binary.RnnRbm import RnnRbm as Model_class
     elif script_param['model_class'] == "cRnnRbm":
-        from acidano.models.lop.binary.cRnnRbm import cRnnRbm as Model_class
+        from Models.binary.cRnnRbm import cRnnRbm as Model_class
     elif script_param['model_class'] == "cLstmRbm":
-        from acidano.models.lop.binary.cLstmRbm import cLstmRbm as Model_class
+        from Models.binary.cLstmRbm import cLstmRbm as Model_class
     elif script_param['model_class'] == "FGcLstmRbm":
-        from acidano.models.lop.binary.FGcLstmRbm import FGcLstmRbm as Model_class
+        from Models.binary.FGcLstmRbm import FGcLstmRbm as Model_class
     elif script_param['model_class'] == "LstmRbm":
-        from acidano.models.lop.binary.LstmRbm import LstmRbm as Model_class
+        from Models.binary.LstmRbm import LstmRbm as Model_class
     elif script_param['model_class'] == "LSTM_gaussian_mixture":
-        from acidano.models.lop.real.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
+        from Models.real.LSTM_gaussian_mixture import LSTM_gaussian_mixture as Model_class
     elif script_param['model_class'] == "LSTM_gaussian_mixture_2":
-        from acidano.models.lop.real.LSTM_gaussian_mixture_2 import LSTM_gaussian_mixture_2 as Model_class
+        from Models.real.LSTM_gaussian_mixture_2 import LSTM_gaussian_mixture_2 as Model_class
 
     if script_param['optimization_method'] == "gradient_descent":
         from acidano.utils.optim.gradient_descent import Gradient_descent as Optimization_method

@@ -2,14 +2,12 @@ import csv
 import build_data_aux
 from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
 import re
+import cPickle as pkl
 
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-
-DATABASE_PATH = "/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17"
-DATA_PATH = "../../Data"
 
 def get_number_of_file_per_composer(files):
     
@@ -141,6 +139,21 @@ def histogram_per_pitch():
     T_orch = orchestra_train.shape[0] + orchestra_test.shape[0] + orchestra_valid.shape[0]
     orch_on = (orchestra_train.sum(axis=0) + orchestra_test.sum(axis=0) + orchestra_valid.sum(axis=0) + 0.) / T_orch
 
+    # Get ticks locations (just put a mark but don't write instrument names, we do it by hand later on)
+    metadata = pkl.load(open(DATA_PATH + '/metadata.pkl', 'rb'))
+    instru_mapping = metadata['instru_mapping']
+    labels_location = []
+    labels = ['']
+    for k, v in instru_mapping.iteritems():
+        if k == 'Piano':
+            continue
+        labels_location.append(v['index_min'])
+        labels_location.append(v['index_max'])
+        labels.append(k)
+    xa = set(labels_location)
+    labels_location = list(xa)
+    labels_location.sort()
+
     # Plot barplot
     bar_width = 0.35
     x = range(len(orch_on))
@@ -149,26 +162,34 @@ def histogram_per_pitch():
                  color='b',
                  label='Number notes on')
 
-
     plt.suptitle('Activation ratio per pitch in the whole database', fontsize=14, fontweight='bold')
     plt.xlabel('pitch')
     plt.ylabel('nb_occurence / total_length')
+    plt.xticks(labels_location, labels_location, rotation='vertical')
     plt.savefig('barplot_pitch_interclass_imbalance.pdf')
 
 
-def label_cardinality():
+def label_cardinality_density(remove_silence=False):
     orchestra_train = np.load(DATA_PATH + '/orchestra_train.npy')
     orchestra_test = np.load(DATA_PATH + '/orchestra_test.npy')
     orchestra_valid = np.load(DATA_PATH + '/orchestra_valid.npy')
     orchestra = np.concatenate((orchestra_train, orchestra_valid, orchestra_test), axis=0)
-    import pdb; pdb.set_trace()
+    N = orchestra.shape[1]
 
-    return np.mean(orchestra.sum(axis=1))
+    if remove_silence:
+        T = orchestra.shape[0]
+        flat_orch = orchestra.sum(axis=1)
+        indices = np.arange(T)
+        ind = [e for e in indices if (flat_orch[e] != 0)]
+        orchestra = orchestra[ind]
+
+    return (np.mean(orchestra.sum(axis=1))), (np.mean(orchestra.sum(axis=1))/N)
 
 if __name__ == '__main__':
+    DATABASE_PATH = "/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17"
+    DATA_PATH = "../../Data_frame_q8"
+    
     # get_number_of_file_per_composer([DATABASE_PATH + '/' + e for e in ['bouliane.csv', 'hand_picked_spotify.csv', 'liszt_classical_archives.csv', 'imslp.csv']])
-
     # histogram_per_pitch()
-
-    print(label_cardinality())
+    print(label_cardinality_density(False))
     

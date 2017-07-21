@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 
 # Model lop
-from acidano.models.lop.model_lop import Model_lop
+from ..model_lop import Model_lop
 
 # Hyperopt
 from acidano.utils import hopt_wrapper
@@ -35,7 +35,6 @@ class FGcRBM(Model_lop):
         Model_lop.__init__(self, model_param, dimensions, checksum_database)
 
         self.threshold = model_param['threshold']
-        self.weighted_ce = model_param['weighted_ce']
 
         # Datas are represented like this:
         #   - visible : (num_batch, orchestra_dim)
@@ -257,38 +256,21 @@ class FGcRBM(Model_lop):
     ###############################
     #       TRAIN FUNCTION
     ###############################
-    def build_latent(self, piano, index):
-        visible = piano[index, :]
-        return visible
-
-    def build_visible(self, orchestra, index):
-        visible = orchestra[index, :]
-        return visible
-
-    def build_past(self, orchestra, index):
-        past_3D = build_theano_input.build_sequence(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_v)
-        past = past_3D\
-            .ravel()\
-            .reshape((self.batch_size, (self.temporal_order-1)*self.n_v))
-        return past
-
-    def get_train_function(self, piano, orchestra, optimizer, name):
+    def build_train_fn(self, optimizer, name):
         self.step_flag = 'train'
-        # index to a [mini]batch : int32
-        index = T.ivector()
-        index.tag.test_value = np.arange(500, 500 + self.batch_size, dtype=np.int32)
-
         # get the cost and the gradient corresponding to one step of CD-15
         cost, monitor, updates, mean_chain = self.cost_updates(optimizer)
 
-        return theano.function(inputs=[index],
-                               outputs=[cost, monitor],
-                               updates=updates,
-                               givens={self.v: self.build_visible(orchestra, index),
-                                       self.p: self.build_past(orchestra, index),
-                                       self.z: self.build_latent(piano, index)},
-                               name=name
-                               )
+        self.train_function = theano.function(inputs=[self.v, self.p, self.z],
+                                            outputs=[cost, monitor],
+                                            updates=updates,
+                                            name=name
+                                            )
+
+    def train_batch(self, batch_data):
+        # Simply used for parsing the batch_data
+        visible, past, latent = batch_data
+        return self.train_function(visible, past, latent)
 
     ###############################
     #       PREDICTION
@@ -309,21 +291,21 @@ class FGcRBM(Model_lop):
     ###############################
     #       VALIDATION FUNCTION
     ##############################
-    def get_validation_error(self, piano, orchestra, name):
+    def build_validation_fn(self, name):
         self.step_flag = 'validate'
-        # index to a [mini]batch : int32
-        index = T.ivector()
-
+        
         precision, recall, accuracy, updates_valid = self.prediction_measure()
 
-        return theano.function(inputs=[index],
-                               outputs=[precision, recall, accuracy],
-                               updates=updates_valid,
-                               givens={self.p: self.build_past(orchestra, index),
-                                       self.z: self.build_latent(piano, index),
-                                       self.v_truth: self.build_visible(orchestra, index)},
-                               name=name
-                               )
+        self.validate_function = theano.function(inputs=[self.v_truth, self.p, self.z],
+            outputs=[precision, recall, accuracy],
+            updates=updates_valid,
+            name=name
+            )
+
+    def validate_batch(self, batch_data):
+        # Simply used for parsing the batch_data
+        visible, past, latent = batch_data
+        return self.validate_function(visible, past, latent)
 
     ###############################
     #       GENERATION
@@ -384,3 +366,14 @@ class FGcRBM(Model_lop):
             return (orchestra_gen,)
 
         return closure
+
+
+    def generator(self, piano, orchestra, indices):
+        for index in indices:
+            visible = orchestra[index, :]
+            latent = piano[index, :]
+            past_3D = build_theano_input.build_sequence(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_v)
+            past = past_3D\
+                .ravel()\
+                .reshape((self.batch_size, (self.temporal_order-1)*self.n_v))
+            yield visible, past, latent

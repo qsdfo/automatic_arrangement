@@ -245,6 +245,9 @@ def train(model, optimizer,
     best_epoch = None
     while (not OVERFITTING and not TIME_LIMIT
            and epoch != train_param['max_iter']):
+
+        start_time_epoch = time.time()
+
         #######################################
         # Train
         #######################################
@@ -297,6 +300,8 @@ def train(model, optimizer,
                 #             os.makedirs(path_accuracy)
                 #         visualize_mat(np.transpose(pr_viz), path_accuracy, str(ind) + '_score_' + str(accuracy_batch[ind]))
         mean_accuracy = 100 * np.mean(accuracy)
+
+        end_time_epoch = time.time()
 
         #######################################
         # Is it the best model we have seen so far ?
@@ -376,6 +381,10 @@ def train(model, optimizer,
         #######################################
         logger_train.info(('Epoch : {} , Monitor : {} , Cost : {} , Valid acc : {}'
                           .format(epoch, np.mean(train_monitor_epoch), mean_loss, mean_accuracy))
+                          .encode('utf8'))
+
+        logger_train.info(('Time : {}'
+                          .format(end_time_epoch - start_time_epoch))
                           .encode('utf8'))
 
         if OVERFITTING:

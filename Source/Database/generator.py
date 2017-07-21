@@ -2,10 +2,7 @@
 # -*- coding: utf-8-unix -*-
 
 
-def generate_in_background(generator, num_cached=50):
-    """
-    Runs any generator in a background thread, caching up to `num_cached` items.
-    """
+def threaded_generator(generator, num_cached=50):
     import Queue
     queue = Queue.Queue(maxsize=num_cached)
     sentinel = object()  # guaranteed unique reference

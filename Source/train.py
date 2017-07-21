@@ -8,7 +8,7 @@ import numpy as np
 import cPickle as pkl
 import os
 # Perso
-from load_data import load_data_train, load_data_valid, load_data_test
+from Database.load_data import load_data_train, load_data_valid, load_data_test
 from acidano.utils.early_stopping import up_criterion
 
 ####################
@@ -97,7 +97,8 @@ def run_wrapper(params, config_folder, start_time_train):
                           model_param['batch_size'],
                           skip_sample=script_param['skip_sample'],
                           avoid_silence=script_param['avoid_silence'],
-                          logger_load=logger_run)
+                          logger_load=logger_run,
+                          shared_variable=False)
     piano_valid, orchestra_valid, valid_index \
         = load_data_valid(script_param['data_folder'],
                           None, None,
@@ -105,7 +106,8 @@ def run_wrapper(params, config_folder, start_time_train):
                           model_param['batch_size'],
                           skip_sample=script_param['skip_sample'],
                           avoid_silence=script_param['avoid_silence'],
-                          logger_load=logger_run)
+                          logger_load=logger_run,
+                          shared_variable=False)
     # This load is only for sanity check purposes
     piano_test, orchestra_test, _, _ \
         = load_data_test(script_param['data_folder'],
@@ -114,24 +116,25 @@ def run_wrapper(params, config_folder, start_time_train):
                          model_param['batch_size'],
                          skip_sample=script_param['skip_sample'],
                          avoid_silence=script_param['avoid_silence'],
-                         logger_load=logger_run)
+                         logger_load=logger_run,
+                         shared_variable=False)
     time_load_1 = time.time()
     logger_run.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
     # Create the checksum dictionnary
     checksum_database = {
-        'piano_train': piano_train.get_value(borrow=True).sum(),
-        'orchestra_train': orchestra_train.get_value(borrow=True).sum(),
-        'piano_valid': piano_valid.get_value(borrow=True).sum(),
-        'orchestra_valid': orchestra_valid.get_value(borrow=True).sum(),
-        'piano_test': piano_test.get_value(borrow=True).sum(),
-        'orchestra_test': orchestra_test.get_value(borrow=True).sum()
+        'piano_train': piano_train.sum(),
+        'orchestra_train': orchestra_train.sum(),
+        'piano_valid': piano_valid.sum(),
+        'orchestra_valid': orchestra_valid.sum(),
+        'piano_test': piano_test.sum(),
+        'orchestra_test': orchestra_test.sum()
     }
 
     ############################################################
     # Get dimensions of batches
     ############################################################
-    piano_dim = piano_train.get_value().shape[1]
-    orchestra_dim = orchestra_train.get_value().shape[1]
+    piano_dim = piano_train.shape[1]
+    orchestra_dim = orchestra_train.shape[1]
     dimensions = {'batch_size': model_param['batch_size'],
                   'temporal_order': model_param['temporal_order'],
                   'piano_dim': piano_dim,
@@ -152,13 +155,13 @@ def run_wrapper(params, config_folder, start_time_train):
     train_param['start_time_train'] = start_time_train
 
     # Class normalization
-    notes_activation = orchestra_train.get_value(borrow=True).sum(axis=0)
+    notes_activation = orchestra_train.sum(axis=0)
     notes_activation_norm = notes_activation.mean() / (notes_activation+1e-10)
     class_normalization = np.maximum(1, np.minimum(20, notes_activation_norm))
     model_param['class_normalization'] = class_normalization
 
     # Other kind of regularization
-    L_train = orchestra_train.get_value(borrow=True).shape[0]
+    L_train = orchestra_train.shape[0]
     mean_notes_activation = notes_activation / L_train
     mean_notes_activation = np.where(mean_notes_activation == 0, 1. / L_train, mean_notes_activation)
     model_param['mean_notes_activation'] = mean_notes_activation
@@ -227,9 +230,9 @@ def train(model, optimizer,
     # Compilation of the training function is encapsulated in the class since the 'givens'
     # can vary with the model
     ############################################################
-    train_iteration = model.get_train_function(piano_train, orchestra_train, optimizer, name='train_iteration')
+    model.get_train_function(optimizer, name='train_iteration')
     # Same for the validation
-    validation_error = model.get_validation_error(piano_valid, orchestra_valid, name='validation_error')
+    model.get_validation_error(name='validation_error')
 
     ############################################################
     # Training
@@ -245,6 +248,9 @@ def train(model, optimizer,
     best_epoch = None
     while (not OVERFITTING and not TIME_LIMIT
            and epoch != train_param['max_iter']):
+
+        start_time_epoch = time.time()
+
         #######################################
         # Train
         #######################################
@@ -255,8 +261,9 @@ def train(model, optimizer,
         # random_choice_mean_activation = np.zeros((model.k, model.n_v, train_param['n_train_batches']))
         # mean_activation = np.zeros((model.k, model.n_v, train_param['n_train_batches']))
         ###### # # # # ## # ## ## #  #
-        for batch_index in xrange(train_param['n_train_batches']):
-            this_cost, this_monitor = train_iteration(train_index[batch_index])
+        for batch_data in model.generator(piano_train, orchestra_train, train_index):
+        # for batch_data in threaded_generator(model.generator(piano_train, orchestra_train))
+            this_cost, this_monitor = model.train_batch(batch_data)
             # Keep track of cost
             train_cost_epoch.append(this_cost)
             train_monitor_epoch.append(this_monitor)
@@ -274,9 +281,9 @@ def train(model, optimizer,
         # For real valued units its a gaussian centered value with variance 1
         #######################################
         accuracy = []
-        for batch_index in xrange(train_param['n_val_batches']):
+        for batch_data in model.generator(piano_valid, orchestra_valid, valid_index):
             # _, _, accuracy_batch, true_frame, past_frame, piano_frame, predicted_frame = validation_error(valid_index[batch_index])
-            _, _, accuracy_batch = validation_error(valid_index[batch_index])
+            _, _, accuracy_batch = model.validation_batch(batch_data)
             accuracy += [accuracy_batch]
 
             # if train_param['DEBUG']:
@@ -297,6 +304,8 @@ def train(model, optimizer,
                 #             os.makedirs(path_accuracy)
                 #         visualize_mat(np.transpose(pr_viz), path_accuracy, str(ind) + '_score_' + str(accuracy_batch[ind]))
         mean_accuracy = 100 * np.mean(accuracy)
+
+        end_time_epoch = time.time()
 
         #######################################
         # Is it the best model we have seen so far ?
@@ -376,6 +385,10 @@ def train(model, optimizer,
         #######################################
         logger_train.info(('Epoch : {} , Monitor : {} , Cost : {} , Valid acc : {}'
                           .format(epoch, np.mean(train_monitor_epoch), mean_loss, mean_accuracy))
+                          .encode('utf8'))
+
+        logger_train.info(('Time : {}'
+                          .format(end_time_epoch - start_time_epoch))
                           .encode('utf8'))
 
         if OVERFITTING:

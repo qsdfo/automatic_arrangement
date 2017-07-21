@@ -33,7 +33,7 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
         logger_load.warning('Incorrect data type for pianorolls')
         logger_load.warning(str(piano.dtype))
     # borrow=True avoid copying the entire matrix
-    if shared_variable=True: 
+    if shared_variable == True:
         piano_out = theano.shared(piano, name='piano_' + set_identifier, borrow=True)
         orchestra_out = theano.shared(orchestra, name='orchestra_' + set_identifier, borrow=True)
     else:

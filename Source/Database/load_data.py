@@ -12,7 +12,7 @@ import cPickle as pickle
 
 
 def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, temporal_order=20, batch_size=100,
-              skip_sample=1, avoid_silence=True, logger_load=None, generation_length=100):
+              skip_sample=1, avoid_silence=True, logger_load=None, generation_length=100, shared_variable=True):
 
     # If no logger, create one
     if logger_load is None:
@@ -33,8 +33,12 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
         logger_load.warning('Incorrect data type for pianorolls')
         logger_load.warning(str(piano.dtype))
     # borrow=True avoid copying the entire matrix
-    piano_shared = theano.shared(piano, name='piano_' + set_identifier, borrow=True)
-    orchestra_shared = theano.shared(orchestra, name='orchestra_' + set_identifier, borrow=True)
+    if shared_variable == True:
+        piano_out = theano.shared(piano, name='piano_' + set_identifier, borrow=True)
+        orchestra_out = theano.shared(orchestra, name='orchestra_' + set_identifier, borrow=True)
+    else:
+        piano_out = piano
+        orchestra_out = orchestra
 
     # Sanity check
     if piano_checksum and orchestra_checksum:  # test it's not a None
@@ -99,22 +103,22 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
         generation_index = last_indices(tracks_start_end, generation_length)
 
     if set_identifier == 'test':
-        return piano_shared, orchestra_shared, np.asarray(batches, dtype=np.int32), np.asarray(generation_index, dtype=np.int32)
+        return piano_out, orchestra_out, np.asarray(batches, dtype=np.int32), np.asarray(generation_index, dtype=np.int32)
     else:
-        return piano_shared, orchestra_shared, np.asarray(batches, dtype=np.int32)
+        return piano_out, orchestra_out, np.asarray(batches, dtype=np.int32)
 
 
 # Wrappers
-def load_data_train(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=True, logger_load=None, generation_length=100):
+def load_data_train(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=True, logger_load=None, generation_length=100, shared_variable=True):
     return load_data(data_folder, piano_checksum, orchestra_checksum, 'train', temporal_order=temporal_order, batch_size=batch_size,
-                     skip_sample=skip_sample, avoid_silence=avoid_silence, logger_load=logger_load, generation_length=generation_length)
+                     skip_sample=skip_sample, avoid_silence=avoid_silence, logger_load=logger_load, generation_length=generation_length, shared_variable=shared_variable)
 
 
-def load_data_valid(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=False, logger_load=None, generation_length=100):
+def load_data_valid(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=False, logger_load=None, generation_length=100, shared_variable=True):
     return load_data(data_folder, piano_checksum, orchestra_checksum, 'valid', temporal_order=temporal_order, batch_size=batch_size,
-                     skip_sample=skip_sample, avoid_silence=avoid_silence, logger_load=logger_load, generation_length=generation_length)
+                     skip_sample=skip_sample, avoid_silence=avoid_silence, logger_load=logger_load, generation_length=generation_length, shared_variable=shared_variable)
 
 
-def load_data_test(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=False, logger_load=None, generation_length=100):
+def load_data_test(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=False, logger_load=None, generation_length=100, shared_variable=True):
     return load_data(data_folder, piano_checksum, orchestra_checksum, 'test', temporal_order=temporal_order, batch_size=batch_size,
-                     skip_sample=skip_sample, avoid_silence=avoid_silence, logger_load=logger_load, generation_length=generation_length)
+                     skip_sample=skip_sample, avoid_silence=avoid_silence, logger_load=logger_load, generation_length=generation_length, shared_variable=shared_variable)

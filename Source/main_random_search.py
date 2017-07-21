@@ -39,12 +39,12 @@ if LOCAL:
 else:
     RESULT_ROOT = "/sb/project/ymd-084-aa/leo/"
 
-DATA_DIR = '../Data_event'
+DATA_DIR = '../Data'
 SUFFIX_DATABASE = ''
 
 DATA_DIR = DATA_DIR + SUFFIX_DATABASE
-RESULT_DIR = u'TEST_SHARED'
-# RESULT_DIR = u'Results_SMC' + SUFFIX_DATABASE
+# RESULT_DIR = u'TEST' + SUFFIX_DATABASE
+RESULT_DIR = u'TEST'
 
 
 commands = [

@@ -2,7 +2,7 @@
 # -*- coding: utf-8-unix -*-
 
 # Model lop
-from Models.model_lop import Model_lop
+from ..model_lop import Model_lop
 
 # Hyperopt
 from hyperopt import hp
@@ -330,20 +330,22 @@ class FGgru(Model_lop):
     ###############################
     #       TRAIN FUNCTION
     ###############################
-    def get_train_function(self, piano, orchestra, optimizer, name):
+    def get_train_function(self, optimizer, name):
         self.step_flag = 'train'
-        # index to a [mini]batch : int32
-        index = T.ivector()
         # get the cost and the gradient corresponding to one step of CD-15
         cost, monitor, updates = self.cost_updates(optimizer)
-        return theano.function(inputs=[index],
-                               outputs=[cost, monitor],
-                               updates=updates,
-                               givens={self.p: piano[index, :],
-                                       self.o_past: build_theano_input.build_sequence(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_o),
-                                       self.o: orchestra[index, :]},
-                               name=name
-                               )
+        self.train_function = theano.function(inputs=[self.p, self.o_past, self.o],
+                                outputs=[cost, monitor],
+                                updates=updates,
+                                name=name
+                                )
+        return
+
+
+    def train_batch(self, batch_data):
+        # Simply used for parsing the batch_data
+        p, o_past, o = batch_data
+        return self.train_function(p, o_past, o)
 
     ###############################
     #       PREDICTION
@@ -362,21 +364,26 @@ class FGgru(Model_lop):
     ###############################
     #       VALIDATION FUNCTION
     ##############################
-    def get_validation_error(self, piano, orchestra, name):
+    def get_validation_error(self, name):
         self.step_flag = 'validate'
-        # index to a [mini]batch : int32
-        index = T.ivector()
-
+        
         precision, recall, accuracy, true_frame, past_frame, piano_frame, predicted_frame, updates_valid = self.prediction_measure()
 
-        return theano.function(inputs=[index],
-                               outputs=[precision, recall, accuracy],
-                               updates=updates_valid,
-                               givens={self.p: piano[index, :],
-                                       self.o_past: build_theano_input.build_sequence(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_o),
-                                       self.o_truth: orchestra[index, :]},
-                               name=name
-                               )
+        self.validation_error = theano.function(inputs=[self.p, self.o_past, self.o_truth],
+                                                outputs=[precision, recall, accuracy],
+                                                updates=updates_valid,
+                                                name=name
+                                                )
+        return
+
+    def validation_batch(self, batch_data):
+        # Simply used for parsing the batch_data
+        p, o_past, o = batch_data
+        return self.validation_error(p, o_past, o)
+
+    #  self.p: piano[index, :],
+    # self.o_past: build_theano_input.build_sequence(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_o),
+    # self.o_truth: orchestra[index, :]
 
     ###############################
     #       GENERATION
@@ -425,3 +432,10 @@ class FGgru(Model_lop):
         # Last layer could be of size piano = 93
         model_space['n_hidden'] = [500, 500, 100]
         return model_space
+
+    def generator(self, piano, orchestra, indices):
+        for index in indices:
+            p = piano[index, :]
+            o_past = build_theano_input.build_sequence_NUMPY(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_o)
+            o_truth = orchestra[index, :]
+            yield p, o_past, o_truth

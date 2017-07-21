@@ -268,7 +268,6 @@ class FGgru(Model_lop):
         ################################################################
         ################################################################
         # Before sampling, we THRESHOLD
-        # orch_pred_mean_threshold = orch_pred_mean
         orch_pred_mean_threshold = T.where(T.le(orch_pred_mean, self.threshold), 0, orch_pred_mean)
         ################################################################
         ################################################################
@@ -330,7 +329,7 @@ class FGgru(Model_lop):
     ###############################
     #       TRAIN FUNCTION
     ###############################
-    def get_train_function(self, optimizer, name):
+    def build_train_fn(self, optimizer, name):
         self.step_flag = 'train'
         # get the cost and the gradient corresponding to one step of CD-15
         cost, monitor, updates = self.cost_updates(optimizer)
@@ -364,7 +363,7 @@ class FGgru(Model_lop):
     ###############################
     #       VALIDATION FUNCTION
     ##############################
-    def get_validation_error(self, name):
+    def build_validation_fn(self, name):
         self.step_flag = 'validate'
         
         precision, recall, accuracy, true_frame, past_frame, piano_frame, predicted_frame, updates_valid = self.prediction_measure()
@@ -380,10 +379,6 @@ class FGgru(Model_lop):
         # Simply used for parsing the batch_data
         p, o_past, o = batch_data
         return self.validation_error(p, o_past, o)
-
-    #  self.p: piano[index, :],
-    # self.o_past: build_theano_input.build_sequence(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_o),
-    # self.o_truth: orchestra[index, :]
 
     ###############################
     #       GENERATION
@@ -436,6 +431,6 @@ class FGgru(Model_lop):
     def generator(self, piano, orchestra, indices):
         for index in indices:
             p = piano[index, :]
-            o_past = build_theano_input.build_sequence_NUMPY(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_o)
+            o_past = build_theano_input.build_sequence(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_o)
             o_truth = orchestra[index, :]
             yield p, o_past, o_truth

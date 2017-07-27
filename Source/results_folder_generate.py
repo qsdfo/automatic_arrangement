@@ -13,7 +13,6 @@ import theano
 import re
 
 import reconstruct_pr
-from acidano.utils.init import shared_zeros
 from acidano.data_processing.midi.write_midi import write_midi
 from acidano.data_processing.utils.event_level import from_event_to_frame
 
@@ -67,11 +66,11 @@ def generate_midi(config_folder, data_folder, generation_length, corruption_flag
     ############################################################
     generated_folder = config_folder + '/generated_sequences'
     if 'piano' == corruption_flag:
-        piano_test = shared_zeros(piano_test.get_value(borrow=True).shape)
+        piano_test = np.zeros(piano_test.shape)
         generated_folder = generated_folder + '_corrupted_piano'
         logger_generate.info("CORRUPTED PIANO :\nGenerating data with piano set to O")
     elif 'orchestra' == corruption_flag:
-        orchestra_test = shared_zeros(orchestra_test.get_value(borrow=True).shape)
+        orchestra_test = np.zeros(orchestra_test.shape)
         generated_folder = generated_folder + '_corrupted_orchestra'
         logger_generate.info("CORRUPTED ORCHESTRA :\nGenerating data with orchestra seed set to O")
     else:
@@ -103,12 +102,12 @@ def generate_midi(config_folder, data_folder, generation_length, corruption_flag
         write_path = generated_folder_ind + '/generated.mid'
         write_midi(pr_orchestra, quantization_write, write_path, tempo=80)
         # Write original orchestration and piano scores, but reconstructed version, just to check
-        pr_piano_ref = piano_test.get_value(borrow=True)[generation_index[write_counter]-generation_length:generation_index[write_counter]]
+        pr_piano_ref = piano_test[generation_index[write_counter]-generation_length:generation_index[write_counter]]
         piano_reconstructed = reconstruct_pr.instrument_reconstruction_piano(pr_piano_ref, instru_mapping)
         write_path = generated_folder_ind + '/piano_reconstructed.mid'
         write_midi(piano_reconstructed, quantization_write, write_path, tempo=80)
         #
-        pr_orch_ref = orchestra_test.get_value(borrow=True)[generation_index[write_counter]-generation_length:generation_index[write_counter]]
+        pr_orch_ref = orchestra_test[generation_index[write_counter]-generation_length:generation_index[write_counter]]
         orchestra_reconstructed = reconstruct_pr.instrument_reconstruction(pr_orch_ref, instru_mapping)
         write_path = generated_folder_ind + '/orchestra_reconstructed.mid'
         write_midi(orchestra_reconstructed, quantization_write, write_path, tempo=80)
@@ -175,10 +174,6 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, n
     # Generation length is the duration of the piano track
     generation_length = pr_piano_gen.shape[0]
 
-    # Push them on the GPU
-    pr_piano_shared = theano.shared(pr_piano_gen, name='piano_generation', borrow=True)
-    pr_orchestra_shared = theano.shared(pr_orchestra_gen, name='orchestra_generation', borrow=True)
-
     # generation_index is the last index of the track we want to generate
     # We feed several time the same index to get different proposition of orchestration
     generation_index = np.asarray([duration-1, ] * number_of_version, dtype=np.int32)
@@ -195,7 +190,7 @@ def generate_midi_full_track_reference(config_folder, data_folder, track_path, n
     # Generate
     ############################################################
     time_generate_0 = time.time()
-    generated_sequences = generate(model, pr_piano_shared, pr_orchestra_shared, generation_index, generation_length, seed_size)
+    generated_sequences = generate(model, pr_piano_gen, pr_orchestra_gen, generation_index, generation_length, seed_size)
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 

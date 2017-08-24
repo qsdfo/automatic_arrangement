@@ -181,8 +181,10 @@ def align_tracks(pr0, pr1, unit_type, gapopen, gapextend):
     # Get trace from needleman_wunsch algorithm
 
     # First extract binary representation, whatever unit_type is
-    pr0_trace = sum_along_instru_dim(Unit_type.from_type_to_binary(pr0, unit_type))
-    pr1_trace = sum_along_instru_dim(Unit_type.from_type_to_binary(pr1, unit_type))
+    pr0_binary = Unit_type.from_type_to_binary(pr0, unit_type)
+    pr1_binary = Unit_type.from_type_to_binary(pr1, unit_type)  
+    pr0_trace = sum_along_instru_dim(pr0_binary)
+    pr1_trace = sum_along_instru_dim(pr1_binary)
 
     # Traces are computed from binaries matrices
     # Traces are binary lists, 0 meaning a gap is inserted

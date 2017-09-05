@@ -164,7 +164,6 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization
                     if not os.path.isdir(folder_path):
                         continue
 
-                    import pdb; pdb.set_trace()
                     # Get pr, warped and duration
                     new_pr_piano, _, _, _, new_pr_orchestra, _, new_instru_orchestra, _, duration\
                         = build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, gapopen=3, gapextend=1)
@@ -282,13 +281,16 @@ if __name__ == '__main__':
     # Set up
     unit_type = 'continuous'
     temporal_granularity = 'event_level'
-    max_translation = 0
+    quantization = 100
+    if temporal_granularity == 'event_level':
+        quantization = 100
+    max_translation = 11
     pitch_translations = range(-max_translation, max_translation+1)
 
     DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17'
     INDEX_PATH = DATABASE_PATH + '/tvt_split'
     data_folder = '../../Data/Data'
-    data_folder += '__' + unit_type + '__' + temporal_granularity + '__' + str(max_translation)
+    data_folder += '__' + unit_type + '__' + temporal_granularity + str(quantization) + '__' + str(max_translation)
     index_files_dict = {}
     index_files_dict['train'] = [
         # INDEX_PATH + "/debug_train.txt",
@@ -312,10 +314,13 @@ if __name__ == '__main__':
         # INDEX_PATH + "/imslp_test.txt"
     ]
 
+    if not os.path.isdir(data_folder):
+        os.makedirs(data_folder)
+
     build_data(root_dir=DATABASE_PATH,
                index_files_dict=index_files_dict,
                meta_info_path=data_folder + '/temp.p',
-               quantization=100,
+               quantization=quantization,
                unit_type=unit_type,
                temporal_granularity=temporal_granularity,
                store_folder=data_folder,

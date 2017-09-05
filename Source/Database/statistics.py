@@ -175,21 +175,23 @@ def label_cardinality_density(remove_silence=False):
     orchestra_valid = np.load(DATA_PATH + '/orchestra_valid.npy')
     orchestra = np.concatenate((orchestra_train, orchestra_valid, orchestra_test), axis=0)
     N = orchestra.shape[1]
+    T = orchestra.shape[0]
 
     if remove_silence:
-        T = orchestra.shape[0]
         flat_orch = orchestra.sum(axis=1)
         indices = np.arange(T)
         ind = [e for e in indices if (flat_orch[e] != 0)]
         orchestra = orchestra[ind]
+        # New value for T
+        T = orchestra.shape[0]
 
-    return (np.mean(orchestra.sum(axis=1))), (np.mean(orchestra.sum(axis=1))/N)
+    return {'label_cardinality': np.mean(orchestra.sum(axis=1)), 'label_density': (np.mean(orchestra.sum(axis=1))/N), 'N': N, 'T': T}
 
 if __name__ == '__main__':
     DATABASE_PATH = "/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17"
-    DATA_PATH = "../../Data_frame_q8"
-    
+    DATA_PATH = "../../Data"
+
     # get_number_of_file_per_composer([DATABASE_PATH + '/' + e for e in ['bouliane.csv', 'hand_picked_spotify.csv', 'liszt_classical_archives.csv', 'imslp.csv']])
     # histogram_per_pitch()
-    print(label_cardinality_density(False))
+    print(label_cardinality_density(True))
     

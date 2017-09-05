@@ -27,11 +27,11 @@ from results_folder_plot_weights import plot_weights
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 1
+N_HP_CONFIG = 5
 LOCAL = True
 DEBUG = False
 CLEAN = True
-DEFINED_CONFIG = True
+DEFINED_CONFIG = False
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
@@ -39,16 +39,14 @@ if LOCAL:
 else:
     RESULT_ROOT = "/sb/project/ymd-084-aa/leo/"
 
-DATA_DIR = '../Data'
+DATA_DIR = '../Data/Data__continuous__event_level__0/'
 SUFFIX_DATABASE = ''
 
 DATA_DIR = DATA_DIR + SUFFIX_DATABASE
-# RESULT_DIR = u'TEST' + SUFFIX_DATABASE
-RESULT_DIR = u'TEST'
-
+RESULT_DIR = u'Results/Grid_search/' + SUFFIX_DATABASE
 
 commands = [
-    'FGgru',
+    'RBM',
     'adam_L2',
     'event_level',
     'binary',
@@ -81,15 +79,67 @@ logging.getLogger('').addHandler(console)
 # Define configs
 ############################################################
 configs = {
-    '1': {
+    '0': {
         'batch_size' : 200,
-        'temporal_order' : 10,
+        'temporal_order' : 5,
         'dropout_probability' : 0,
         'weight_decay_coeff' : 0,
-        'n_hidden' : [500, 500, 100],
+        'n_hidden' : [500, 500],
         'threshold' : 0,
-        'weighted_ce' : 1
-    }
+        'weighted_ce' : 0
+    },
+
+    # '1': {
+    #     'batch_size' : 200,
+    #     'temporal_order' : 5,
+    #     'dropout_probability' : 0,
+    #     'weight_decay_coeff' : 0,
+    #     'n_hidden' : [500, 500],
+    #     'threshold' : 0,
+    #     'weighted_ce' : 0
+    # },
+
+    # '2': {
+    #     'batch_size' : 200,
+    #     'temporal_order' : 4,
+    #     'dropout_probability' : 0,
+    #     'weight_decay_coeff' : 0,
+    #     'n_hidden' : [500, 500],
+    #     'threshold' : 0,
+    #     'weighted_ce' : 0
+    # },
+
+    # '3': {
+    #     'batch_size' : 200,
+    #     'temporal_order' : 5,
+    #     'dropout_probability' : 0,
+    #     'weight_decay_coeff' : 0,
+    #     'n_hidden' : [500, 500],
+    #     'threshold' : 0,
+    #     'weighted_ce' : 0
+    # },
+
+    # '4': {
+    #     'batch_size' : 200,
+    #     'temporal_order' : 10,
+    #     'dropout_probability' : 0,
+    #     'weight_decay_coeff' : 0,
+    #     'n_hidden' : [500, 500],
+    #     'threshold' : 0,
+    #     'weighted_ce' : 0
+    # },
+
+    # '5': {
+    #     'batch_size' : 200,
+    #     'temporal_order' : 5,
+    #     'dropout_probability' : 0,
+    #     'weight_decay_coeff' : 0,
+    #     'n_hidden' : [500, 500],
+    #     'threshold' : 0,
+    #     'weighted_ce' : 0
+    # },
+
+
 }
 
 ############################################################
@@ -103,6 +153,11 @@ script_param = {}
 # Unit type
 unit_type = commands[3]
 script_param['unit_type'] = unit_type
+if unit_type == 'binary':
+    script_param['binarize_piano'] = True
+else:
+    script_param['binarize_piano'] = False
+script_param['binarize_orchestra'] = True
 
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the optimization method
@@ -197,9 +252,8 @@ except ValueError:
     print(commands[4] + ' is not an integer')
     raise
 
-script_param['avoid_silence'] = True
-if not script_param['avoid_silence']:
-    RESULT_DIR += '_with_silence'
+script_param['avoid_silence'] = False
+
 ############################################################
 # System paths
 ############################################################
@@ -307,7 +361,8 @@ if DEFINED_CONFIG:
             config_folder = config_folder
             params = pkl.load(open(config_folder + '/config.pkl', "rb"))
             train.run_wrapper(params, config_folder, start_time_train)
-            plot_weights(config_folder, logging)
+            # plot_weights(config_folder, logging)
+            # generate_midi(config_folder, DATA_DIR, 20, None, logging)
             for track_path in track_paths:
                 generate_midi_full_track_reference(config_folder, DATA_DIR, track_path, 5, logging)
 else:

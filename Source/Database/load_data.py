@@ -9,10 +9,11 @@ import theano
 import logging
 import random
 import cPickle as pickle
+import acidano.data_processing.utils.unit_type as Unit_type
 
 
 def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, temporal_order=20, batch_size=100,
-              skip_sample=1, avoid_silence=True, logger_load=None, generation_length=100):
+              skip_sample=1, avoid_silence=True, binarize_piano=False, binarize_orchestra=True, logger_load=None, generation_length=100):
 
     # If no logger, create one
     if logger_load is None:
@@ -26,6 +27,13 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
     piano = np.load(data_folder + '/piano_' + set_identifier + '.npy')
     orchestra = np.load(data_folder + '/orchestra_' + set_identifier + '.npy')
 
+    if binarize_piano:
+        piano[np.nonzero(piano)] = 1
+        
+
+    if binarize_orchestra:
+        orchestra[np.nonzero(orchestra)] = 1
+
     # First check type
     type_data = (piano.dtype != theano.config.floatX)
     if type_data:
@@ -33,9 +41,9 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
         logger_load.warning(str(piano.dtype))
 
     # Sanity check
-    if piano_checksum and orchestra_checksum:  # test it's not a None
-        if (piano.sum() != piano_checksum) or (orchestra.sum() != orchestra_checksum):
-            raise ValueError("Checksum of the database failed")
+    # if piano_checksum and orchestra_checksum:  # test it's not a None
+    #     if (piano.sum() != piano_checksum) or (orchestra.sum() != orchestra_checksum):
+    #         raise ValueError("Checksum of the database failed")
 
     # Get start and end for each track
     tracks_start_end = pickle.load(open(data_folder + '/tracks_start_end_' + set_identifier + '.pkl', 'rb'))
@@ -50,6 +58,7 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
     def remove_silences(indices, pr):
         flat_pr = pr.sum(axis=1)
         return [e for e in indices if (flat_pr[e] != 0)]
+
 
     def last_indices(tracks_start_end, temporal_order):
         valid_ind = []
@@ -101,16 +110,16 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
 
 
 # Wrappers
-def load_data_train(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=True, logger_load=None, generation_length=100):
+def load_data_train(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=True, binarize_piano=False, binarize_orchestra=True, logger_load=None, generation_length=100):
     return load_data(data_folder, piano_checksum, orchestra_checksum, 'train', temporal_order=temporal_order, batch_size=batch_size,
-                     skip_sample=skip_sample, avoid_silence=avoid_silence, logger_load=logger_load, generation_length=generation_length)
+                     skip_sample=skip_sample, avoid_silence=avoid_silence, binarize_piano=binarize_piano, binarize_orchestra=binarize_orchestra, logger_load=logger_load, generation_length=generation_length)
 
 
-def load_data_valid(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=False, logger_load=None, generation_length=100):
+def load_data_valid(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=False, binarize_piano=False, binarize_orchestra=True, logger_load=None, generation_length=100):
     return load_data(data_folder, piano_checksum, orchestra_checksum, 'valid', temporal_order=temporal_order, batch_size=batch_size,
-                     skip_sample=skip_sample, avoid_silence=avoid_silence, logger_load=logger_load, generation_length=generation_length)
+                     skip_sample=skip_sample, avoid_silence=avoid_silence, binarize_piano=binarize_piano, binarize_orchestra=binarize_orchestra, logger_load=logger_load, generation_length=generation_length)
 
 
-def load_data_test(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=False, logger_load=None, generation_length=100):
+def load_data_test(data_folder, piano_checksum, orchestra_checksum, temporal_order=20, batch_size=100, skip_sample=1, avoid_silence=False, binarize_piano=False, binarize_orchestra=True, logger_load=None, generation_length=100):
     return load_data(data_folder, piano_checksum, orchestra_checksum, 'test', temporal_order=temporal_order, batch_size=batch_size,
-                     skip_sample=skip_sample, avoid_silence=avoid_silence, logger_load=logger_load, generation_length=generation_length)
+                     skip_sample=skip_sample, avoid_silence=avoid_silence, binarize_piano=binarize_piano, binarize_orchestra=binarize_orchestra, logger_load=logger_load, generation_length=generation_length)

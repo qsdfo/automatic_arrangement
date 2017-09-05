@@ -11,6 +11,9 @@ import os
 from Database.load_data import load_data_train, load_data_valid, load_data_test
 from acidano.utils.early_stopping import up_criterion
 
+import sys 
+sys.setrecursionlimit(50000)
+
 ####################
 # Debugging compiler flags
 import theano
@@ -97,17 +100,19 @@ def run_wrapper(params, config_folder, start_time_train):
                           model_param['batch_size'],
                           skip_sample=script_param['skip_sample'],
                           avoid_silence=script_param['avoid_silence'],
-                          logger_load=logger_run,
-                          shared_variable=False)
+                          binarize_piano=script_param['binarize_piano'],
+                          binarize_orchestra=script_param['binarize_orchestra'],
+                          logger_load=logger_run)
     piano_valid, orchestra_valid, valid_index \
         = load_data_valid(script_param['data_folder'],
                           None, None,
                           model_param['temporal_order'],
                           model_param['batch_size'],
                           skip_sample=script_param['skip_sample'],
-                          avoid_silence=script_param['avoid_silence'],
-                          logger_load=logger_run,
-                          shared_variable=False)
+                          avoid_silence=True,
+                          binarize_piano=script_param['binarize_piano'],
+                          binarize_orchestra=script_param['binarize_orchestra'],
+                          logger_load=logger_run)
     # This load is only for sanity check purposes
     piano_test, orchestra_test, _, _ \
         = load_data_test(script_param['data_folder'],
@@ -115,9 +120,10 @@ def run_wrapper(params, config_folder, start_time_train):
                          model_param['temporal_order'],
                          model_param['batch_size'],
                          skip_sample=script_param['skip_sample'],
-                         avoid_silence=script_param['avoid_silence'],
-                         logger_load=logger_run,
-                         shared_variable=False)
+                         avoid_silence=True,
+                         binarize_piano=script_param['binarize_piano'],
+                         binarize_orchestra=script_param['binarize_orchestra'],
+                         logger_load=logger_run)
     time_load_1 = time.time()
     logger_run.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
     # Create the checksum dictionnary
@@ -189,6 +195,7 @@ def run_wrapper(params, config_folder, start_time_train):
                                     piano_train, orchestra_train, train_index,
                                     piano_valid, orchestra_valid, valid_index,
                                     train_param, config_folder, logger_run)
+
     time_train_1 = time.time()
     training_time = time_train_1-time_train_0
     logger_run.info('TTT : Training data took {} seconds'.format(training_time))
@@ -230,9 +237,9 @@ def train(model, optimizer,
     # Compilation of the training function is encapsulated in the class since the 'givens'
     # can vary with the model
     ############################################################
-    model.get_train_function(optimizer, name='train_iteration')
+    model.build_train_fn(optimizer, name='train_iteration')
     # Same for the validation
-    model.get_validation_error(name='validation_error')
+    model.build_validation_fn(name='validation_error')
 
     ############################################################
     # Training
@@ -261,8 +268,8 @@ def train(model, optimizer,
         # random_choice_mean_activation = np.zeros((model.k, model.n_v, train_param['n_train_batches']))
         # mean_activation = np.zeros((model.k, model.n_v, train_param['n_train_batches']))
         ###### # # # # ## # ## ## #  #
-        for batch_data in model.generator(piano_train, orchestra_train, train_index):
-        # for batch_data in threaded_generator(model.generator(piano_train, orchestra_train))
+        for batch_index in train_index:
+            batch_data = model.generator(piano_train, orchestra_train, batch_index)
             this_cost, this_monitor = model.train_batch(batch_data)
             # Keep track of cost
             train_cost_epoch.append(this_cost)
@@ -281,9 +288,10 @@ def train(model, optimizer,
         # For real valued units its a gaussian centered value with variance 1
         #######################################
         accuracy = []
-        for batch_data in model.generator(piano_valid, orchestra_valid, valid_index):
+        for batch_index in valid_index:
+            batch_data = model.generator(piano_valid, orchestra_valid, batch_index)
             # _, _, accuracy_batch, true_frame, past_frame, piano_frame, predicted_frame = validation_error(valid_index[batch_index])
-            _, _, accuracy_batch = model.validation_batch(batch_data)
+            _, _, accuracy_batch = model.validate_batch(batch_data)
             accuracy += [accuracy_batch]
 
             # if train_param['DEBUG']:

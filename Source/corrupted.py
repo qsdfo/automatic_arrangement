@@ -7,7 +7,7 @@
 import numpy as np
 import os
 import cPickle as pkl
-from load_data import load_data_valid
+from Database.load_data import load_data_valid
 from results_folder_generate import generate_midi
 from acidano.utils.init import shared_zeros
 import logging

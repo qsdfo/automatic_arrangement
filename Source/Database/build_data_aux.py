@@ -135,7 +135,7 @@ def align_tracks_removing_silences(pr0, pr1, unit_type, gapopen, gapextend):
     trace_prod = [e1 * e2 for (e1, e2) in zip(trace_0, trace_1)]
     duration = sum(trace_prod)
     if duration == 0:
-        return [None]*5
+        return [None]*6
     # Remove gaps
     pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
@@ -201,7 +201,7 @@ def align_tracks(pr0, pr1, unit_type, gapopen, gapextend):
     trace_prod = [e1 * e2 for (e1, e2) in zip(trace_0, trace_1)]
     duration = sum(trace_prod)
     if duration == 0:
-        return [None]*5
+        return [None]*6
     # Remove gaps
     pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
@@ -270,23 +270,24 @@ def process_folder(folder_path, quantization, unit_type, temporal_granularity, g
     pr0_aligned, trace_0, pr1_aligned, trace_1, trace_prod, duration = align_tracks(pr0, pr1, unit_type, gapopen, gapextend)
     
     # Clean events
-    if temporal_granularity == 'event_level':
-        event0_aligned = clean_event(event_0, trace_0, trace_prod)
-        event1_aligned = clean_event(event_1, trace_1, trace_prod)
+    if (temporal_granularity == 'event_level'):
+        if (trace_0 is None) or (trace_1 is None):
+            event0_aligned = None
+            event1_aligned = None
+        else:
+            event0_aligned = clean_event(event_0, trace_0, trace_prod)
+            event1_aligned = clean_event(event_1, trace_1, trace_prod)
     else:
         event0_aligned = []
         event1_aligned = []
 
     # Find which pr is orchestra, which one is piano
-    try:
-        pr_piano, event_piano, instru_piano, name_piano,\
-            pr_orch, event_orch, instru_orch, name_orch,\
-            duration =\
-            discriminate_between_piano_and_orchestra(pr0_aligned, event0_aligned, instru0, name0,
-                                                     pr1_aligned, event1_aligned, instru1, name1,
-                                                     duration)
-    except:
-        import pdb; pdb.set_trace()
+    pr_piano, event_piano, instru_piano, name_piano,\
+        pr_orch, event_orch, instru_orch, name_orch,\
+        duration =\
+        discriminate_between_piano_and_orchestra(pr0_aligned, event0_aligned, instru0, name0,
+                                                 pr1_aligned, event1_aligned, instru1, name1,
+                                                 duration)
 
     return pr_piano, event_piano, instru_piano, name_piano, pr_orch, event_orch, instru_orch, name_orch, duration
 
@@ -326,7 +327,10 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
 
             # Insert the small pr in the big one :)
             # Insertion is max between already written notes and new ones
-            pr_big[t_min:t_max, index_min:index_max] = np.maximum(pr_big[t_min:t_max, index_min:index_max], pr_instru[:, pitch_min:pitch_max])
+            try:
+                pr_big[t_min:t_max, index_min:index_max] = np.maximum(pr_big[t_min:t_max, index_min:index_max], pr_instru[:, pitch_min:pitch_max])
+            except:
+                import pdb; pdb.set_trace()
 
     return pr_big
 

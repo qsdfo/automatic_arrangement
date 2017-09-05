@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 
 # Model lop
-from acidano.models.lop.model_lop import Model_lop
+from ..model_lop import Model_lop
 
 # Hyperopt
 from hyperopt import hp

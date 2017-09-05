@@ -76,28 +76,30 @@ class FGgru(Model_lop):
             # Weights
             for layer in xrange(self.n_layer):
                 if layer == 0:
-                    n_htm1 = self.n_o
+                    n_hlm1 = self.n_o
                 else:
-                    n_htm1 = self.n_hs[layer-1]
-                n_ht = self.n_hs[layer]
+                    n_hlm1 = self.n_hs[layer-1]
+                n_hl = self.n_hs[layer]
                 # Forget gate
-                self.U_z[layer] = shared_normal((n_htm1, n_ht), 0.01, name='W_z'+str(layer))
-                self.W_z[layer] = shared_normal((n_ht, n_ht), 0.01, name='U_z'+str(layer))
-                self.b_z[layer] = shared_zeros((n_ht), name='b_z'+str(layer))
+                self.U_z[layer] = shared_normal((n_hlm1, n_hl), 0.01, name='U_z'+str(layer))
+                self.W_z[layer] = shared_normal((n_hl, n_hl), 0.01, name='W_z'+str(layer))
+                self.b_z[layer] = shared_zeros((n_hl), name='b_z'+str(layer))
                 # Reset gate
-                self.U_r[layer] = shared_normal((n_htm1, n_ht), 0.01, name='W_r'+str(layer))
-                self.W_r[layer] = shared_normal((n_ht, n_ht), 0.01, name='U_r'+str(layer))
-                self.b_r[layer] = shared_zeros((n_ht), name='b_r'+str(layer))
+                self.U_r[layer] = shared_normal((n_hlm1, n_hl), 0.01, name='U_r'+str(layer))
+                self.W_r[layer] = shared_normal((n_hl, n_hl), 0.01, name='W_r'+str(layer))
+                self.b_r[layer] = shared_zeros((n_hl), name='b_r'+str(layer))
                 # Recurence
-                self.U_h[layer] = shared_normal((n_htm1, n_ht), 0.01, name='W_h'+str(layer))
-                self.W_h[layer] = shared_normal((n_ht, n_ht), 0.01, name='U_h'+str(layer))
-                self.b_h[layer] = shared_zeros((n_ht), name='b_h'+str(layer))
+                self.U_h[layer] = shared_normal((n_hlm1, n_hl), 0.01, name='U_h'+str(layer))
+                self.W_h[layer] = shared_normal((n_hl, n_hl), 0.01, name='W_h'+str(layer))
+                self.b_h[layer] = shared_zeros((n_hl), name='b_h'+str(layer))
             
             self.W_piano = shared_normal((self.n_p, self.n_hs[-1]), 0.01, name='W_piano')
             self.b_piano = shared_zeros((self.n_hs[-1]), name='b_piano')
             # Last predictive layer
-            self.W = shared_normal((self.n_hs[-1] * 2, self.n_o), 0.01, name='W')
+            # self.W = shared_normal((self.n_hs[-1] * 2, self.n_o), 0.01, name='W')
+            self.W = shared_normal((self.n_hs[-1], self.n_o), 0.01, name='W')
             self.b = shared_zeros((self.n_o), name='b')
+            self.sum_coeff = theano.shared(1.0, name='sum_coeff')
         else:
             # Layer weights
             for layer, n_h_layer in enumerate(self.n_hs):
@@ -114,10 +116,11 @@ class FGgru(Model_lop):
             self.b_piano = weights_initialization['b_piano']
             self.W = weights_initialization['W']
             self.b = weights_initialization['b']
+            self.sum_coeff = weights_initialization['sum_coeff']
 
         self.params = self.W_z.values() + self.U_z.values() + self.b_z.values() + self.W_r.values() + self.U_r.values() +\
             self.b_r.values() + self.W_h.values() + self.U_h.values() + self.b_h.values() +\
-            [self.W_piano, self.b_piano, self.W, self.b]
+            [self.W_piano, self.b_piano, self.W, self.b, self.sum_coeff]
 
         # Variables
         self.p = T.matrix('p', dtype=theano.config.floatX)
@@ -260,7 +263,14 @@ class FGgru(Model_lop):
         ################################################################
         ################################################################
 
-        concat_input = T.concatenate([orchestra_repr_norm, piano_repr], axis=1)
+        ################################################################
+        ################################################################
+        # Sum or concatenate
+        # concat_input = T.concatenate([orchestra_repr_norm, piano_repr], axis=1)
+        concat_input = orchestra_repr_norm + self.sum_coeff * piano_repr
+        ################################################################
+        ################################################################
+
         # Last layer
         orch_pred_mean = T.nnet.sigmoid(T.dot(concat_input, self.W) + self.b)
 
@@ -375,7 +385,7 @@ class FGgru(Model_lop):
                                                 )
         return
 
-    def validation_batch(self, batch_data):
+    def validate_batch(self, batch_data):
         # Simply used for parsing the batch_data
         p, o_past, o = batch_data
         return self.validation_error(p, o_past, o)
@@ -428,9 +438,8 @@ class FGgru(Model_lop):
         model_space['n_hidden'] = [500, 500, 100]
         return model_space
 
-    def generator(self, piano, orchestra, indices):
-        for index in indices:
-            p = piano[index, :]
-            o_past = build_theano_input.build_sequence(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_o)
-            o_truth = orchestra[index, :]
-            yield p, o_past, o_truth
+    def generator(self, piano, orchestra, index):    
+        p = piano[index, :]
+        o_past = build_theano_input.build_sequence(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_o)
+        o_truth = orchestra[index, :]
+        return p, o_past, o_truth

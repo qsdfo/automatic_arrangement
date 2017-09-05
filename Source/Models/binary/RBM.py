@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 
 # Model lop
-from acidano.models.lop.model_lop import Model_lop
+from ..model_lop import Model_lop
 
 # Hyperopt
 from hyperopt import hp
@@ -172,42 +172,21 @@ class RBM(Model_lop):
     ###############################
     ##       TRAIN FUNCTION
     ###############################
-    def build_context(self, piano, orchestra, index):
-        # [T-1, T-2, ..., 0]
-        decreasing_time = theano.shared(np.arange(self.temporal_order-1,0,-1, dtype=np.int32))
-        #
-        temporal_shift = T.tile(decreasing_time, (self.batch_size,1))
-        # Reshape
-        index_full = index.reshape((self.batch_size, 1)) - temporal_shift
-        # Slicing
-        past_orchestra = orchestra[index_full,:]\
-            .ravel()\
-            .reshape((self.batch_size, (self.temporal_order-1)*self.n_v))
-        present_piano = piano[index,:]
-        # Concatenate along pitch dimension
-        past = T.concatenate((present_piano, past_orchestra), axis=1)
-        # Reshape
-        return past
-
-    def build_visible(self, orchestra, index):
-        visible = orchestra[index,:]
-        return visible
-
-    def get_train_function(self, piano, orchestra, optimizer, name):
-        Model_lop.get_train_function(self)
-        # index to a [mini]batch : int32
-        index = T.ivector()
-
+    def build_train_fn(self, optimizer, name):
+        self.step_flag = 'train'
         # get the cost and the gradient corresponding to one step of CD-15
         cost, monitor, updates = self.cost_updates(optimizer)
 
-        return theano.function(inputs=[index],
-                               outputs=[cost, monitor],
-                               updates=updates,
-                               givens={self.v: self.build_visible(orchestra, index),
-                                       self.c: self.build_context(piano, orchestra, index)},
-                               name=name
-                               )
+        self.train_function = theano.function(inputs=[self.v, self.c],
+                                            outputs=[cost, monitor],
+                                            updates=updates,
+                                            name=name
+                                            )
+
+    def train_batch(self, batch_data):
+        # Simply used for parsing the batch_data
+        v, c = batch_data
+        return self.train_function(v, c)
 
     ###############################
     ##       PREDICTION
@@ -228,20 +207,21 @@ class RBM(Model_lop):
     ###############################
     ##       VALIDATION FUNCTION
     ##############################
-    def get_validation_error(self, piano, orchestra, name):
-        Model_lop.get_validation_error(self)
-        # index to a [mini]batch : int32
-        index = T.ivector()
-
+    def build_validation_fn(self, name):
+        self.step_flag = 'validate'
+        
         precision, recall, accuracy, updates_valid = self.prediction_measure()
 
-        return theano.function(inputs=[index],
-                               outputs=[precision, recall, accuracy],
-                               updates=updates_valid,
-                               givens={self.c: self.build_context(piano, orchestra, index),
-                                       self.v_truth: self.build_visible(orchestra, index)},
-                               name=name
-                               )
+        self.validate_function = theano.function(inputs=[self.v_truth, self.c],
+            outputs=[precision, recall, accuracy],
+            updates=updates_valid,
+            name=name
+            )
+
+    def validate_batch(self, batch_data):
+        # Simply used for parsing the batch_data
+        v_truth, c = batch_data
+        return self.validate_function(v_truth, c)
 
     ###############################
     ##       GENERATION
@@ -298,3 +278,30 @@ class RBM(Model_lop):
             return (orchestra_gen,)
 
         return closure
+
+
+    def build_context(self, piano, orchestra, index):
+        # [T-1, T-2, ..., 0]
+        decreasing_time = np.arange(self.temporal_order-1,0,-1, dtype=np.int32)
+        #
+        temporal_shift = np.tile(decreasing_time, (self.batch_size,1))
+        # Reshape
+        index_full = index.reshape((self.batch_size, 1)) - temporal_shift
+        # Slicing
+        past_orchestra = orchestra[index_full,:]\
+            .ravel()\
+            .reshape((self.batch_size, (self.temporal_order-1)*self.n_v))
+        present_piano = piano[index,:]
+        # Concatenate along pitch dimension
+        past = np.concatenate((present_piano, past_orchestra), axis=1)
+        # Reshape
+        return past
+
+    def build_visible(self, orchestra, index):
+        visible = orchestra[index,:]
+        return visible
+
+    def generator(self, piano, orchestra, index):
+        v = self.build_visible(orchestra, index)
+        c = self.build_context(piano, orchestra, index)
+        return v, c

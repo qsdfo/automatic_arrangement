@@ -6,6 +6,7 @@ from ..model_lop import Model_lop
 
 # Hyperopt
 from acidano.utils import hopt_wrapper
+from hyperopt import hp
 from math import log
 
 # Numpy
@@ -108,7 +109,8 @@ class FGcRBM(Model_lop):
 
         space = {'n_hidden': hopt_wrapper.qloguniform_int('n_hidden', log(3000), log(5000), 10),
                  'n_factor': hopt_wrapper.qloguniform_int('n_factor', log(3000), log(5000), 10),
-                 'gibbs_steps': hopt_wrapper.qloguniform_int('gibbs_steps', log(1), log(50), 1)
+                 'gibbs_steps': hopt_wrapper.qloguniform_int('gibbs_steps', log(1), log(50), 1),
+                 'threshold': hp.uniform('threshold', 0, 0.5)
                  }
 
         space.update(super_space)
@@ -368,12 +370,11 @@ class FGcRBM(Model_lop):
         return closure
 
 
-    def generator(self, piano, orchestra, indices):
-        for index in indices:
-            visible = orchestra[index, :]
-            latent = piano[index, :]
-            past_3D = build_theano_input.build_sequence(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_v)
-            past = past_3D\
-                .ravel()\
-                .reshape((self.batch_size, (self.temporal_order-1)*self.n_v))
-            yield visible, past, latent
+    def generator(self, piano, orchestra, index):
+        visible = orchestra[index, :]
+        latent = piano[index, :]
+        past_3D = build_theano_input.build_sequence(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_v)
+        past = past_3D\
+            .ravel()\
+            .reshape((self.batch_size, (self.temporal_order-1)*self.n_v))
+        return visible, past, latent

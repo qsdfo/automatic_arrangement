@@ -20,6 +20,8 @@ from bokeh.plotting import figure, output_file, save
 from hyperopt import hp
 from math import log
 
+from abc import ABCMeta, abstractmethod
+
 
 class Model_lop(object):
     """
@@ -27,6 +29,8 @@ class Model_lop(object):
 
     Contains plot methods
     """
+
+    __metaclass__ = ABCMeta
 
     def __init__(self, model_param, dimensions, checksum_database):
         # Training parameters
@@ -69,6 +73,31 @@ class Model_lop(object):
 
         space_training.update(space_regularization)
         return space_training
+
+
+    ###############################
+    # Abstract methods for the 
+    # structure of the train function
+    ###############################
+    @abstractmethod
+    def build_train_fn(self, optimizer, name):
+        pass
+
+    @abstractmethod
+    def train_batch(self, batch_data):
+        pass
+
+    @abstractmethod
+    def build_validation_fn(self, name):
+        pass
+
+    @abstractmethod
+    def validate_batch(self, batch_data):
+        pass
+
+    @abstractmethod
+    def generator(self, piano, orchestra, indices):
+        pass
 
     ###############################
     # Set flags for the different steps
@@ -133,6 +162,9 @@ class Model_lop(object):
             ydim = param.shape[1]
             minparam = param.min()
             maxparam = param.max()
+            # Avoid division by zero
+            if minparam == maxparam:
+                maxparam = minparam + 1
             view = param.view(dtype=np.uint8).reshape((xdim, ydim, 4))
             for i in range(xdim):
                 for j in range(ydim):
@@ -148,7 +180,8 @@ class Model_lop(object):
 
         # Plot weights
         for param_shared in self.params:
-            plot_process(param_shared)
+            if not (param_shared.name == 'sum_coeff'):
+                plot_process(param_shared)
 
     def get_weight_decay(self):
         ret = 0

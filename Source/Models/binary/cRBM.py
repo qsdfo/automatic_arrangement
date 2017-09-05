@@ -11,10 +11,11 @@ http://www.uoguelph.ca/~gwtaylor/publications/nips2006mhmublv/motion.mat
 @author Graham Taylor"""
 
 # Model lop
-from acidano.models.lop.model_lop import Model_lop
+from ..model_lop import Model_lop
 
 # Hyperopt
 from acidano.utils import hopt_wrapper
+from hyperopt import hp
 from math import log
 
 # Numpy
@@ -44,7 +45,6 @@ class cRBM(Model_lop):
         super(cRBM, self).__init__(model_param, dimensions, checksum_database)
 
         self.threshold = model_param['threshold']
-        self.weighted_ce = model_param['weighted_ce']
 
         # Datas are represented like this:
         #   - visible : (num_batch, orchestra_dim)
@@ -82,12 +82,11 @@ class cRBM(Model_lop):
 
         self.v.tag.test_value = np.random.rand(self.batch_size, self.n_v).astype(theano.config.floatX)
         self.p.tag.test_value = np.random.rand(self.batch_size, self.n_p).astype(theano.config.floatX)
-
+        
         # v_gen : random init
         # p_gen : piano[t] ^ orchestra[t-N:t-1]
         self.v_gen = T.matrix('v_gen', dtype=theano.config.floatX)
         self.p_gen = T.matrix('p_gen', dtype=theano.config.floatX)
-
         return
 
     ###############################
@@ -101,7 +100,8 @@ class cRBM(Model_lop):
         super_space = Model_lop.get_hp_space()
 
         space = {'n_h': hopt_wrapper.qloguniform_int('n_h', log(3000), log(5000), 10),
-                 'gibbs_steps': hopt_wrapper.qloguniform_int('gibbs_steps', log(20), log(50), 1)
+                 'gibbs_steps': hopt_wrapper.qloguniform_int('gibbs_steps', log(1), log(50), 1),
+                 'threshold': hp.uniform('threshold', 0, 0.5)
                  }
 
         space.update(super_space)
@@ -195,47 +195,20 @@ class cRBM(Model_lop):
     ###############################
     #       TRAIN FUNCTION
     ###############################
-    def get_index_full(self, index, batch_size, length_seq):
-        index.tag.test_value = np.linspace(50, 160, batch_size).astype(np.int32)
-        # [T-1, T-2, ..., 0]
-        decreasing_time = theano.shared(np.arange(length_seq-1, 0, -1, dtype=np.int32))
-        #
-        temporal_shift = T.tile(decreasing_time, (batch_size, 1))
-        # Reshape
-        index_full = index.reshape((batch_size, 1)) - temporal_shift
-        return index_full
-
-    def build_past(self, piano, orchestra, index, batch_size, length_seq):
-        index_full = self.get_index_full(index, batch_size, length_seq)
-        # Slicing
-        past_orchestra = orchestra[index_full, :]\
-            .ravel()\
-            .reshape((batch_size, (length_seq-1)*self.n_v))
-        present_piano = piano[index, :]
-        # Concatenate along pitch dimension
-        past = T.concatenate((present_piano, past_orchestra), axis=1)
-        # Reshape
-        return past
-
-    def build_visible(self, orchestra, index):
-        visible = orchestra[index, :]
-        return visible
-
-    def get_train_function(self, piano, orchestra, optimizer, name):
+    def build_train_fn(self, optimizer, name):
         self.step_flag = 'train'
-        # index to a [mini]batch : int32
-        index = T.ivector()
-
         # get the cost and the gradient corresponding to one step of CD-15
         cost, monitor, updates, mean_chain = self.cost_updates(optimizer)
 
-        return theano.function(inputs=[index],
-                               outputs=[cost, monitor],
-                               updates=updates,
-                               givens={self.v: self.build_visible(orchestra, index),
-                                       self.p: self.build_past(piano, orchestra, index, self.batch_size, self.temporal_order)},
-                               name=name
-                               )
+        self.train_function = theano.function(inputs=[self.v, self.p],
+            outputs=[cost, monitor],
+            updates=updates,
+            name=name
+            )
+
+    def train_batch(self, batch_data):
+        visible, context = batch_data
+        return self.train_function(visible, context)
 
     ###############################
     #       PREDICTION
@@ -256,21 +229,20 @@ class cRBM(Model_lop):
     ###############################
     #       VALIDATION FUNCTION
     ##############################
-    def get_validation_error(self, piano, orchestra, name):
+    def build_validation_fn(self, name):
         self.step_flag = 'validate'
-        # index to a [mini]batch : int32
-        index = T.ivector()
-
         precision, recall, accuracy, updates_valid = self.prediction_measure()
-
         # This time self.v is initialized randomly
-        return theano.function(inputs=[index],
-                               outputs=[precision, recall, accuracy],
-                               updates=updates_valid,
-                               givens={self.v_truth: self.build_visible(orchestra, index),
-                                       self.p: self.build_past(piano, orchestra, index, self.batch_size, self.temporal_order)},
-                               name=name
-                               )
+        self.validation_function =  theano.function(inputs=[self.v_truth, self.p],
+           outputs=[precision, recall, accuracy],
+           updates=updates_valid,
+           name=name
+           )
+
+    def validate_batch(self, batch_data):
+        # Simply used for parsing the batch_data
+        visible, context = batch_data
+        return self.validation_function(visible, context)
 
     ###############################
     #       GENERATION
@@ -323,5 +295,17 @@ class cRBM(Model_lop):
                 # Add this visible sample to the generated orchestra
                 orchestra_gen[:, time_index, :] = v_t
             return (orchestra_gen,)
-
         return closure
+
+    def generator(self, piano, orchestra, index):
+        visible = orchestra[index, :]
+        
+        past_3D = build_theano_input.build_sequence(orchestra, index-1, self.batch_size, self.temporal_order-1, self.n_v)
+        past_orchestra = past_3D\
+            .ravel()\
+            .reshape((self.batch_size, (self.temporal_order-1)*self.n_v))
+        present_piano = piano[index, :]
+        context = np.concatenate((present_piano, past_orchestra), axis=1)
+
+        return visible, context
+

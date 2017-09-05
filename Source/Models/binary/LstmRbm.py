@@ -2,8 +2,8 @@
 # -*- coding: utf8 -*-
 
 # Model lop
-from acidano.models.lop.model_lop import Model_lop
-from acidano.models.lop.binary.LSTM import LSTM
+from ..model_lop import Model_lop
+from LSTM import LSTM
 
 # Hyperopt
 from acidano.utils import hopt_wrapper
@@ -19,6 +19,9 @@ import theano.tensor as T
 # Performance measures
 from acidano.utils.init import shared_normal, shared_zeros
 from acidano.utils.measure import accuracy_measure, precision_measure, recall_measure
+
+# Build matrix inputs
+import acidano.utils.build_theano_input as build_theano_input
 
 
 class LstmRbm(LSTM, Model_lop):
@@ -275,21 +278,25 @@ class LstmRbm(LSTM, Model_lop):
     ###############################
     ##       TRAIN FUNCTION
     ###############################
-    def get_train_function(self, piano, orchestra, optimizer, name):
-        Model_lop.get_train_function(self)
-        # index to a [mini]batch : int32
-        index = T.ivector()
-
+    ###############################
+    #       TRAIN FUNCTION
+    ###############################
+    def build_train_fn(self, optimizer, name):
+        self.step_flag = 'train'
         # get the cost and the gradient corresponding to one step of CD-15
         cost, monitor, updates = self.cost_updates(optimizer)
 
-        return theano.function(inputs=[index],
-                               outputs=[cost, monitor],
-                               updates=updates,
-                               givens={self.p_init: self.build_sequence(piano, index, self.batch_size, self.temporal_order, self.n_piano),
-                                       self.o_init: self.build_sequence(orchestra, index, self.batch_size, self.temporal_order, self.n_orchestra)},
-                               name=name
-                               )
+        self.train_function = theano.function(inputs=[self.p_init, self.o_init],
+                                            outputs=[cost, monitor],
+                                            updates=updates,
+                                            name=name
+                                            )
+
+    def train_batch(self, batch_data):
+        # Simply used for parsing the batch_data
+        p_init, o_init = batch_data
+        return self.train_function(p_init, o_init)
+
 
     ###############################
     ##       PREDICTION
@@ -311,20 +318,21 @@ class LstmRbm(LSTM, Model_lop):
     ###############################
     ##       VALIDATION FUNCTION
     ###############################
-    def get_validation_error(self, piano, orchestra, name):
-        Model_lop.get_validation_error(self)
-        # index to a [mini]batch : int32
-        index = T.ivector()
-
+    def build_validation_fn(self, name):
+        self.step_flag = 'validate'
+        
         precision, recall, accuracy, updates_valid = self.prediction_measure()
 
-        return theano.function(inputs=[index],
-                               outputs=[precision, recall, accuracy],
-                               updates=updates_valid,
-                               givens={self.p_init: self.build_sequence(piano, index, self.batch_size, self.temporal_order, self.n_piano),
-                                       self.o_truth: self.build_sequence(orchestra, index, self.batch_size, self.temporal_order, self.n_orchestra)},
-                               name=name
-                               )
+        self.validate_function = theano.function(inputs=[self.p_init, self.o_truth],
+            outputs=[precision, recall, accuracy],
+            updates=updates_valid,
+            name=name
+            )
+
+    def validate_batch(self, batch_data):
+        # Simply used for parsing the batch_data
+        p_init, o_truth = batch_data
+        return self.validate_function(p_init, o_truth)
 
     ###############################
     ##       GENERATION
@@ -408,8 +416,8 @@ class LstmRbm(LSTM, Model_lop):
         seed_function = theano.function(inputs=[index],
                                         outputs=[u_seed, state_seed],
                                         updates=updates_initialization,
-                                        givens={self.p_seed: self.build_sequence(piano, end_seed, batch_generation_size, seed_size, self.n_piano),
-                                                self.o_seed: self.build_sequence(orchestra, end_seed, batch_generation_size, seed_size, self.n_orchestra)},
+                                        givens={self.p_seed: build_theano_input.build_sequence(piano, end_seed, batch_generation_size, seed_size, self.n_piano),
+                                                self.o_seed: build_theano_input.build_sequence(orchestra, end_seed, batch_generation_size, seed_size, self.n_orchestra)},
                                         name=name
                                         )
         ########################################################################
@@ -447,3 +455,8 @@ class LstmRbm(LSTM, Model_lop):
             return (orchestra_gen,)
 
         return closure
+
+    def generator(self, piano, orchestra, index):
+        p_init = build_theano_input.build_sequence(piano, index, self.batch_size, self.temporal_order, self.n_piano)
+        o_init = build_theano_input.build_sequence(orchestra, index, self.batch_size, self.temporal_order, self.n_orchestra)
+        return p_init, o_init

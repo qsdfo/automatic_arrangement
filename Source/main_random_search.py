@@ -11,12 +11,15 @@ import subprocess
 import glob
 import time
 import re
-# Build data
-from build_data import build_data
 # Clean Script
 from clean_result_folder import clean
 
+# Train
 import train
+# Generate
+from results_folder_generate import generate_midi, generate_midi_full_track_reference
+from results_folder_plot_weights import plot_weights
+
 ####################
 # Reminder for plotting tools
 # import matplotlib.pyplot as plt
@@ -24,26 +27,26 @@ import train
 # n, bins, patches = plt.hist(x, num_bins, normed=1, facecolor='green', alpha=0.5)
 # plt.show()
 
-N_HP_CONFIG = 1
+N_HP_CONFIG = 5
 LOCAL = True
-BUILD_DATABASE = False
 DEBUG = False
 CLEAN = True
-DEFINED_CONFIG = True
+DEFINED_CONFIG = False
 
 # For Guillimin, write in the project space. Home is too small (10Gb VS 1Tb)
 if LOCAL:
     RESULT_ROOT = os.getcwd() + '/../'
-    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked'
-    # DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/Orchestration_checked'
 else:
     RESULT_ROOT = "/sb/project/ymd-084-aa/leo/"
-    DATABASE_PATH = "/home/crestel/database/orchestration"
 
-DATA_DIR = '../Data'
+DATA_DIR = '../Data/Data__continuous__event_level__0/'
+SUFFIX_DATABASE = ''
+
+DATA_DIR = DATA_DIR + SUFFIX_DATABASE
+RESULT_DIR = u'Results/Grid_search/' + SUFFIX_DATABASE
 
 commands = [
-    'FGgru',
+    'RBM',
     'adam_L2',
     'event_level',
     'binary',
@@ -71,6 +74,74 @@ console.setFormatter(formatter)
 # add the handler to the root logger
 logging.getLogger('').addHandler(console)
 
+
+############################################################
+# Define configs
+############################################################
+configs = {
+    '0': {
+        'batch_size' : 200,
+        'temporal_order' : 5,
+        'dropout_probability' : 0,
+        'weight_decay_coeff' : 0,
+        'n_hidden' : [500, 500],
+        'threshold' : 0,
+        'weighted_ce' : 0
+    },
+
+    # '1': {
+    #     'batch_size' : 200,
+    #     'temporal_order' : 5,
+    #     'dropout_probability' : 0,
+    #     'weight_decay_coeff' : 0,
+    #     'n_hidden' : [500, 500],
+    #     'threshold' : 0,
+    #     'weighted_ce' : 0
+    # },
+
+    # '2': {
+    #     'batch_size' : 200,
+    #     'temporal_order' : 4,
+    #     'dropout_probability' : 0,
+    #     'weight_decay_coeff' : 0,
+    #     'n_hidden' : [500, 500],
+    #     'threshold' : 0,
+    #     'weighted_ce' : 0
+    # },
+
+    # '3': {
+    #     'batch_size' : 200,
+    #     'temporal_order' : 5,
+    #     'dropout_probability' : 0,
+    #     'weight_decay_coeff' : 0,
+    #     'n_hidden' : [500, 500],
+    #     'threshold' : 0,
+    #     'weighted_ce' : 0
+    # },
+
+    # '4': {
+    #     'batch_size' : 200,
+    #     'temporal_order' : 10,
+    #     'dropout_probability' : 0,
+    #     'weight_decay_coeff' : 0,
+    #     'n_hidden' : [500, 500],
+    #     'threshold' : 0,
+    #     'weighted_ce' : 0
+    # },
+
+    # '5': {
+    #     'batch_size' : 200,
+    #     'temporal_order' : 5,
+    #     'dropout_probability' : 0,
+    #     'weight_decay_coeff' : 0,
+    #     'n_hidden' : [500, 500],
+    #     'threshold' : 0,
+    #     'weighted_ce' : 0
+    # },
+
+
+}
+
 ############################################################
 # Script parameters
 ############################################################
@@ -82,6 +153,11 @@ script_param = {}
 # Unit type
 unit_type = commands[3]
 script_param['unit_type'] = unit_type
+if unit_type == 'binary':
+    script_param['binarize_piano'] = True
+else:
+    script_param['binarize_piano'] = False
+script_param['binarize_orchestra'] = True
 
 # Select a model (path to the .py file)
 # Two things define a model : it's architecture and the optimization method
@@ -176,13 +252,15 @@ except ValueError:
     print(commands[4] + ' is not an integer')
     raise
 
+script_param['avoid_silence'] = False
+
 ############################################################
 # System paths
 ############################################################
 logging.info('System paths')
 SOURCE_DIR = os.getcwd()
 
-result_folder = RESULT_ROOT + u'Results/' + script_param['temporal_granularity'] + '/' + unit_type + '/' +\
+result_folder = RESULT_ROOT + RESULT_DIR + '/' + script_param['temporal_granularity'] + '/' + unit_type + '/' +\
     'quantization_' + str(script_param['quantization']) + '/' + Optimization_method.name() + '/' + Model_class.name()
 
 # Check if the result folder exists
@@ -212,7 +290,7 @@ train_param['DEBUG'] = DEBUG
 # Validation
 train_param['validation_order'] = 2
 train_param['number_strips'] = 3
-train_param['min_number_iteration'] = 10
+train_param['min_number_iteration'] = 0
 # train_param['initial_derivative_length'] = 20
 # train_param['check_derivative_length'] = 5
 
@@ -240,53 +318,20 @@ logging.info((u'**** Quantization : ' + str(script_param['quantization'])).enco
 logging.info((u'**** Result folder : ' + str(script_param['result_folder'])).encode('utf8'))
 
 ############################################################
-# Build data
-############################################################
-if BUILD_DATABASE:
-    logging.info('# ** BUILD DATABASE **')
-    index_files_dict = {}
-    index_files_dict['train'] = [
-        DATABASE_PATH + "/debug_train.txt",
-        # DATABASE_PATH + "/bouliane_train.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_train.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_train.txt",
-        # DATABASE_PATH + "/imslp_train.txt"
-    ]
-    index_files_dict['valid'] = [
-        DATABASE_PATH + "/debug_valid.txt",
-        # DATABASE_PATH + "/bouliane_valid.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_valid.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_valid.txt",
-        # DATABASE_PATH + "/imslp_valid.txt"
-    ]
-    index_files_dict['test'] = [
-        DATABASE_PATH + "/debug_test.txt",
-        # DATABASE_PATH + "/bouliane_test.txt",
-        # DATABASE_PATH + "/hand_picked_Spotify_test.txt",
-        # DATABASE_PATH + "/liszt_classical_archives_test.txt",
-        # DATABASE_PATH + "/imslp_test.txt"
-    ]
-
-    # Dictionary with None if the data augmentation is not used, else the value for this data augmentation
-    # Pitch translation. Write [0] for no translation
-    max_translation = 3
-    pitch_translations = range(-max_translation, max_translation+1)
-
-    build_data(root_dir=DATABASE_PATH,
-               index_files_dict=index_files_dict,
-               meta_info_path=DATA_DIR + '/temp.p',
-               quantization=script_param['quantization'],
-               unit_type=script_param['unit_type'],
-               temporal_granularity=script_param['temporal_granularity'],
-               store_folder=DATA_DIR,
-               pitch_translation_augmentations=pitch_translations,
-               logging=logging)
-
-############################################################
 # Hyper parameter space
 ############################################################
 model_space = Model_class.get_hp_space()
 optim_space = Optimization_method.get_hp_space()
+
+track_paths = [
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/liszt_classical_archives/16',
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/liszt_classical_archives/17',
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/liszt_classical_archives/26',
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/liszt_classical_archives/5',
+        # '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/bouliane/22',
+        # '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/bouliane/3',
+        # '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/bouliane/0',  # This one is in train set
+]
 
 ############################################################
 # Grid search loop
@@ -299,23 +344,27 @@ optim_space = Optimization_method.get_hp_space()
 # The result.csv file containing id;result is created from the directory, rebuilt from time to time
 
 if DEFINED_CONFIG:
-    model_space = Model_class.get_static_config()
-    optim_space['lr'] = 0.001
-    config_folder = script_param['result_folder'] + '/1'
-    if not os.path.isdir(config_folder):
-        os.mkdir(config_folder)
-    else:
-        raise Exception("this folder already exists")
-    # Pickle the space in the config folder
-    space = {'model': model_space, 'optim': optim_space, 'train': train_param, 'script': script_param}
-    pkl.dump(space, open(config_folder + '/config.pkl', 'wb'))
-    if not LOCAL:
-        raise Exception()
-    else:
-        start_time_train = time.time()
-        config_folder = config_folder
-        params = pkl.load(open(config_folder + '/config.pkl', "rb"))
-        train.run_wrapper(params, config_folder, start_time_train)
+    for config_id, model_space in configs.iteritems():
+        optim_space['lr'] = 0.001
+        config_folder = script_param['result_folder'] + '/' + config_id
+        if not os.path.isdir(config_folder):
+            os.mkdir(config_folder)
+        else:
+            raise Exception("this folder already exists")
+        # Pickle the space in the config folder
+        space = {'model': model_space, 'optim': optim_space, 'train': train_param, 'script': script_param}
+        pkl.dump(space, open(config_folder + '/config.pkl', 'wb'))
+        if not LOCAL:
+            raise Exception()
+        else:
+            start_time_train = time.time()
+            config_folder = config_folder
+            params = pkl.load(open(config_folder + '/config.pkl', "rb"))
+            train.run_wrapper(params, config_folder, start_time_train)
+            # plot_weights(config_folder, logging)
+            # generate_midi(config_folder, DATA_DIR, 20, None, logging)
+            for track_path in track_paths:
+                generate_midi_full_track_reference(config_folder, DATA_DIR, track_path, 5, logging)
 else:
     # Already tested configs
     list_config_folders = glob.glob(result_folder + '/*')

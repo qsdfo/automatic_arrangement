@@ -135,7 +135,7 @@ def align_tracks_removing_silences(pr0, pr1, unit_type, gapopen, gapextend):
     trace_prod = [e1 * e2 for (e1, e2) in zip(trace_0, trace_1)]
     duration = sum(trace_prod)
     if duration == 0:
-        return [None]*5
+        return [None]*6
     # Remove gaps
     pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
@@ -181,8 +181,10 @@ def align_tracks(pr0, pr1, unit_type, gapopen, gapextend):
     # Get trace from needleman_wunsch algorithm
 
     # First extract binary representation, whatever unit_type is
-    pr0_trace = sum_along_instru_dim(Unit_type.from_type_to_binary(pr0, unit_type))
-    pr1_trace = sum_along_instru_dim(Unit_type.from_type_to_binary(pr1, unit_type))
+    pr0_binary = Unit_type.from_type_to_binary(pr0, unit_type)
+    pr1_binary = Unit_type.from_type_to_binary(pr1, unit_type)  
+    pr0_trace = sum_along_instru_dim(pr0_binary)
+    pr1_trace = sum_along_instru_dim(pr1_binary)
 
     # Traces are computed from binaries matrices
     # Traces are binary lists, 0 meaning a gap is inserted
@@ -199,59 +201,51 @@ def align_tracks(pr0, pr1, unit_type, gapopen, gapextend):
     trace_prod = [e1 * e2 for (e1, e2) in zip(trace_0, trace_1)]
     duration = sum(trace_prod)
     if duration == 0:
-        return [None]*5
+        return [None]*6
     # Remove gaps
     pr0_aligned = remove_zero_in_trace(pr0_warp, trace_prod)
     pr1_aligned = remove_zero_in_trace(pr1_warp, trace_prod)
 
-    ####################################
-    # Actually it is easier to have the indices of the non silent frames in the original score :
-    def get_non_silent(non_silent, trace_prod):
-        counter = 0
-        out_list = []
-        for (t0, tp) in zip(non_silent, trace_prod):
-            if t0 == 1 and tp == 0:
-                counter += 1
-            elif t0 == 1 and tp == 1:
-                out_list.append(counter)
-                counter += 1
-        return out_list
-
-    non_silent_0 = get_non_silent(trace_0, trace_prod)
-    non_silent_1 = get_non_silent(trace_1, trace_prod)
-
-    return pr0_aligned, non_silent_0, pr1_aligned, non_silent_1, duration
+    return pr0_aligned, trace_0, pr1_aligned, trace_1, trace_prod, duration
 
 
-def discriminate_between_piano_and_orchestra(pr0, event0, map0, instru0, name0, pr1, event1, map1, instru1, name1, duration):
+def clean_event(event, trace, trace_prod):
+    new_event = []
+    counter = 0
+    for t, tp in zip(trace, trace_prod):
+        if t + tp == 2:
+            new_event.append(event[counter])
+            counter += 1
+        elif t != 0:
+            counter +=1
+    return new_event
+
+
+def discriminate_between_piano_and_orchestra(pr0, event0, instru0, name0, pr1, event1, instru1, name1, duration):
     if len(set(instru0.values())) > len(set(instru1.values())):
         pr_orch = pr0
         event_orch = event0
-        map_orch = map0
         instru_orch = instru0
         name_orch = name0
         #
         pr_piano = pr1
         event_piano = event1
-        map_piano = map1
         instru_piano = instru1
         name_piano = name1
     elif len(set(instru0.values())) < len(set(instru1.values())):
         pr_orch = pr1
         event_orch = event1
-        map_orch = map1
         instru_orch = instru1
         name_orch = name1
         #
         pr_piano = pr0
         event_piano = event0
-        map_piano = map0
         instru_piano = instru0
         name_piano = name0
     else:
         # Both tracks have the same number of instruments
-        return [None] * 11
-    return pr_piano, event_piano, map_piano, instru_piano, name_piano, pr_orch, event_orch, map_orch, instru_orch, name_orch, duration
+        return [None] * 9
+    return pr_piano, event_piano, instru_piano, name_piano, pr_orch, event_orch, instru_orch, name_orch, duration
 
 
 def process_folder(folder_path, quantization, unit_type, temporal_granularity, gapopen=3, gapextend=1):
@@ -273,17 +267,29 @@ def process_folder(folder_path, quantization, unit_type, temporal_granularity, g
         event_1 = None
 
     # Align tracks
-    pr0_aligned, non_silent_0, pr1_aligned, non_silent_1, duration = align_tracks(pr0, pr1, unit_type, gapopen, gapextend)
+    pr0_aligned, trace_0, pr1_aligned, trace_1, trace_prod, duration = align_tracks(pr0, pr1, unit_type, gapopen, gapextend)
+    
+    # Clean events
+    if (temporal_granularity == 'event_level'):
+        if (trace_0 is None) or (trace_1 is None):
+            event0_aligned = None
+            event1_aligned = None
+        else:
+            event0_aligned = clean_event(event_0, trace_0, trace_prod)
+            event1_aligned = clean_event(event_1, trace_1, trace_prod)
+    else:
+        event0_aligned = []
+        event1_aligned = []
 
     # Find which pr is orchestra, which one is piano
-    pr_piano, event_piano, non_silent_piano, instru_piano, name_piano,\
-        pr_orch, event_orch, non_silent_orch, instru_orch, name_orch,\
+    pr_piano, event_piano, instru_piano, name_piano,\
+        pr_orch, event_orch, instru_orch, name_orch,\
         duration =\
-        discriminate_between_piano_and_orchestra(pr0_aligned, event_0, non_silent_0, instru0, name0,
-                                                 pr1_aligned, event_1, non_silent_1, instru1, name1,
+        discriminate_between_piano_and_orchestra(pr0_aligned, event0_aligned, instru0, name0,
+                                                 pr1_aligned, event1_aligned, instru1, name1,
                                                  duration)
 
-    return pr_piano, event_piano, non_silent_piano, instru_piano, name_piano, pr_orch, event_orch, non_silent_orch, instru_orch, name_orch, duration
+    return pr_piano, event_piano, instru_piano, name_piano, pr_orch, event_orch, instru_orch, name_orch, duration
 
 
 def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, pr_big):
@@ -321,7 +327,10 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
 
             # Insert the small pr in the big one :)
             # Insertion is max between already written notes and new ones
-            pr_big[t_min:t_max, index_min:index_max] = np.maximum(pr_big[t_min:t_max, index_min:index_max], pr_instru[:, pitch_min:pitch_max])
+            try:
+                pr_big[t_min:t_max, index_min:index_max] = np.maximum(pr_big[t_min:t_max, index_min:index_max], pr_instru[:, pitch_min:pitch_max])
+            except:
+                import pdb; pdb.set_trace()
 
     return pr_big
 
@@ -331,213 +340,83 @@ def simplify_instrumentation(instru_name_complex):
     # This script aims at reducing the number of instrument written in the csv files
     # by grouping together different but close instruments ()
 
-    # simplify_mapping = {
-    #     "Piccolo": "Piccolo",
-    #     "Flute": "Flute",
-    #     "Alto-Flute": "Flute",
-    #     "Soprano-Flute": "Flute",
-    #     "Bass-Flute": "Flute",
-    #     "Contrabass-Flute": "Flute",
-    #     "Pan Flute": "Flute",
-    #     "Recorder": "Flute",
-    #     "Ocarina": "Remove",
-    #     "Oboe": "Oboe",
-    #     "Oboe-dAmore": "Oboe",
-    #     "Oboe de Caccia": "Oboe",
-    #     "English-Horn": "Horn",
-    #     "Heckelphone": "Remove",
-    #     "Piccolo-Clarinet-Ab": "Clarinet",
-    #     "Clarinet": "Clarinet",
-    #     "Clarinet-Eb": "Clarinet",
-    #     "Clarinet-Bb": "Clarinet",
-    #     "Piccolo-Clarinet-D": "Clarinet",
-    #     "Clarinet-C": "Clarinet",
-    #     "Clarinet-A": "Clarinet",
-    #     "Basset-Horn-F": "Horn",
-    #     "Alto-Clarinet-Eb": "Clarinet",
-    #     "Bass-Clarinet-Bb": "Clarinet",
-    #     "Bass-Clarinet-A": "Clarinet",
-    #     "Contra-Alto-Clarinet-Eb": "Clarinet",
-    #     "Contrabass-Clarinet-Bb": "Clarinet",
-    #     "Bassoon": "Bassoon",
-    #     "Contrabassoon": "Bassoon",
-    #     "Soprano-Sax": "Sax",
-    #     "Alto-Sax": "Sax",
-    #     "Tenor-Sax": "Sax",
-    #     "Baritone-Sax": "Sax",
-    #     "Bass-Sax": "Sax",
-    #     "Contrabass-Sax": "Sax",
-    #     "Horn": "Horn",
-    #     "Harmonica": "Remove",
-    #     "Piccolo-Trumpet-Bb": "Trumpet",
-    #     "Piccolo-Trumpet-A": "Trumpet",
-    #     "High-Trumpet-F": "Trumpet",
-    #     "High-Trumpet-Eb": "Trumpet",
-    #     "High-Trumpet-D": "Trumpet",
-    #     "Cornet": "Trumpet",
-    #     "Trumpet": "Trumpet",
-    #     "Trumpet-C": "Trumpet",
-    #     "Trumpet-Bb": "Trumpet",
-    #     "Cornet-Bb": "Trumpet",
-    #     "Alto-Trumpet-F": "Trumpet",
-    #     "Bass-Trumpet-Eb": "Trumpet",
-    #     "Bass-Trumpet-C": "Trumpet",
-    #     "Bass-Trumpet-Bb": "Trumpet",
-    #     "Clarion": "Trumpet",
-    #     "Trombone": "Trombone",
-    #     "Alto-Trombone": "Trombone",
-    #     "Soprano-Trombone": "Trombone",
-    #     "Tenor-Trombone": "Trombone",
-    #     "Bass-Trombone": "Trombone",
-    #     "Contrabass-Trombone": "Trombone",
-    #     "Euphonium": "Remove",
-    #     "Tuba": "Tuba",
-    #     "Bass-Tuba": "Tuba",
-    #     "Contrabass-Tuba": "Tuba",
-    #     "Flugelhorn": "Remove",
-    #     "Piano": "Piano",
-    #     "Celesta": "Remove",
-    #     "Organ": "Organ",
-    #     "Harpsichord": "Harpsichord",
-    #     "Accordion": "Accordion",
-    #     "Bandoneone": "Remove",
-    #     "Harp": "Harp",
-    #     "Guitar": "Guitar",
-    #     "Bandurria": "Guitar",
-    #     "Mandolin": "Guitar",
-    #     "Lute": "Remove",
-    #     "Lyre": "Remove",
-    #     "Strings": "Remove",
-    #     "Violin": "Violin",
-    #     "Violins": "Violin",
-    #     "Viola": "Viola",
-    #     "Violas": "Viola",
-    #     "Viola de gamba": "Viola",
-    #     "Viola de braccio": "Remove",
-    #     "Violoncello": "Violoncello",
-    #     "Violoncellos": "Violoncello",
-    #     "Contrabass": "Contrabass",
-    #     "Basso continuo": "Remove",
-    #     "Bass drum": "Remove",
-    #     "Glockenspiel": "Remove",
-    #     "Xylophone": "Remove",
-    #     "Vibraphone": "Remove",
-    #     "Marimba": "Remove",
-    #     "Maracas": "Remove",
-    #     "Bass-Marimba": "Remove",
-    #     "Tubular-Bells": "Remove",
-    #     "Clave": "Remove",
-    #     "Bombo": "Remove",
-    #     "Hi-hat": "Remove",
-    #     "Triangle": "Remove",
-    #     "Ratchet": "Remove",
-    #     "Drum": "Remove",
-    #     "Snare drum": "Remove",
-    #     "Steel drum": "Remove",
-    #     "Tambourine": "Remove",
-    #     "Tam tam": "Remove",
-    #     "Timpani": "Remove",
-    #     "Cymbal": "Remove",
-    #     "Castanets": "Remove",
-    #     "Percussion": "Remove",
-    #     "Voice": "Voice",
-    #     "Voice soprano": "Voice",
-    #     "Voice mezzo": "Voice",
-    #     "Voice alto": "Voice",
-    #     "Voice contratenor": "Voice",
-    #     "Voice tenor": "Voice",
-    #     "Voice baritone": "Voice",
-    #     "Voice bass": "Voice",
-    #     "Ondes martenot": "Remove",
-    #     "Unknown": "Remove",
-    # }
-
-    #################################################
-    #################################################
-    #################################################
-    #################################################
-    # Violin : G3-C7
-    # Viola : C3-E6
-    # Cello : C2-C6
-    # D-bass : C1-C4
-    # VERSION HARDCORE QUATUOR
     simplify_mapping = {
-        "Piccolo": "Violin",
-        "Flute": "Violin",
-        "Alto-Flute": "Violin",
-        "Soprano-Flute": "Violin",
-        "Bass-Flute": "Viola",
-        "Contrabass-Flute": "Violoncello",
-        "Pan Flute": "Remove",
-        "Recorder": "Violin",
+        "Piccolo": "Flute",
+        "Flute": "Flute",
+        "Alto-Flute": "Flute",
+        "Soprano-Flute": "Flute",
+        "Bass-Flute": "Flute",
+        "Contrabass-Flute": "Flute",
+        "Pan Flute": "Flute",
+        "Recorder": "Flute",
         "Ocarina": "Remove",
-        "Oboe": "Violin",
-        "Oboe-dAmore": "Violin",
-        "Oboe de Caccia": "Remove",
-        "English-Horn": "Viola",
+        "Oboe": "Oboe",
+        "Oboe-dAmore": "Oboe",
+        "Oboe de Caccia": "Oboe",
+        "English-Horn": "Horn",
         "Heckelphone": "Remove",
-        "Piccolo-Clarinet-Ab": "Violin",
-        "Clarinet": "Violin",
-        "Clarinet-Eb": "Violin",
-        "Clarinet-Bb": "Violin",
-        "Piccolo-Clarinet-D": "Violin",
-        "Clarinet-C": "Violin",
-        "Clarinet-A": "Violin",
-        "Basset-Horn-F": "Contrabass",
-        "Alto-Clarinet-Eb": "Violoncello",
-        "Bass-Clarinet-Bb": "Contrabass",
-        "Bass-Clarinet-A": "Contrabass",
-        "Contra-Alto-Clarinet-Eb": "Contrabass",
-        "Contrabass-Clarinet-Bb": "Contrabass",
-        "Bassoon": "Contrabass",
-        "Contrabassoon": "Contrabass",
-        "Soprano-Sax": "Violin",
-        "Alto-Sax": "Viola",
-        "Tenor-Sax": "Violoncello",
-        "Baritone-Sax": "Violoncello",
-        "Bass-Sax": "Contrabass",
-        "Contrabass-Sax": "Contrabass",
-        "Horn": "Contrabass",
+        "Piccolo-Clarinet-Ab": "Clarinet",
+        "Clarinet": "Clarinet",
+        "Clarinet-Eb": "Clarinet",
+        "Clarinet-Bb": "Clarinet",
+        "Piccolo-Clarinet-D": "Clarinet",
+        "Clarinet-C": "Clarinet",
+        "Clarinet-A": "Clarinet",
+        "Basset-Horn-F": "Horn",
+        "Alto-Clarinet-Eb": "Clarinet",
+        "Bass-Clarinet-Bb": "Clarinet",
+        "Bass-Clarinet-A": "Clarinet",
+        "Contra-Alto-Clarinet-Eb": "Clarinet",
+        "Contrabass-Clarinet-Bb": "Clarinet",
+        "Bassoon": "Bassoon",
+        "Contrabassoon": "Bassoon",
+        "Soprano-Sax": "Sax",
+        "Alto-Sax": "Sax",
+        "Tenor-Sax": "Sax",
+        "Baritone-Sax": "Sax",
+        "Bass-Sax": "Sax",
+        "Contrabass-Sax": "Sax",
+        "Horn": "Horn",
         "Harmonica": "Remove",
-        "Piccolo-Trumpet-Bb": "Violin",
-        "Piccolo-Trumpet-A": "Violin",
-        "High-Trumpet-F": "Violin",
-        "High-Trumpet-Eb": "Violin",
-        "High-Trumpet-D": "Violin",
-        "Cornet": "Viola",
-        "Trumpet": "Viola",
-        "Trumpet-C": "Viola",
-        "Trumpet-Bb": "Viola",
-        "Cornet-Bb": "Viola",
-        "Alto-Trumpet-F": "Viola",
-        "Bass-Trumpet-Eb": "Violoncello",
-        "Bass-Trumpet-C": "Violoncello",
-        "Bass-Trumpet-Bb": "Violoncello",
-        "Clarion": "Unknow",
-        "Trombone": "Violin and Viola and Violoncello and Contrabass",
-        "Alto-Trombone": "Violoncello",
-        "Soprano-Trombone": "Viola",
-        "Tenor-Trombone": "Contrabass",
-        "Bass-Trombone": "Contrabass",
+        "Piccolo-Trumpet-Bb": "Trumpet",
+        "Piccolo-Trumpet-A": "Trumpet",
+        "High-Trumpet-F": "Trumpet",
+        "High-Trumpet-Eb": "Trumpet",
+        "High-Trumpet-D": "Trumpet",
+        "Cornet": "Trumpet",
+        "Trumpet": "Trumpet",
+        "Trumpet-C": "Trumpet",
+        "Trumpet-Bb": "Trumpet",
+        "Cornet-Bb": "Trumpet",
+        "Alto-Trumpet-F": "Trumpet",
+        "Bass-Trumpet-Eb": "Trumpet",
+        "Bass-Trumpet-C": "Trumpet",
+        "Bass-Trumpet-Bb": "Trumpet",
+        "Clarion": "Trumpet",
+        "Trombone": "Trombone",
+        "Alto-Trombone": "Trombone",
+        "Soprano-Trombone": "Trombone",
+        "Tenor-Trombone": "Trombone",
+        "Bass-Trombone": "Trombone",
         "Contrabass-Trombone": "Trombone",
         "Euphonium": "Remove",
-        "Tuba": "Contrabass",
-        "Bass-Tuba": "Contrabass",
-        "Contrabass-Tuba": "Contrabass",
+        "Tuba": "Tuba",
+        "Bass-Tuba": "Tuba",
+        "Contrabass-Tuba": "Tuba",
         "Flugelhorn": "Remove",
         "Piano": "Piano",
         "Celesta": "Remove",
-        "Organ": "Violin and Viola and Violoncello and Contrabass",
-        "Harpsichord": "Violin and Viola and Violoncello and Contrabass",
-        "Accordion": "Remove",
+        "Organ": "Organ",
+        "Harpsichord": "Piano",
+        "Accordion": "Accordion",
         "Bandoneone": "Remove",
-        "Harp": "Remove",
-        "Guitar": "Remove",
-        "Bandurria": "Remove",
-        "Mandolin": "Remove",
+        "Harp": "Harp",
+        "Guitar": "Guitar",
+        "Bandurria": "Guitar",
+        "Mandolin": "Guitar",
         "Lute": "Remove",
         "Lyre": "Remove",
-        "Strings": "Violin and Viola and Violoncello and Contrabass",
+        "Strings": "Remove",
         "Violin": "Violin",
         "Violins": "Violin",
         "Viola": "Viola",
@@ -570,17 +449,147 @@ def simplify_instrumentation(instru_name_complex):
         "Cymbal": "Remove",
         "Castanets": "Remove",
         "Percussion": "Remove",
-        "Voice": "Violin and Viola and Violoncello and Contrabass",
-        "Voice soprano": "Violin",
-        "Voice mezzo": "Viola",
-        "Voice alto": "Viola",
-        "Voice contratenor": "Viola",
-        "Voice tenor": "Violoncello",
-        "Voice baritone": "Violoncello",
-        "Voice bass": "Contrabass",
+        "Voice": "Voice",
+        "Voice soprano": "Voice",
+        "Voice mezzo": "Voice",
+        "Voice alto": "Voice",
+        "Voice contratenor": "Voice",
+        "Voice tenor": "Voice",
+        "Voice baritone": "Voice",
+        "Voice bass": "Voice",
         "Ondes martenot": "Remove",
         "Unknown": "Remove",
     }
+
+    #################################################
+    #################################################
+    #################################################
+    #################################################
+    # Violin : G3-C7
+    # Viola : C3-E6
+    # Cello : C2-C6
+    # D-bass : C1-C4
+    # VERSION HARDCORE QUATUOR
+    # simplify_mapping = {
+    #     "Piccolo": "Violin",
+    #     "Flute": "Violin",
+    #     "Alto-Flute": "Violin",
+    #     "Soprano-Flute": "Violin",
+    #     "Bass-Flute": "Viola",
+    #     "Contrabass-Flute": "Violoncello",
+    #     "Pan Flute": "Remove",
+    #     "Recorder": "Violin",
+    #     "Ocarina": "Remove",
+    #     "Oboe": "Violin",
+    #     "Oboe-dAmore": "Violin",
+    #     "Oboe de Caccia": "Remove",
+    #     "English-Horn": "Viola",
+    #     "Heckelphone": "Remove",
+    #     "Piccolo-Clarinet-Ab": "Violin",
+    #     "Clarinet": "Violin",
+    #     "Clarinet-Eb": "Violin",
+    #     "Clarinet-Bb": "Violin",
+    #     "Piccolo-Clarinet-D": "Violin",
+    #     "Clarinet-C": "Violin",
+    #     "Clarinet-A": "Violin",
+    #     "Basset-Horn-F": "Contrabass",
+    #     "Alto-Clarinet-Eb": "Violoncello",
+    #     "Bass-Clarinet-Bb": "Contrabass",
+    #     "Bass-Clarinet-A": "Contrabass",
+    #     "Contra-Alto-Clarinet-Eb": "Contrabass",
+    #     "Contrabass-Clarinet-Bb": "Contrabass",
+    #     "Bassoon": "Contrabass",
+    #     "Contrabassoon": "Contrabass",
+    #     "Soprano-Sax": "Violin",
+    #     "Alto-Sax": "Viola",
+    #     "Tenor-Sax": "Violoncello",
+    #     "Baritone-Sax": "Violoncello",
+    #     "Bass-Sax": "Contrabass",
+    #     "Contrabass-Sax": "Contrabass",
+    #     "Horn": "Contrabass",
+    #     "Harmonica": "Remove",
+    #     "Piccolo-Trumpet-Bb": "Violin",
+    #     "Piccolo-Trumpet-A": "Violin",
+    #     "High-Trumpet-F": "Violin",
+    #     "High-Trumpet-Eb": "Violin",
+    #     "High-Trumpet-D": "Violin",
+    #     "Cornet": "Viola",
+    #     "Trumpet": "Viola",
+    #     "Trumpet-C": "Viola",
+    #     "Trumpet-Bb": "Viola",
+    #     "Cornet-Bb": "Viola",
+    #     "Alto-Trumpet-F": "Viola",
+    #     "Bass-Trumpet-Eb": "Violoncello",
+    #     "Bass-Trumpet-C": "Violoncello",
+    #     "Bass-Trumpet-Bb": "Violoncello",
+    #     "Clarion": "Unknow",
+    #     "Trombone": "Violin and Viola and Violoncello and Contrabass",
+    #     "Alto-Trombone": "Violoncello",
+    #     "Soprano-Trombone": "Viola",
+    #     "Tenor-Trombone": "Contrabass",
+    #     "Bass-Trombone": "Contrabass",
+    #     "Contrabass-Trombone": "Trombone",
+    #     "Euphonium": "Remove",
+    #     "Tuba": "Contrabass",
+    #     "Bass-Tuba": "Contrabass",
+    #     "Contrabass-Tuba": "Contrabass",
+    #     "Flugelhorn": "Remove",
+    #     "Piano": "Piano",
+    #     "Celesta": "Remove",
+    #     "Organ": "Violin and Viola and Violoncello and Contrabass",
+    #     "Harpsichord": "Violin and Viola and Violoncello and Contrabass",
+    #     "Accordion": "Remove",
+    #     "Bandoneone": "Remove",
+    #     "Harp": "Remove",
+    #     "Guitar": "Remove",
+    #     "Bandurria": "Remove",
+    #     "Mandolin": "Remove",
+    #     "Lute": "Remove",
+    #     "Lyre": "Remove",
+    #     "Strings": "Violin and Viola and Violoncello and Contrabass",
+    #     "Violin": "Violin",
+    #     "Violins": "Violin",
+    #     "Viola": "Viola",
+    #     "Violas": "Viola",
+    #     "Viola de gamba": "Viola",
+    #     "Viola de braccio": "Remove",
+    #     "Violoncello": "Violoncello",
+    #     "Violoncellos": "Violoncello",
+    #     "Contrabass": "Contrabass",
+    #     "Basso continuo": "Remove",
+    #     "Bass drum": "Remove",
+    #     "Glockenspiel": "Remove",
+    #     "Xylophone": "Remove",
+    #     "Vibraphone": "Remove",
+    #     "Marimba": "Remove",
+    #     "Maracas": "Remove",
+    #     "Bass-Marimba": "Remove",
+    #     "Tubular-Bells": "Remove",
+    #     "Clave": "Remove",
+    #     "Bombo": "Remove",
+    #     "Hi-hat": "Remove",
+    #     "Triangle": "Remove",
+    #     "Ratchet": "Remove",
+    #     "Drum": "Remove",
+    #     "Snare drum": "Remove",
+    #     "Steel drum": "Remove",
+    #     "Tambourine": "Remove",
+    #     "Tam tam": "Remove",
+    #     "Timpani": "Remove",
+    #     "Cymbal": "Remove",
+    #     "Castanets": "Remove",
+    #     "Percussion": "Remove",
+    #     "Voice": "Violin and Viola and Violoncello and Contrabass",
+    #     "Voice soprano": "Violin",
+    #     "Voice mezzo": "Viola",
+    #     "Voice alto": "Viola",
+    #     "Voice contratenor": "Viola",
+    #     "Voice tenor": "Violoncello",
+    #     "Voice baritone": "Violoncello",
+    #     "Voice bass": "Contrabass",
+    #     "Ondes martenot": "Remove",
+    #     "Unknown": "Remove",
+    # }
     #################################################
     #################################################
     #################################################
@@ -596,7 +605,4 @@ def simplify_instrumentation(instru_name_complex):
 
 
 if __name__ == '__main__':
-    name = 'DEBUG/test.mid'
-    reader = Read_midi(name, 12)
-    time = reader.get_time()
-    pr = reader.read_file()
+    process_folder('/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/imslp/72', 4, 'binary', 'frame_level')

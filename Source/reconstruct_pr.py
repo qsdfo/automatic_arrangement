@@ -34,17 +34,6 @@ def instrument_reconstruction(matrix, mapping):
     return pr_instru
 
 
-def time_reconstruction(matrix, non_silent_ind, event_ind):
-    # Write back the zeros
-    A = np.zeros((np.max(non_silent_ind)+1, matrix.shape[1]))
-    A[non_silent_ind] = matrix
-    # Duplicate repeted event
-    if event_ind is not None:
-        return from_event_to_frame(A, event_ind)
-    else:
-        return A
-
-
 def instrument_reconstruction_piano(matrix, mapping):
     # Reconstruct an orchestral dictionnary pianoroll from
     #   - matrix : (time * pitch)

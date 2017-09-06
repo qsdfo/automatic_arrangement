@@ -3,7 +3,10 @@
 
 import numpy as np
 import cPickle as pkl
-from sklearn import tree
+from skmultilearn.problem_transform import LabelPowerset, BinaryRelevance
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+
 
 from acidano.utils.measure import accuracy_measure_not_shared, accuracy_measure_not_shared_continuous
 
@@ -33,10 +36,12 @@ X_train, Y_train = load_split_data(temporal_order, 'train', data_folder)
 X_valid, Y_valid = load_split_data(temporal_order, 'valid', data_folder)
 
 # Train
-clf = tree.DecisionTreeClassifier()
+clf = BinaryRelevance(classifier = SVC(), require_dense = [False, True])
+# clf = LabelPowerset(GaussianNB())
 clf = clf.fit(X_train, Y_train)
 
 # Predict
 Y_predict = clf.predict(X_valid)
 # Accuracy
 accuracy = accuracy_measure_not_shared(Y_predict, Y_valid)
+import pdb; pdb.set_trace()

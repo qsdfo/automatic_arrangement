@@ -88,9 +88,10 @@ if __name__ == '__main__':
     data_folder = '/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/27_02_17/Results/event_level/binary/quantization_100/Data'
     model_path = '/home/aciditeam-leo/Aciditeam/lop/Results_guillimin/27_02_17/Results/event_level/binary/quantization_100/gradient_descent'
     track_paths = [
-        '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/liszt_classical_archives/16',
-        '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/bouliane/22',
-        '/home/aciditeam-leo/Aciditeam/database/Orchestration/Orchestration_checked/bouliane/0',  # This one is in train set
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_29_05_17/liszt_classical_archives/16',
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_29_05_17/bouliane/22',
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_29_05_17/bouliane/3',
+        '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_29_05_17/bouliane/0',  # This one is in train set
     ]
 
     # data_folder = "/home/crestel/lop/Data"
@@ -111,14 +112,17 @@ if __name__ == '__main__':
     #################################
     # Or just generate or plot weight of a specific configuration
     #################################
-    configuration = "/Users/leo/TEMP/1"
+    configurations = [
+        "/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/adam_L2/FGgru/11",
+        "/home/aciditeam-leo/Aciditeam/lop/Results/event_level/binary/quantization_100/adam_L2/FGgru/12",
+        ]
     data_folder = "../Data"
     generation_length = 50
-    seed_size = 20
     corruption_flag = None
     number_of_version = 5
-    # generate_midi(configuration, data_folder, generation_length, seed_size, 1, corruption_flag, logging)
-    plot_weights(configuration, logging)
-    generate_midi(configuration, data_folder, generation_length, corruption_flag, logging)
-    # for track_path in track_paths:
-    #     generate_midi_full_track_reference(configuration, data_folder, track_path, seed_size, number_of_version, logging)
+
+    for configuration in configurations:
+        plot_weights(configuration, logging)
+        generate_midi(configuration, data_folder, generation_length, corruption_flag, logging)
+        for track_path in track_paths:
+            generate_midi_full_track_reference(configuration, data_folder, track_path, number_of_version, logging)

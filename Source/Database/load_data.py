@@ -47,11 +47,12 @@ def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, t
     # Get start and end for each track
     tracks_start_end = pickle.load(open(data_folder + '/tracks_start_end_' + set_identifier + '.pkl', 'rb'))
 
-    # Get valid indices given start_track and temporal_order
-    def valid_indices(tracks_start_end, temporal_order):
+    # Get valid indices given start_track, end_track and temporal_order
+    # Consider that you might use interval [t - temporal_order ; t + temporal_order]
+    def valid_indices(tracks_start_end temporal_order):
         valid_ind = []
         for (start_track, end_track) in tracks_start_end.values():
-            valid_ind.extend(range(start_track+temporal_order-1, end_track, skip_sample))
+            valid_ind.extend(range(start_track+temporal_order-1, end_track-temporal_order+1, skip_sample))
         return valid_ind
 
     def remove_silences(indices, pr):

@@ -9,7 +9,6 @@ import theano
 import logging
 import random
 import cPickle as pickle
-import acidano.data_processing.utils.unit_type as Unit_type
 
 
 def load_data(data_folder, piano_checksum, orchestra_checksum, set_identifier, temporal_order=20, batch_size=100,

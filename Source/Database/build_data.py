@@ -25,7 +25,7 @@ import build_data_aux
 import cPickle as pickle
 
 
-def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, unit_type='binary', temporal_granularity='frame_level', pitch_translation_augmentations=[0], logging=None):
+def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, temporal_granularity='frame_level', pitch_translation_augmentations=[0], logging=None):
     logging.info("##########")
     logging.info("Get dimension informations")
     # Determine the temporal size of the matrices
@@ -55,7 +55,7 @@ def get_dim_matrix(root_dir, index_files_dict, meta_info_path='temp.p', quantiza
 
                     # Read pr
                     pr_piano, _, instru_piano, _, pr_orch, _, instru_orch, _, duration =\
-                        build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, gapopen=3, gapextend=1)
+                        build_data_aux.process_folder(folder_path, quantization, temporal_granularity, gapopen=3, gapextend=1)
 
                     if duration is None:
                         # Files that could not be aligned
@@ -122,10 +122,10 @@ def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, du
     pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, start_time, duration, instru_mapping, pr_piano)
 
 
-def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, unit_type='binary', temporal_granularity='frame_level', store_folder='../Data', pitch_translation_augmentations=[0], logging=None):
+def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization=12, temporal_granularity='frame_level', store_folder='../Data', pitch_translation_augmentations=[0], logging=None):
 
     # Get dimensions
-    instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, unit_type=unit_type, temporal_granularity=temporal_granularity, pitch_translation_augmentations=pitch_translation_augmentations, logging=logging)
+    instru_mapping, quantization, T_dict, N_orchestra = get_dim_matrix(root_dir, index_files_dict, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, pitch_translation_augmentations=pitch_translation_augmentations, logging=logging)
 
     logging.info("##########")
     logging.info("Build data")
@@ -166,7 +166,7 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization
 
                     # Get pr, warped and duration
                     new_pr_piano, _, _, _, new_pr_orchestra, _, new_instru_orchestra, _, duration\
-                        = build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, gapopen=3, gapextend=1)
+                        = build_data_aux.process_folder(folder_path, quantization, temporal_granularity, gapopen=3, gapextend=1)
 
                     # SKip shitty files
                     if new_pr_piano is None:
@@ -241,7 +241,6 @@ def build_data(root_dir, index_files_dict, meta_info_path='temp.p', quantization
     metadata['N_piano'] = N_piano
     metadata['instru_mapping'] = instru_mapping
     metadata['quantization'] = quantization
-    metadata['unit_type'] = unit_type
     metadata['temporal_granularity'] = temporal_granularity
     metadata['store_folder'] = store_folder
     metadata['max_translation'] = max_translation
@@ -279,7 +278,6 @@ if __name__ == '__main__':
     logging.getLogger('').addHandler(console)
 
     # Set up
-    unit_type = 'continuous'
     temporal_granularity = 'event_level'
     quantization = 100
     if temporal_granularity == 'event_level':
@@ -290,7 +288,7 @@ if __name__ == '__main__':
     DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17'
     INDEX_PATH = DATABASE_PATH + '/tvt_split'
     data_folder = '../../Data/Data'
-    data_folder += '__' + unit_type + '__' + temporal_granularity + str(quantization) + '__' + str(max_translation)
+    data_folder += '__' + temporal_granularity + str(quantization) + '__' + str(max_translation)
     index_files_dict = {}
     index_files_dict['train'] = [
         # INDEX_PATH + "/debug_train.txt",
@@ -321,7 +319,6 @@ if __name__ == '__main__':
                index_files_dict=index_files_dict,
                meta_info_path=data_folder + '/temp.p',
                quantization=quantization,
-               unit_type=unit_type,
                temporal_granularity=temporal_granularity,
                store_folder=data_folder,
                pitch_translation_augmentations=pitch_translations,

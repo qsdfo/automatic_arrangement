@@ -1,6 +1,6 @@
 import csv
 import build_data_aux
-from acidano.data_processing.utils.pianoroll_processing import sum_along_instru_dim
+from LOP_database.utils.pianoroll_processing import sum_along_instru_dim
 import re
 import cPickle as pkl
 

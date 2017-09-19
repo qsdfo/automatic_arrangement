@@ -8,8 +8,7 @@ import numpy as np
 import cPickle as pkl
 import os
 # Perso
-from Database.load_data import load_data_train, load_data_valid, load_data_test
-from acidano.utils.early_stopping import up_criterion
+from LOP.Utils import early_stopping
 
 import sys 
 sys.setrecursionlimit(50000)
@@ -379,7 +378,7 @@ def train(model, optimizer,
         # so the minus sign)
         val_tab[epoch] = mean_accuracy
         if epoch >= train_param['min_number_iteration']:
-            OVERFITTING = up_criterion(-val_tab, epoch, train_param["number_strips"], train_param["validation_order"])
+            OVERFITTING = early_stopping.up_criterion(-val_tab, epoch, train_param["number_strips"], train_param["validation_order"])
         #######################################
 
         #######################################

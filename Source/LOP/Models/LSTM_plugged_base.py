@@ -1,10 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
+from LOP.Models.model_lop import Model_lop
 
-from LOP_source.Models.model_lop import Model_lop
+# Tensorflow
+import tensorflow as tf
+
+# Keras
+import keras
 from keras.layers.recurrent import GRU
 from keras.layers import Dense
+
+# Hyperopt
+from LOP.Utils import hopt_wrapper
+from math import log
+from hyperopt import hp
 
 
 class LSTM_plugged_base(Model_lop):
@@ -12,13 +22,11 @@ class LSTM_plugged_base(Model_lop):
 
 		Model_lop.__init__(self, model_param, dimensions)
 
-		# Placeholders
-		self.piano_t = tf.placeholder(tf.float32, shape=(None, self.piano_dim))
-		self.orchestra_past = tf.placeholder(tf.float32, shape=(None, self.temporal_order, self.orchestra_dim))
-		self.orchestra_t = tf.placeholder(tf.float32, shape=(None, self.orchestra_dim))
-
-		# Dimensions
+		# Hidden layers architecture
 		self.n_hs = model_param['n_hidden']
+
+		# Is it a keras model ?
+		self.keras = True
 
 		return
 
@@ -67,6 +75,7 @@ class LSTM_plugged_base(Model_lop):
 						activation='relu', dropout=self.dropout_probability,
 						kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
 						bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))(x)
+
 		lstm_out = x
 		#####################
 		
@@ -85,17 +94,3 @@ class LSTM_plugged_base(Model_lop):
 		#####################
 
 		return orch_prediction
-
-
-
-
-	def fit(self, orch_past, orch_t, piano_past, piano_t):
-		return (self.model).fit(x={'orch_seq': orch_past, 'piano_t': piano_t},
-								y=orch_t,
-								epochs=1,
-								batch_size=self.batch_size,
-								verbose=0)
-
-	def validate(self, orch_past, orch_t, piano_past, piano_t):
-		return (self.model).predict(x={'orch_seq': orch_past, 'piano_t': piano_t},
-									batch_size=self.batch_size)

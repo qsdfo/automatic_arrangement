@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-import theano
-import theano.tensor as T
 import numpy as np
 
 def build_sequence(pr, index, batch_size, seq_length, last_dim):
@@ -62,6 +60,6 @@ def initialization_generation(piano, orchestra, ind, generation_length, batch_ge
                                 batch_generation_size, seed_size)
 
     n_orchestra = orchestra.shape[1]
-    orchestra_gen = np.zeros((batch_generation_size, generation_length, n_orchestra)).astype(theano.config.floatX)
+    orchestra_gen = np.zeros((batch_generation_size, generation_length, n_orchestra)).astype(np.float32)
     orchestra_gen[:, :seed_size, :] = orchestra_seed
     return piano_gen, orchestra_gen

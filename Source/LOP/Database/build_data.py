@@ -19,8 +19,8 @@
 import os
 import numpy as np
 
-from acidano.data_processing.utils.build_dico import build_dico
-import acidano.data_processing.utils.data_augmentation as data_augmentation
+from LOP_database.utils.build_dico import build_dico
+import LOP_database.utils.data_augmentation as data_augmentation
 import build_data_aux
 import cPickle as pickle
 
@@ -285,9 +285,10 @@ if __name__ == '__main__':
     max_translation = 0
     pitch_translations = range(-max_translation, max_translation+1)
 
-    DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17'
+    # DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17'
+    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_06_09_17'
     INDEX_PATH = DATABASE_PATH + '/tvt_split'
-    data_folder = '../../Data/Data'
+    data_folder = '../../../Data/Data'
     data_folder += '__' + temporal_granularity + str(quantization) + '__' + str(max_translation)
     index_files_dict = {}
     index_files_dict['train'] = [

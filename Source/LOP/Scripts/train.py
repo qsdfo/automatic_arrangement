@@ -45,6 +45,9 @@ def train(model,
 	best_epoch = None
 
 	with tf.Session() as sess:        
+
+		writer = tf.summary.FileWriter("graph", sess.graph)
+
 		if model.keras == True:
 			from keras import backend as K
 			K.set_session(sess)
@@ -75,7 +78,6 @@ def train(model,
 				orchestra_t = orchestra_train[batch_index]
 				
 				# Train step
-				logger_train.info("Cest parti")
 				res = sess.run(train_step, {model.piano_t: piano_t,
 											model.orchestra_past: orchestra_past,
 											labels: orchestra_t,

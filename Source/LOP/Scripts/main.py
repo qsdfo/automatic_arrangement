@@ -35,9 +35,10 @@ parameters = {
 	"skip_sample": 1,
 	"avoid_silence": True,
 	# Train
-	"max_iter": 3,            # nb max of iterations when training 1 configuration of hparams
+	"max_iter": 200,            # nb max of iterations when training 1 configuration of hparams (~200)
 	"walltime": 11,             # in hours
 	# Validation
+	"min_number_iteration": 10,
 	"validation_order": 2,
 	"number_strips": 3,
 	# Hyperopt

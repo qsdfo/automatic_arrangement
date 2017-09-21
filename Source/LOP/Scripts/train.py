@@ -68,9 +68,7 @@ def train(model,
 			#######################################
 			# Train
 			#######################################
-			train_cost_epoch = []
-			train_monitor_epoch = []
-			
+			train_cost_epoch = []			
 			for batch_index in train_index:
 				# Build batch
 				piano_t = piano_train[batch_index]
@@ -84,104 +82,75 @@ def train(model,
 				
 				if model.keras:
 					feed_dict[K.learning_phase()] = 1
-				
-				import pdb; pdb.set_trace()
 
-				res = sess.run([train_step, loss], feed_dict)
+				_, loss_batch = sess.run([train_step, loss], feed_dict)
 
-				import pdb; pdb.set_trace()
-				
+				# Keep track of cost
+				train_cost_epoch.append(loss_batch)
+ 
+			mean_loss = np.mean(train_cost_epoch)
+			loss_tab[epoch] = mean_loss
 
-		#      this_cost, this_monitor = model.train_batch(batch_data)
-		#         # Keep track of cost
-		#         train_cost_epoch.append(this_cost)
-		#         train_monitor_epoch.append(this_monitor)
-		#         # # Plot a random mean_chain
-		#         # random_choice_mean_activation[:, :, batch_index] = mean_chain[:, ind_activation[batch_index], :]
-		#         # # mean along batch axis
-		#         # mean_activation[:, :, batch_index] = mean_chain.mean(axis=1)
+			#######################################
+			# Validate
+			#######################################
+			# accuracy = []
+			# for batch_index in valid_index:
+			#     batch_data = model.generator(piano_valid, orchestra_valid, batch_index)
+			#     # _, _, accuracy_batch, true_frame, past_frame, piano_frame, predicted_frame = validation_error(valid_index[batch_index])
+			#     _, _, accuracy_batch = model.validate_batch(batch_data)
+			#     accuracy += [accuracy_batch]
+			################################
+			################################
+			# TEMP : just to test script
+			accuracy = [-e for e in train_cost_epoch]
+			################################
+			################################
+			mean_accuracy = 100 * np.mean(accuracy)
 
-		#     mean_loss = np.mean(train_cost_epoch)
-		#     loss_tab[epoch] = mean_loss
+			end_time_epoch = time.time()
 
-		#     #######################################
-		#     # Validate
-		#     # For binary unit, it's an accuracy measure.
-		#     # For real valued units its a gaussian centered value with variance 1
-		#     #######################################
-		#     accuracy = []
-		#     for batch_index in valid_index:
-		#         batch_data = model.generator(piano_valid, orchestra_valid, batch_index)
-		#         # _, _, accuracy_batch, true_frame, past_frame, piano_frame, predicted_frame = validation_error(valid_index[batch_index])
-		#         _, _, accuracy_batch = model.validate_batch(batch_data)
-		#         accuracy += [accuracy_batch]
-
-		#         # if parameters['DEBUG']:
-		#             # from acidano.visualization.numpy_array.visualize_numpy import visualize_mat
-		#             # if batch_index == 0:
-		#             #     for ind in range(accuracy_batch.shape[0]):
-		#             #         pr_viz = np.zeros((4, predicted_frame.shape[1]))
-		#             #         # Threshold prediction
-		#             #         orch_pred_ind = predicted_frame[ind]
-		#             #         # Less than 1%
-		#             #         thresh_pred = np.where(orch_pred_ind > 0.01, orch_pred_ind, 0)
-		#             #         pr_viz[0] = thresh_pred
-		#             #         pr_viz[1] = true_frame[ind]
-		#             #         pr_viz[2] = past_frame[ind]
-		#             #         pr_viz[3][:piano_frame.shape[1]] = piano_frame[ind]
-		#             #         path_accuracy = config_folder + '/DEBUG/' + str(epoch) + '/validation'
-		#             #         if not os.path.isdir(path_accuracy):
-		#             #             os.makedirs(path_accuracy)
-		#             #         visualize_mat(np.transpose(pr_viz), path_accuracy, str(ind) + '_score_' + str(accuracy_batch[ind]))
-		#     mean_accuracy = 100 * np.mean(accuracy)
-
-		#     end_time_epoch = time.time()
-
-		#     #######################################
-		#     # Is it the best model we have seen so far ?
-		#     if mean_accuracy >= np.max(val_tab):
-		#         best_model = model
-		#         best_epoch = epoch
-		#     #######################################
+			#######################################
+			# Best model ?
+			if mean_accuracy >= np.max(val_tab):
+				best_model = model
+				best_epoch = epoch
+			#######################################
 			
-		#     #######################################
-		#     # Article
-		#     # Early stopping, but when ?
-		#     # Lutz Prechelt
-		#     # UP criterion (except that we expect accuracy to go up in our case,
-		#     # so the minus sign)
-		#     val_tab[epoch] = mean_accuracy
-		#     if epoch >= parameters['min_number_iteration']:
-		#         OVERFITTING = up_criterion(-val_tab, epoch, parameters["number_strips"], parameters["validation_order"])
-		#     #######################################
+			#######################################
+			# Overfitting ?
+			val_tab[epoch] = mean_accuracy
+			if epoch >= parameters['min_number_iteration']:
+				OVERFITTING = up_criterion(-val_tab, epoch, parameters["number_strips"], parameters["validation_order"])
+			#######################################
 
-		#     #######################################
-		#     # Monitor time (guillimin walltime)
-		#     if (time.time() - start_time_train) > time_limit:
-		#         TIME_LIMIT = True
-		#     #######################################
+			#######################################
+			# Monitor time (guillimin walltime)
+			if (time.time() - start_time_train) > time_limit:
+				TIME_LIMIT = True
+			#######################################
 
-		#     #######################################
-		#     # Log training
-		#     #######################################
-		#     logger_train.info(('Epoch : {} , Monitor : {} , Cost : {} , Valid acc : {}'
-		#                       .format(epoch, np.mean(train_monitor_epoch), mean_loss, mean_accuracy))
-		#                       .encode('utf8'))
+			#######################################
+			# Log training
+			#######################################
+			logger_train.info(('Epoch : {} , Training loss : {} , Validation score : {}'
+							  .format(epoch, mean_loss, mean_accuracy))
+							  .encode('utf8'))
 
-		#     logger_train.info(('Time : {}'
-		#                       .format(end_time_epoch - start_time_epoch))
-		#                       .encode('utf8'))
+			logger_train.info(('Time : {}'
+							  .format(end_time_epoch - start_time_epoch))
+							  .encode('utf8'))
 
-		#     if OVERFITTING:
-		#         logger_train.info('OVERFITTING !!')
+			if OVERFITTING:
+				logger_train.info('OVERFITTING !!')
 
-		#     if TIME_LIMIT:
-		#         logger_train.info('TIME OUT !!')
+			if TIME_LIMIT:
+				logger_train.info('TIME OUT !!')
 
-		#     #######################################
-		#     # Epoch +1
-		#     #######################################
-		#     epoch += 1
+			#######################################
+			# Epoch +1
+			#######################################
+			epoch += 1
 
 		# # Return best accuracy
 		# best_accuracy = val_tab[best_epoch]

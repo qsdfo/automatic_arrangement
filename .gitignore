@@ -10,6 +10,7 @@ Source/Needlepote
 Source/test.py
 Articles/ICCC/Corrections/
 Articles/ICCC/Corrections2/
+Source/LOP/Scripts/graph/
 
 # Image files
 **/*.pdf

@@ -4,6 +4,7 @@
 import tensorflow as tf
 from tensorflow.python import debug as tf_debug
 import keras
+from keras import backend as K
 import numpy as np
 
 from LOP.Utils.build_input import build_sequence
@@ -49,7 +50,6 @@ def train(model,
 		writer = tf.summary.FileWriter("graph", sess.graph)
 
 		if model.keras == True:
-			from keras import backend as K
 			K.set_session(sess)
 
 		# Initialize weights
@@ -71,17 +71,13 @@ def train(model,
 			train_cost_epoch = []			
 			for batch_index in train_index:
 				# Build batch
-				piano_t = piano_train[batch_index]
-				orch_past = build_sequence(orch_train, batch_index-1, model.batch_size, model.temporal_order-1, model.orch_dim)
-				orch_t = orch_train[batch_index]
+				piano_t, orch_past, orch_t = build_batch(batch_index, piano_train, orch_train, model.batch_size, model.temporal_order, model.orch_dim)
 				
 				# Train step
 				feed_dict = {model.piano_t: piano_t,
 							model.orch_past: orch_past,
-							labels: orch_t}
-				
-				if model.keras:
-					feed_dict[K.learning_phase()] = 1
+							labels: orch_t,
+							K.learning_phase(): 1}
 
 				_, loss_batch = sess.run([train_step, loss], feed_dict)
 
@@ -94,18 +90,21 @@ def train(model,
 			#######################################
 			# Validate
 			#######################################
-			# accuracy = []
-			# for batch_index in valid_index:
-			#     batch_data = model.generator(piano_valid, orchestra_valid, batch_index)
-			#     # _, _, accuracy_batch, true_frame, past_frame, piano_frame, predicted_frame = validation_error(valid_index[batch_index])
-			#     _, _, accuracy_batch = model.validate_batch(batch_data)
-			#     accuracy += [accuracy_batch]
-			################################
-			################################
-			# TEMP : just to test script
-			accuracy = [-e for e in train_cost_epoch]
-			################################
-			################################
+			accuracy = []
+			for batch_index in valid_index:
+				# Build batch
+				piano_t, orch_past, orch_t = build_batch(batch_index, piano_valid, orch_valid, model.batch_size, model.temporal_order, model.orch_dim)
+
+				# Train step
+				feed_dict = {model.piano_t: piano_t,
+							model.orch_past: orch_past,
+							labels: orch_t,
+							K.learning_phase(): 0}
+
+				loss_batch = sess.run(loss, feed_dict)
+				accuracy_batch = -loss_batch
+				accuracy += [accuracy_batch]
+
 			mean_accuracy = 100 * np.mean(accuracy)
 
 			end_time_epoch = time.time()
@@ -157,3 +156,11 @@ def train(model,
 		# best_loss = loss_tab[best_epoch]
 		# return best_loss, best_accuracy, best_epoch, best_model
 	return
+
+
+def build_batch(batch_index, piano, orch, batch_size, temporal_order, orch_dim):
+	# Build batch
+	piano_t = piano[batch_index]
+	orch_past = build_sequence(orch, batch_index-1, batch_size, temporal_order-1, orch_dim)
+	orch_t = orch[batch_index]
+	return piano_t, orch_past, orch_t

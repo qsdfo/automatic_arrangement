@@ -58,10 +58,10 @@ class LSTM_plugged_base(Model_lop):
 		else:
 			return_sequences = False
 		
-		x = GRU(self.n_hs[0], return_sequences=return_sequences, input_shape=(self.temporal_order, self.orchestra_dim),
+		x = GRU(self.n_hs[0], return_sequences=return_sequences, input_shape=(self.temporal_order, self.orch_dim),
 				activation='relu', dropout=self.dropout_probability,
 				kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-				bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))(self.orchestra_past)
+				bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))(self.orch_past)
 		
 		if len(self.n_hs) > 1:
 			# Intermediates layers
@@ -88,7 +88,7 @@ class LSTM_plugged_base(Model_lop):
 		# Concatenate and predict
 		top_input = keras.layers.concatenate([lstm_out, piano_embedding], axis=1)
 		# Dense layers on top
-		orch_prediction = Dense(self.orchestra_dim, activation='sigmoid', name='orch_pred',
+		orch_prediction = Dense(self.orch_dim, activation='sigmoid', name='orch_pred',
 								kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
 								bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))(top_input)
 		#####################

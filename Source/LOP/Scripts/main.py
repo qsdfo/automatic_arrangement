@@ -11,10 +11,11 @@ import time
 import numpy as np
 
 from train import train
+from config import import_configs
 from LOP.Database.load_data import load_data_train, load_data_valid, load_data_test
 
 # MODEL
-from LOP.Models.LSTM_plugged_base import LSTM_plugged_base as Model
+from LOP.Models.mlp import MLP as Model
 # DATABASE
 DATABASE = "Data__event_level100__0"
 DATABASE_PATH = "../../../Data/" + DATABASE
@@ -94,17 +95,7 @@ track_paths = [
 		'/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/liszt_classical_archives/5',
 ]
 
-configs = {
-	'0': {
-		'batch_size' : 200,
-		'temporal_order' : 5,
-		'dropout_probability' : 0,
-		'weight_decay_coeff' : 0,
-		'n_hidden' : [500, 500],
-		'threshold' : 0,
-		'weighted_ce' : 0
-	},
-}
+configs = import_configs()
 
 def run_wrapper(parameters, model_params, config_folder, data_folder):
 
@@ -112,7 +103,7 @@ def run_wrapper(parameters, model_params, config_folder, data_folder):
 	# Load data
 	############################################################
 	time_load_0 = time.time()
-	piano_train, orchestra_train, train_index \
+	piano_train, orch_train, train_index \
 		= load_data_train(data_folder,
 						  model_params['temporal_order'],
 						  model_params['batch_size'],
@@ -121,7 +112,7 @@ def run_wrapper(parameters, model_params, config_folder, data_folder):
 						  binarize_piano=parameters['binarize_piano'],
 						  binarize_orchestra=parameters['binarize_orchestra'],
 						  logger_load=logging)
-	piano_valid, orchestra_valid, valid_index \
+	piano_valid, orch_valid, valid_index \
 		= load_data_valid(data_folder,
 						  model_params['temporal_order'],
 						  model_params['batch_size'],
@@ -131,7 +122,7 @@ def run_wrapper(parameters, model_params, config_folder, data_folder):
 						  binarize_orchestra=parameters['binarize_orchestra'],
 						  logger_load=logging)
 	# This load is only for sanity check purposes
-	piano_test, orchestra_test, _, _ \
+	piano_test, orch_test, _, _ \
 		= load_data_test(data_folder,
 						 model_params['temporal_order'],
 						 model_params['batch_size'],
@@ -147,11 +138,11 @@ def run_wrapper(parameters, model_params, config_folder, data_folder):
 	# Get dimensions of batches
 	############################################################
 	piano_dim = piano_train.shape[1]
-	orchestra_dim = orchestra_train.shape[1]
+	orch_dim = orch_train.shape[1]
 	dimensions = {'batch_size': model_params['batch_size'],
 				  'temporal_order': model_params['temporal_order'],
 				  'piano_dim': piano_dim,
-				  'orchestra_dim': orchestra_dim}
+				  'orch_dim': orch_dim}
 
 	############################################################
 	# Update train_param and model_param dicts with new information from load data
@@ -167,13 +158,13 @@ def run_wrapper(parameters, model_params, config_folder, data_folder):
 	parameters['n_val_batches'] = n_val_batches
 
 	# Class normalization
-	notes_activation = orchestra_train.sum(axis=0)
+	notes_activation = orch_train.sum(axis=0)
 	notes_activation_norm = notes_activation.mean() / (notes_activation+1e-10)
 	class_normalization = np.maximum(1, np.minimum(20, notes_activation_norm))
 	model_params['class_normalization'] = class_normalization
 
 	# Other kind of regularization
-	L_train = orchestra_train.shape[0]
+	L_train = orch_train.shape[0]
 	mean_notes_activation = notes_activation / L_train
 	mean_notes_activation = np.where(mean_notes_activation == 0, 1. / L_train, mean_notes_activation)
 	model_params['mean_notes_activation'] = mean_notes_activation
@@ -195,8 +186,8 @@ def run_wrapper(parameters, model_params, config_folder, data_folder):
 	############################################################
 	time_train_0 = time.time()
 	loss, accuracy, best_epoch, best_model = train(model,
-									piano_train, orchestra_train, train_index,
-									piano_valid, orchestra_valid, valid_index,
+									piano_train, orch_train, train_index,
+									piano_valid, orch_valid, valid_index,
 									parameters, config_folder, time_train_0, logging)
 
 	time_train_1 = time.time()

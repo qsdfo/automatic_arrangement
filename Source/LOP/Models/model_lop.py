@@ -19,7 +19,7 @@ class Model_lop(object):
 		self.batch_size = dimensions['batch_size']
 		self.temporal_order = dimensions['temporal_order']
 		self.piano_dim = dimensions['piano_dim']
-		self.orchestra_dim = dimensions['orchestra_dim']
+		self.orch_dim = dimensions['orch_dim']
 
 		# Regularization paramters
 		self.dropout_probability = model_param['dropout_probability']
@@ -27,7 +27,7 @@ class Model_lop(object):
 
 		# Placeholders
 		self.piano_t = tf.placeholder(tf.float32, shape=(None, self.piano_dim), name="piano_t")
-		self.orchestra_past = tf.placeholder(tf.float32, shape=(None, self.temporal_order-1, self.orchestra_dim), name="orchestra_past")	
+		self.orch_past = tf.placeholder(tf.float32, shape=(None, self.temporal_order-1, self.orch_dim), name="orch_past")	
 
 		self.params = []
 		return

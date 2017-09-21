@@ -13,8 +13,8 @@ import time
 DEBUG = False
 
 def train(model,
-		  piano_train, orchestra_train, train_index,
-		  piano_valid, orchestra_valid, valid_index,
+		  piano_train, orch_train, train_index,
+		  piano_valid, orch_valid, valid_index,
 		  parameters, config_folder, start_time_train, logger_train):
    
 	# Time information used
@@ -24,7 +24,7 @@ def train(model,
 	# Compute train step
 	preds = model.predict()
 	# Declare labels placeholders
-	labels = tf.placeholder(tf.float32, shape=(None, model.orchestra_dim), name="labels")
+	labels = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="labels")
 	# TODO : remplacer cette ligne par une fonction qui prends labels et preds et qui compute la loss
 	# Comme ça on pourra faire des classifier chains
 	loss = tf.reduce_mean(keras.losses.binary_crossentropy(labels, preds), name="loss")
@@ -74,14 +74,23 @@ def train(model,
 			for batch_index in train_index:
 				# Build batch
 				piano_t = piano_train[batch_index]
-				orchestra_past = build_sequence(orchestra_train, batch_index-1, model.batch_size, model.temporal_order-1, model.orchestra_dim)
-				orchestra_t = orchestra_train[batch_index]
+				orch_past = build_sequence(orch_train, batch_index-1, model.batch_size, model.temporal_order-1, model.orch_dim)
+				orch_t = orch_train[batch_index]
 				
 				# Train step
-				res = sess.run(train_step, {model.piano_t: piano_t,
-											model.orchestra_past: orchestra_past,
-											labels: orchestra_t,
-											K.learning_phase(): 1})
+				feed_dict = {model.piano_t: piano_t,
+							model.orch_past: orch_past,
+							labels: orch_t}
+				
+				if model.keras:
+					feed_dict[K.learning_phase()] = 1
+				
+				import pdb; pdb.set_trace()
+
+				res = sess.run([train_step, loss], feed_dict)
+
+				import pdb; pdb.set_trace()
+				
 
 		#      this_cost, this_monitor = model.train_batch(batch_data)
 		#         # Keep track of cost

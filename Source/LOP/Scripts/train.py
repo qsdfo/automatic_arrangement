@@ -8,6 +8,7 @@ from keras import backend as K
 import numpy as np
 
 from LOP.Utils.build_input import build_sequence
+from LOP.Utils.early_stopping import up_criterion
 
 import time
 

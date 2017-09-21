@@ -41,7 +41,8 @@ def train(model,
 	epoch = 0
 	OVERFITTING = False
 	TIME_LIMIT = False
-	val_tab = np.zeros(max(1, parameters['max_iter']))
+	val_tab_acc = np.zeros(max(1, parameters['max_iter']))
+	val_tab_loss = np.zeros(max(1, parameters['max_iter']))
 	loss_tab = np.zeros(max(1, parameters['max_iter']))
 	best_model = None
 	best_epoch = None
@@ -92,6 +93,7 @@ def train(model,
 			# Validate
 			#######################################
 			accuracy = []
+			val_loss = []
 			for batch_index in valid_index:
 				# Build batch
 				piano_t, orch_past, orch_t = build_batch(batch_index, piano_valid, orch_valid, model.batch_size, model.temporal_order, model.orch_dim)
@@ -102,26 +104,29 @@ def train(model,
 							labels: orch_t,
 							K.learning_phase(): 0}
 
-				loss_batch = sess.run(loss, feed_dict)
-				accuracy_batch = -loss_batch
+				preds_batch, loss_batch = sess.run([preds, loss], feed_dict)
+				val_loss += [loss_batch]
+				accuracy_batch = accuracy_measure(orch_t, preds_batch)
 				accuracy += [accuracy_batch]
 
+			mean_val_loss = np.mean(val_loss)
+			val_tab_loss[epoch] = mean_val_loss
 			mean_accuracy = 100 * np.mean(accuracy)
+			val_tab_acc[epoch] = mean_accuracy
 
 			end_time_epoch = time.time()
 
 			#######################################
 			# Best model ?
-			if mean_accuracy >= np.max(val_tab):
+			if mean_accuracy >= np.max(val_tab_acc):
 				best_model = model
 				best_epoch = epoch
 			#######################################
 			
 			#######################################
 			# Overfitting ?
-			val_tab[epoch] = mean_accuracy
 			if epoch >= parameters['min_number_iteration']:
-				OVERFITTING = up_criterion(-val_tab, epoch, parameters["number_strips"], parameters["validation_order"])
+				OVERFITTING = up_criterion(-val_tab_acc, epoch, parameters["number_strips"], parameters["validation_order"])
 			#######################################
 
 			#######################################
@@ -133,8 +138,8 @@ def train(model,
 			#######################################
 			# Log training
 			#######################################
-			logger_train.info(('Epoch : {} , Training loss : {} , Validation score : {}'
-							  .format(epoch, mean_loss, mean_accuracy))
+			logger_train.info(('Epoch : {} , Training loss : {} , Validation loss : {}, Validation accuracy : {}%'
+							  .format(epoch, mean_loss, mean_val_loss, mean_accuracy))
 							  .encode('utf8'))
 
 			logger_train.info(('Time : {}'

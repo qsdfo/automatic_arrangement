@@ -8,7 +8,7 @@ def import_configs():
 			'temporal_order' : 5,
 			'dropout_probability' : 0,
 			'weight_decay_coeff' : 0,
-			'layers' : [500, 500],
+			'n_hidden' : [500, 500],
 			'threshold' : 0,
 			'weighted_ce' : 0
 		},

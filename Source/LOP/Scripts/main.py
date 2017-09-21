@@ -15,7 +15,7 @@ from config import import_configs
 from LOP.Database.load_data import load_data_train, load_data_valid, load_data_test
 
 # MODEL
-from LOP.Models.mlp import MLP as Model
+from LOP.Models.LSTM_plugged_base import LSTM_plugged_base as Model
 # DATABASE
 DATABASE = "Data__event_level100__0"
 DATABASE_PATH = "../../../Data/" + DATABASE

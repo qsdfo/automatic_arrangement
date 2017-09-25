@@ -7,13 +7,9 @@ from math import log
 from hyperopt import hp
 import tensorflow as tf
 
-# from abc import ABCMeta, abstractmethod
-
 
 class Model_lop(object):
 	
-	# __metaclass__ = ABCMeta
-
 	def __init__(self, model_param, dimensions):
 		# Dimensions
 		self.batch_size = dimensions['batch_size']
@@ -24,10 +20,6 @@ class Model_lop(object):
 		# Regularization paramters
 		self.dropout_probability = model_param['dropout_probability']
 		self.weight_decay_coeff = model_param['weight_decay_coeff']
-
-		# Placeholders
-		self.piano_t = tf.placeholder(tf.float32, shape=(None, self.piano_dim), name="piano_t")
-		self.orch_past = tf.placeholder(tf.float32, shape=(None, self.temporal_order-1, self.orch_dim), name="orch_past")	
 
 		self.params = []
 		return

@@ -5,6 +5,7 @@
 # Used to test main scripts and as a baseline
 
 from LOP.Models.model_lop import Model_lop
+from LOP.Models.weight_summary import variable_summaries
 
 # Tensorflow
 import tensorflow as tf
@@ -21,7 +22,7 @@ class MLP(Model_lop):
 		Model_lop.__init__(self, model_param, dimensions)
 
 		# Hidden layers architecture
-		self.layers = [self.piano_dim] + model_param['layers']
+		self.layers = [self.piano_dim] + list(model_param['layers'])
 		# Is it a keras model ?
 		self.keras = False
 
@@ -46,7 +47,7 @@ class MLP(Model_lop):
 		space.update(super_space)
 		return space
 
-	def predict(self):
+	def predict(self, piano_t, orch_past):
 		def add_layer(input, W_shape, b_shape, sigmoid=False):
 			W = tf.get_variable("W", W_shape, initializer=tf.random_normal_initializer())
 			b = tf.get_variable("b", b_shape, initializer=tf.constant_initializer(0.0))
@@ -54,14 +55,16 @@ class MLP(Model_lop):
 				out = tf.nn.sigmoid(tf.matmul(x, W) + b)
 			else:
 				out = tf.nn.relu(tf.matmul(x, W) + b)
+
 			return out
 
-		x = self.piano_t
+		x = piano_t
 		
 		for l in range(len(self.layers)-1):
 			with tf.variable_scope("layer_" + str(l)):
 				x = add_layer(x, [self.layers[l], self.layers[l+1]], [self.layers[l+1]])
 
-		orch_prediction = add_layer(x, [self.layers[-1], self.orch_dim], [self.orch_dim], True)
+		with tf.variable_scope("layer_" + str(len(self.layers))):
+			orch_prediction = add_layer(x, [self.layers[-1], self.orch_dim], [self.orch_dim], True)
 
 		return orch_prediction

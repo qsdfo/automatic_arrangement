@@ -49,7 +49,7 @@ class LSTM_plugged_base(Model_lop):
 		space.update(super_space)
 		return space
 
-	def predict(self):
+	def predict(self, piano_t, orch_past):
 		#####################
 		# GRU for modelling past orchestra
 		# First layer
@@ -62,7 +62,7 @@ class LSTM_plugged_base(Model_lop):
 			x = GRU(self.n_hs[0], return_sequences=return_sequences, input_shape=(self.temporal_order, self.orch_dim),
 					activation='relu', dropout=self.dropout_probability,
 					kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-					bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))(self.orch_past)
+					bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))(orch_past)
 		
 		if len(self.n_hs) > 1:
 			# Intermediates layers
@@ -84,7 +84,7 @@ class LSTM_plugged_base(Model_lop):
 		#####################
 		# gru out and piano(t)
 		with tf.name_scope("piano_embedding"):
-			piano_embedding = Dense(self.n_hs[-1], activation='relu')(self.piano_t)  # fully-connected layer with 128 units and ReLU activation
+			piano_embedding = Dense(self.n_hs[-1], activation='relu')(piano_t)  # fully-connected layer with 128 units and ReLU activation
 		#####################
 
 		#####################

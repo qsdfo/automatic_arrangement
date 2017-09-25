@@ -6,6 +6,7 @@
 # Used to test main scripts and as a baseline
 
 from LOP.Models.model_lop import Model_lop
+from LOP.Models.weight_summary import keras_layer_summary
 
 # Tensorflow
 import tensorflow as tf
@@ -50,12 +51,15 @@ class MLP_K(Model_lop):
 		space.update(super_space)
 		return space
 
-	def predict(self):
-		x = self.piano_t
+	def predict(self, piano_t, orch_past):
+		x = piano_t
 		
-		for l in self.layers:
-			x = Dense(l, activation='relu')(x)
-			x = Dropout(0.5)(x)
+		for i, l in enumerate(self.layers):
+			with tf.name_scope("layer_" + str(i)):
+				dense = Dense(l, activation='relu')
+				x = dense(x)
+				keras_layer_summary(dense)
+				x = Dropout(0.5)(x)
 
 		orch_prediction = Dense(self.orch_dim, activation='sigmoid')(x)
 

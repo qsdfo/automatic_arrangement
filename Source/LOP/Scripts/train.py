@@ -7,12 +7,14 @@ import keras
 from keras import backend as K
 import numpy as np
 
-from LOP.Utils.build_input import build_sequence
 from LOP.Utils.early_stopping import up_criterion
+from LOP.Utils.measure import accuracy_measure
+from LOP.Utils.build_batch import build_batch
 
 import time
 
 DEBUG = False
+SUMMARIZE = False
 
 def train(model,
 		  piano_train, orch_train, train_index,
@@ -22,16 +24,31 @@ def train(model,
 	# Time information used
 	time_limit = parameters['walltime'] * 3600 - 30*60  # walltime - 30 minutes in seconds
 
+	# Reset graph before starting training
+	tf.reset_default_graph()
+
 	############################################################
 	# Compute train step
-	preds = model.predict()
+	# Inputs
+	piano_t_ph = tf.placeholder(tf.float32, shape=(None, model.piano_dim), name="piano_t")
+	orch_past_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.orch_dim), name="orch_past")	
+	# Prediction
+	preds = model.predict(piano_t_ph, orch_past_ph)
 	# Declare labels placeholders
-	labels = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="labels")
+	labels_ph = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="labels")
 	# TODO : remplacer cette ligne par une fonction qui prends labels et preds et qui compute la loss
 	# Comme ça on pourra faire des classifier chains
-	loss = tf.reduce_mean(keras.losses.binary_crossentropy(labels, preds), name="loss")
+	loss = tf.reduce_mean(keras.losses.binary_crossentropy(labels_ph, preds), name="loss")
 	# train_step = tf.train.AdamOptimizer(0.5).minimize(loss)
 	train_step = tf.train.GradientDescentOptimizer(0.5).minimize(loss)
+	############################################################
+
+	############################################################
+	# Saver
+	# tf.add_to_collection('inputs', piano_t_ph)
+	# tf.add_to_collection('inputs', orch_past_ph)
+	tf.add_to_collection('preds', preds)
+	saver = tf.train.Saver()
 	############################################################
 
 	############################################################
@@ -49,7 +66,9 @@ def train(model,
 
 	with tf.Session() as sess:        
 
-		writer = tf.summary.FileWriter("graph", sess.graph)
+		if SUMMARIZE: 
+			merged = tf.summary.merge_all()
+			train_writer = tf.summary.FileWriter(config_folder + '/summary', sess.graph)
 
 		if model.keras == True:
 			K.set_session(sess)
@@ -60,6 +79,7 @@ def train(model,
 		if DEBUG:
 			sess = tf_debug.LocalCLIDebugWrapperSession(sess)
 			sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
+
 
 		# Training iteration
 		while (not OVERFITTING and not TIME_LIMIT
@@ -73,15 +93,19 @@ def train(model,
 			train_cost_epoch = []			
 			for batch_index in train_index:
 				# Build batch
-				piano_t, orch_past, orch_t = build_batch(batch_index, piano_train, orch_train, model.batch_size, model.temporal_order, model.orch_dim)
+				piano_t, orch_past, orch_t = build_batch(batch_index, piano_train, orch_train, model.batch_size, model.temporal_order)
 				
 				# Train step
-				feed_dict = {model.piano_t: piano_t,
-							model.orch_past: orch_past,
-							labels: orch_t,
+				feed_dict = {piano_t_ph: piano_t,
+							orch_past_ph: orch_past,
+							labels_ph: orch_t,
 							K.learning_phase(): 1}
 
-				_, loss_batch = sess.run([train_step, loss], feed_dict)
+				if SUMMARIZE:
+					_, loss_batch, summary = sess.run([train_step, loss, merged], feed_dict)
+					train_writer.add_summary(summary, epoch)
+				else:
+					_, loss_batch = sess.run([train_step, loss], feed_dict)
 
 				# Keep track of cost
 				train_cost_epoch.append(loss_batch)
@@ -96,12 +120,12 @@ def train(model,
 			val_loss = []
 			for batch_index in valid_index:
 				# Build batch
-				piano_t, orch_past, orch_t = build_batch(batch_index, piano_valid, orch_valid, model.batch_size, model.temporal_order, model.orch_dim)
+				piano_t, orch_past, orch_t = build_batch(batch_index, piano_valid, orch_valid, model.batch_size, model.temporal_order)
 
 				# Train step
-				feed_dict = {model.piano_t: piano_t,
-							model.orch_past: orch_past,
-							labels: orch_t,
+				feed_dict = {piano_t_ph: piano_t,
+							orch_past_ph: orch_past,
+							labels_ph: orch_t,
 							K.learning_phase(): 0}
 
 				preds_batch, loss_batch = sess.run([preds, loss], feed_dict)
@@ -115,13 +139,6 @@ def train(model,
 			val_tab_acc[epoch] = mean_accuracy
 
 			end_time_epoch = time.time()
-
-			#######################################
-			# Best model ?
-			if mean_accuracy >= np.max(val_tab_acc):
-				best_model = model
-				best_epoch = epoch
-			#######################################
 			
 			#######################################
 			# Overfitting ?
@@ -138,13 +155,25 @@ def train(model,
 			#######################################
 			# Log training
 			#######################################
-			logger_train.info(('Epoch : {} , Training loss : {} , Validation loss : {}, Validation accuracy : {}%'
+			logger_train.info("############################################################")
+			logger_train.info(('Epoch : {} , Training loss : {} , Validation loss : {}, Validation accuracy : {} %'
 							  .format(epoch, mean_loss, mean_val_loss, mean_accuracy))
 							  .encode('utf8'))
 
 			logger_train.info(('Time : {}'
 							  .format(end_time_epoch - start_time_epoch))
 							  .encode('utf8'))
+
+			#######################################
+			# Best model ?
+			# if mean_accuracy >= np.max(val_tab_acc):
+			if mean_val_loss <= np.max(val_tab_loss):	
+				save_time_start = time.time()
+				save_path = saver.save(sess, config_folder + "/model/model")
+				best_epoch = epoch
+				save_time = time.time() - save_time_start
+				logger_train.info(('Save time : {}'.format(save_time)).encode('utf8'))
+			#######################################
 
 			if OVERFITTING:
 				logger_train.info('OVERFITTING !!')
@@ -157,16 +186,10 @@ def train(model,
 			#######################################
 			epoch += 1
 
-		# # Return best accuracy
-		# best_accuracy = val_tab[best_epoch]
-		# best_loss = loss_tab[best_epoch]
-		# return best_loss, best_accuracy, best_epoch, best_model
-	return
+		# Return best accuracy
+		best_accuracy = val_tab_acc[best_epoch]
+		best_validation_loss = val_tab_loss[best_epoch]
 
+		
 
-def build_batch(batch_index, piano, orch, batch_size, temporal_order, orch_dim):
-	# Build batch
-	piano_t = piano[batch_index]
-	orch_past = build_sequence(orch, batch_index-1, batch_size, temporal_order-1, orch_dim)
-	orch_t = orch[batch_index]
-	return piano_t, orch_past, orch_t
+	return best_validation_loss, best_accuracy, best_epoch

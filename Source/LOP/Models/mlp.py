@@ -33,6 +33,14 @@ class MLP(Model_lop):
 		return "MLP"
 
 	@staticmethod
+	def binarize_piano():
+		return True
+
+	@staticmethod
+	def binarize_orchestra():
+		return True
+
+	@staticmethod
 	def get_hp_space():
 		super_space = Model_lop.get_hp_space()
 

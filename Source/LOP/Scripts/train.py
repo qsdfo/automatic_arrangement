@@ -6,15 +6,18 @@ from tensorflow.python import debug as tf_debug
 import keras
 from keras import backend as K
 import numpy as np
-
-from LOP.Utils.early_stopping import up_criterion
-from LOP.Utils.measure import accuracy_measure
-from LOP.Utils.build_batch import build_batch
-
 import time
 
+from LOP.Utils.early_stopping import up_criterion
+from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure
+from LOP.Utils.build_batch import build_batch
+from LOP.Utils.get_statistics import count_parameters
+
 DEBUG = False
-SUMMARIZE = False
+# Note : debug sans summarize, qui pollue le tableau de variables
+SUMMARIZE = True
+# Shuold almost always be set to True. Just useful for debugs, sometimes
+VALIDATION = False
 
 def train(model,
 		  piano_train, orch_train, train_index,
@@ -27,9 +30,14 @@ def train(model,
 	# Reset graph before starting training
 	tf.reset_default_graph()
 
+	if not VALIDATION:
+		piano_valid, orch_valid, valid_index = piano_train, orch_train, train_index
+
 	############################################################
 	# Compute train step
 	# Inputs
+	logger_train.info((u'#### Graph'))
+	start_time_building_graph = time.time()
 	piano_t_ph = tf.placeholder(tf.float32, shape=(None, model.piano_dim), name="piano_t")
 	orch_past_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.orch_dim), name="orch_past")	
 	# Prediction
@@ -41,6 +49,8 @@ def train(model,
 	loss = tf.reduce_mean(keras.losses.binary_crossentropy(labels_ph, preds), name="loss")
 	# train_step = tf.train.AdamOptimizer(0.5).minimize(loss)
 	train_step = tf.train.GradientDescentOptimizer(0.5).minimize(loss)
+	time_building_graph = time.time() - start_time_building_graph
+	logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))
 	############################################################
 
 	############################################################
@@ -52,13 +62,20 @@ def train(model,
 	############################################################
 
 	############################################################
+	# Display informations about the model
+	num_parameters = count_parameters(tf.get_default_graph())
+	logger_train.info((u'** Num trainable parameters :  {}'.format(num_parameters)).encode('utf8'))
+
+	############################################################
 	# Training
-	logger_train.info("#")
-	logger_train.info("# Training")
+	logger_train.info("#" * 60)
+	logger_train.info("#### Training")
 	epoch = 0
 	OVERFITTING = False
 	TIME_LIMIT = False
 	val_tab_acc = np.zeros(max(1, parameters['max_iter']))
+	val_tab_prec = np.zeros(max(1, parameters['max_iter']))
+	val_tab_rec = np.zeros(max(1, parameters['max_iter']))
 	val_tab_loss = np.zeros(max(1, parameters['max_iter']))
 	loss_tab = np.zeros(max(1, parameters['max_iter']))
 	best_model = None
@@ -117,6 +134,8 @@ def train(model,
 			# Validate
 			#######################################
 			accuracy = []
+			precision = []
+			recall = []
 			val_loss = []
 			for batch_index in valid_index:
 				# Build batch
@@ -131,12 +150,21 @@ def train(model,
 				preds_batch, loss_batch = sess.run([preds, loss], feed_dict)
 				val_loss += [loss_batch]
 				accuracy_batch = accuracy_measure(orch_t, preds_batch)
+				precision_batch = precision_measure(orch_t, preds_batch)
+				recall_batch = recall_measure(orch_t, preds_batch)
 				accuracy += [accuracy_batch]
+				precision += [precision_batch]
+				recall += [recall_batch]
+
 
 			mean_val_loss = np.mean(val_loss)
 			val_tab_loss[epoch] = mean_val_loss
 			mean_accuracy = 100 * np.mean(accuracy)
+			mean_precision = 100 * np.mean(precision)
+			mean_recall = 100 * np.mean(recall)
 			val_tab_acc[epoch] = mean_accuracy
+			val_tab_prec[epoch] = mean_precision
+			val_tab_rec[epoch] = mean_recall
 
 			end_time_epoch = time.time()
 			
@@ -156,8 +184,8 @@ def train(model,
 			# Log training
 			#######################################
 			logger_train.info("############################################################")
-			logger_train.info(('Epoch : {} , Training loss : {} , Validation loss : {}, Validation accuracy : {} %'
-							  .format(epoch, mean_loss, mean_val_loss, mean_accuracy))
+			logger_train.info(('Epoch : {} , Training loss : {} , Validation binary_crossentr : {}, Validation accuracy : {} %, precision : {} %, recall : {} %'
+							  .format(epoch, mean_loss, mean_val_loss, mean_accuracy, mean_precision, mean_recall))
 							  .encode('utf8'))
 
 			logger_train.info(('Time : {}'

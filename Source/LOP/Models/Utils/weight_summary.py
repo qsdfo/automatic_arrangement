@@ -3,7 +3,7 @@
 
 import tensorflow as tf
 
-def variable_summaries(var):
+def variable_summary(var):
 	"""Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
 	with tf.name_scope('summaries'):
 		mean = tf.reduce_mean(var)
@@ -18,5 +18,5 @@ def variable_summaries(var):
 
 def keras_layer_summary(layer):
 	for var in layer.trainable_weights:
-		variable_summaries(var)
+		variable_summary(var)
 	return

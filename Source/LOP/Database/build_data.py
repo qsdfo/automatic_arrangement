@@ -285,30 +285,30 @@ if __name__ == '__main__':
     max_translation = 0
     pitch_translations = range(-max_translation, max_translation+1)
 
-    # DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17'
-    DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_06_09_17'
+    DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17'
+    # DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_06_09_17'
     INDEX_PATH = DATABASE_PATH + '/tvt_split'
-    data_folder = '../../../Data/Data'
+    data_folder = '../../../Data/Data_DEBUG'
     data_folder += '__' + temporal_granularity + str(quantization) + '__' + str(max_translation)
     index_files_dict = {}
     index_files_dict['train'] = [
         # INDEX_PATH + "/debug_train.txt",
-        INDEX_PATH + "/bouliane_train.txt",
-        INDEX_PATH + "/hand_picked_Spotify_train.txt",
+        # INDEX_PATH + "/bouliane_train.txt",
+        # INDEX_PATH + "/hand_picked_Spotify_train.txt",
         INDEX_PATH + "/liszt_classical_archives_train.txt",
         # INDEX_PATH + "/imslp_train.txt"
     ]
     index_files_dict['valid'] = [
         # INDEX_PATH + "/debug_valid.txt",
-        INDEX_PATH + "/bouliane_valid.txt",
-        INDEX_PATH + "/hand_picked_Spotify_valid.txt",
+        # INDEX_PATH + "/bouliane_valid.txt",
+        # INDEX_PATH + "/hand_picked_Spotify_valid.txt",
         INDEX_PATH + "/liszt_classical_archives_valid.txt",
         # INDEX_PATH + "/imslp_valid.txt"
     ]
     index_files_dict['test'] = [
         # INDEX_PATH + "/debug_test.txt",
-        INDEX_PATH + "/bouliane_test.txt",
-        INDEX_PATH + "/hand_picked_Spotify_test.txt",
+        # INDEX_PATH + "/bouliane_test.txt",
+        # INDEX_PATH + "/hand_picked_Spotify_test.txt",
         INDEX_PATH + "/liszt_classical_archives_test.txt",
         # INDEX_PATH + "/imslp_test.txt"
     ]

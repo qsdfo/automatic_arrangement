@@ -19,14 +19,14 @@ from LOP.Database.load_data import load_data_train, load_data_valid, load_data_t
 
 # MODEL
 # from LOP.Models.mlp_K import MLP_K as Model
-from LOP.Models.mlp_K import MLP_K as Model
+from LOP.Models.Conv_reccurent.conv_lstm_0 import Conv_lstm_0 as Model
 
 def main():
 	# DATABASE
-	DATABASE = "Data__event_level100__0"
+	DATABASE = "Data_DEBUG__event_level100__0"
 	DATABASE_PATH = "../../../Data/" + DATABASE
 	# HYPERPARAM ?
-	DEFINED_CONFIG = False
+	DEFINED_CONFIG = True
 	# RESULTS
 	result_folder =  '../../../Results/' + DATABASE + '/' + Model.name()
 	if not os.path.isdir(result_folder):
@@ -40,7 +40,7 @@ def main():
 		"skip_sample": 1,
 		"avoid_silence": True,
 		# Train
-		"max_iter": 1,            # nb max of iterations when training 1 configuration of hparams (~200)
+		"max_iter": 100,            # nb max of iterations when training 1 configuration of hparams (~200)
 		"walltime": 11,             # in hours
 		# Validation
 		"min_number_iteration": 10,
@@ -80,13 +80,15 @@ def main():
 	logging.info('#'*60)
 	logging.info('#'*60)
 	logging.info('* L * O * P *')
-	logging.info((u'**** Model : ' + Model.name()).encode('utf8'))
-	logging.info((u'**** Optimization technic : ##########').encode('utf8'))
-	logging.info((u'**** Temporal granularity : ' + parameters['temporal_granularity']).encode('utf8'))
-	logging.info((u'**** Quantization : ' + str(parameters['quantization'])).encode('utf8'))
-	logging.info((u'**** Binary piano : ' + str(parameters["binarize_piano"])).encode('utf8'))
-	logging.info((u'**** Binary orchestra : ' + str(parameters["binarize_orchestra"])).encode('utf8'))
-	logging.info((u'**** Result folder : ' + result_folder).encode('utf8'))
+	logging.info((u'** Model : ' + Model.name()).encode('utf8'))
+	logging.info((u'** Optimization technic : ##########').encode('utf8'))
+	logging.info((u'** Temporal granularity : ' + parameters['temporal_granularity']).encode('utf8'))
+	logging.info((u'** Quantization : ' + str(parameters['quantization'])).encode('utf8'))
+	logging.info((u'** Binary piano : ' + str(parameters["binarize_piano"])).encode('utf8'))
+	logging.info((u'** Binary orchestra : ' + str(parameters["binarize_orchestra"])).encode('utf8'))
+	logging.info((u'** Result folder : ' + result_folder).encode('utf8'))
+	logging.info('#'*60)
+	logging.info('#'*60)
 
 	############################################################
 	# Hyper parameter space
@@ -128,8 +130,10 @@ def main():
 					raise Exception("Config not overwritten")
 			
 			# Prompt model parameters
-			for k, v in model_parameters:
-				logging.info((u'**** ' + k + ' : ' + str(v)).encode('utf8'))
+			logging.info('#### Model parameters')
+			logging.info((u'** Model : ' + Model.name()).encode('utf8'))
+			for k, v in model_parameters.iteritems():
+				logging.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
 
 			# Persistency
 			pkl.dump(model_parameters, open(config_folder + '/model_parameters.pkl', 'wb'))
@@ -173,8 +177,9 @@ def main():
 
 			# Prompt model parameters
 			logging.info('#### Model parameters')
+			logging.info((u'** Model : ' + Model.name()).encode('utf8'))
 			for k, v in model_parameters.iteritems():
-				logging.info((u'**** ' + k + ' : ' + str(v)).encode('utf8'))
+				logging.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
 			
 			# Persistency
 			pkl.dump(model_parameters, open(config_folder + '/model_parameters.pkl', 'wb'))
@@ -204,8 +209,8 @@ def train_wrapper(parameters, model_params, config_folder, data_folder):
 						  model_params['batch_size'],
 						  skip_sample=parameters['skip_sample'],
 						  avoid_silence=parameters['avoid_silence'],
-						  binarize_piano=parameters['binarize_piano'],
-						  binarize_orchestra=parameters['binarize_orchestra'],
+						  binarize_piano=parameters["binarize_piano"],
+						  binarize_orchestra=parameters["binarize_orchestra"],
 						  logger_load=logging)
 	piano_valid, orch_valid, valid_index \
 		= load_data_valid(data_folder,
@@ -213,8 +218,8 @@ def train_wrapper(parameters, model_params, config_folder, data_folder):
 						  model_params['batch_size'],
 						  skip_sample=parameters['skip_sample'],
 						  avoid_silence=True,
-						  binarize_piano=parameters['binarize_piano'],
-						  binarize_orchestra=parameters['binarize_orchestra'],
+						  binarize_piano=parameters["binarize_piano"],
+						  binarize_orchestra=parameters["binarize_orchestra"],
 						  logger_load=logging)
 	piano_test, orch_test, _, _ \
 		= load_data_test(data_folder,
@@ -222,11 +227,10 @@ def train_wrapper(parameters, model_params, config_folder, data_folder):
 						 model_params['batch_size'],
 						 skip_sample=parameters['skip_sample'],
 						 avoid_silence=True,
-						 binarize_piano=parameters['binarize_piano'],
-						 binarize_orchestra=parameters['binarize_orchestra'],
+						 binarize_piano=parameters["binarize_piano"],
+						 binarize_orchestra=parameters["binarize_orchestra"],
 						 logger_load=logging)
 	time_load_1 = time.time()
-	logging.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
 
 	############################################################
 	# Get dimensions of batches
@@ -248,6 +252,7 @@ def train_wrapper(parameters, model_params, config_folder, data_folder):
 	logging.info((u'##### Data').encode('utf8'))
 	logging.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
 	logging.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
+	logging.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
 
 	parameters['n_train_batches'] = n_train_batches
 	parameters['n_val_batches'] = n_val_batches

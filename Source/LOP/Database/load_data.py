@@ -28,8 +28,12 @@ def load_data(data_folder, set_identifier, temporal_order=20, batch_size=100,
     # Binarize inputs ?
     if binarize_piano:
         piano[np.nonzero(piano)] = 1
+    else:
+        piano = piano / 127
     if binarize_orchestra:
         orchestra[np.nonzero(orchestra)] = 1
+    else:
+        orchestra = orchestra / 127
 
     # Get start and end for each track
     tracks_start_end = pickle.load(open(data_folder + '/tracks_start_end_' + set_identifier + '.pkl', 'rb'))

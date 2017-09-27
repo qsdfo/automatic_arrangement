@@ -33,6 +33,12 @@ class LSTM_plugged_base(Model_lop):
 	@staticmethod
 	def name():
 		return "LSTM_plugged_base"
+	@staticmethod
+	def binarize_piano():
+		return True
+	@staticmethod
+	def binarize_orchestra():
+		return True
 
 	@staticmethod
 	def get_hp_space():
@@ -50,6 +56,13 @@ class LSTM_plugged_base(Model_lop):
 		return space
 
 	def predict(self, piano_t, orch_past):
+		#####################
+		# Batch norm
+		# if self.binarize_piano:
+		# 	piano_t = BatchNorm()
+		#####################
+
+
 		#####################
 		# GRU for modelling past orchestra
 		# First layer

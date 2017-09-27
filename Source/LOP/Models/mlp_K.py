@@ -28,7 +28,7 @@ class MLP_K(Model_lop):
 		# Hidden layers architecture
 		self.layers = model_param['layers']
 		# Is it a keras model ?
-		self.keras = False
+		self.keras = True
 
 		return
 

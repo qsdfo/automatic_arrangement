@@ -5,7 +5,7 @@
 # Used to test main scripts and as a baseline
 
 from LOP.Models.model_lop import Model_lop
-from LOP.Models.weight_summary import variable_summaries
+from LOP.Models.Utils.weight_summary import variable_summaries
 
 # Tensorflow
 import tensorflow as tf

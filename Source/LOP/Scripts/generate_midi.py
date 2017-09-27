@@ -137,7 +137,11 @@ def generate_midi(config_folder, score_source, number_of_version, logger_generat
     ############################################################
 
 if __name__ == '__main__':
-    config_folder = '../../../Results/Data__event_level100__0/MLP/0'
-    score_source = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17/liszt_classical_archives/16'
+    import logging
+    config_folder = '/home/mil/leo/lop/Results/Data_DEBUG__event_level100__0/Conv_lstm_0/0'
+    score_sources = ['/home/mil/leo/Database/LOP_database_06_09_17/liszt_classical_archives/16',
+        '/home/mil/leo/Database/LOP_database_06_09_17/liszt_classical_archives/17',
+        '/home/mil/leo/Database/LOP_database_06_09_17/liszt_classical_archives/18']
 
-    generate_midi(config_folder, score_source, 5)
+    for score_source in score_sources:
+        generate_midi(config_folder, score_source, 2, logging)

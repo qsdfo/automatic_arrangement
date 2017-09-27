@@ -3,7 +3,7 @@
 
 import tensorflow as tf
 from keras.layers import Dense
-from LOP.Models.weight_summary import keras_layer_summary
+from LOP.Models.Utils.weight_summary import keras_layer_summary
 
 def MLP(x, layers, scope_name, activation='relu'):
 	for layer_ind, num_unit in enumerate(layers):

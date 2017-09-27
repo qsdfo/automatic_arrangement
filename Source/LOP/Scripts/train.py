@@ -7,6 +7,7 @@ import keras
 from keras import backend as K
 import numpy as np
 import time
+import os
 
 from LOP.Utils.early_stopping import up_criterion
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure
@@ -15,9 +16,13 @@ from LOP.Utils.get_statistics import count_parameters
 
 DEBUG = False
 # Note : debug sans summarize, qui pollue le tableau de variables
-SUMMARIZE = True
+SUMMARIZE = False
 # Shuold almost always be set to True. Just useful for debugs, sometimes
 VALIDATION = False
+# Device to use
+# os.environ["CUDA_VISIBLE_DEVICES"]="1"
+# Logging deive use ?
+LOGGING_DEVICE = False
 
 def train(model,
 		  piano_train, orch_train, train_index,
@@ -48,7 +53,7 @@ def train(model,
 	# Comme ça on pourra faire des classifier chains
 	loss = tf.reduce_mean(keras.losses.binary_crossentropy(labels_ph, preds), name="loss")
 	# train_step = tf.train.AdamOptimizer(0.5).minimize(loss)
-	train_step = tf.train.GradientDescentOptimizer(0.5).minimize(loss)
+	train_step = tf.train.AdamOptimizer().minimize(loss)
 	time_building_graph = time.time() - start_time_building_graph
 	logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))
 	############################################################
@@ -81,7 +86,8 @@ def train(model,
 	best_model = None
 	best_epoch = None
 
-	with tf.Session() as sess:        
+	# with tf.Session(config=tf.ConfigProto(log_device_placement=LOGGING_DEVICE)) as sess:        
+	with tf.Session() as sess:
 
 		if SUMMARIZE: 
 			merged = tf.summary.merge_all()
@@ -120,7 +126,9 @@ def train(model,
 
 				if SUMMARIZE:
 					_, loss_batch, summary = sess.run([train_step, loss, merged], feed_dict)
-					train_writer.add_summary(summary, epoch)
+					if (epoch<5) or (epoch%10==0):
+						train_writer.add_summary(summary, epoch)
+						logger_train.info("Yo")
 				else:
 					_, loss_batch = sess.run([train_step, loss], feed_dict)
 
@@ -195,7 +203,7 @@ def train(model,
 			#######################################
 			# Best model ?
 			# if mean_accuracy >= np.max(val_tab_acc):
-			if mean_val_loss <= np.max(val_tab_loss):	
+			if mean_val_loss <= np.min(val_tab_loss):	
 				save_time_start = time.time()
 				save_path = saver.save(sess, config_folder + "/model/model")
 				best_epoch = epoch

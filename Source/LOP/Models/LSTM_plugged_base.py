@@ -16,6 +16,7 @@ from LOP.Utils import hopt_wrapper
 from math import log
 from hyperopt import hp
 
+from LOP.Models.Utils.weight_summary import keras_layer_summary
 
 class LSTM_plugged_base(Model_lop):
 	def __init__(self, model_param, dimensions):
@@ -72,10 +73,12 @@ class LSTM_plugged_base(Model_lop):
 			return_sequences = False
 		
 		with tf.name_scope("orch_rnn_0"):
-			x = GRU(self.n_hs[0], return_sequences=return_sequences, input_shape=(self.temporal_order, self.orch_dim),
+			gru_layer = GRU(self.n_hs[0], return_sequences=return_sequences, input_shape=(self.temporal_order, self.orch_dim),
 					activation='relu', dropout=self.dropout_probability,
 					kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-					bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))(orch_past)
+					bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))
+			x = gru_layer(orch_past)
+			keras_layer_summary(gru_layer)
 		
 		if len(self.n_hs) > 1:
 			# Intermediates layers
@@ -86,10 +89,12 @@ class LSTM_plugged_base(Model_lop):
 				else:
 					return_sequences = True
 				with tf.name_scope("orch_rnn_" + str(layer_ind)):
-					x = GRU(self.n_hs[layer_ind], return_sequences=return_sequences,
+					gru_layer = GRU(self.n_hs[layer_ind], return_sequences=return_sequences,
 							activation='relu', dropout=self.dropout_probability,
 							kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-							bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))(x)
+							bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))
+					x = gru_layer(x)
+					keras_layer_summary(gru_layer)
 
 		lstm_out = x
 		#####################
@@ -97,17 +102,27 @@ class LSTM_plugged_base(Model_lop):
 		#####################
 		# gru out and piano(t)
 		with tf.name_scope("piano_embedding"):
-			piano_embedding = Dense(self.n_hs[-1], activation='relu')(piano_t)  # fully-connected layer with 128 units and ReLU activation
+			dense_layer = Dense(self.n_hs[-1], activation='relu')  # fully-connected layer with 128 units and ReLU activation
+			piano_embedding = dense_layer(piano_t)
+			keras_layer_summary(dense_layer)
 		#####################
 
 		#####################
 		# Concatenate and predict
-		with tf.name_scope("concatenation"):
+		with tf.name_scope("top_layer_prediction"):
 			top_input = keras.layers.concatenate([lstm_out, piano_embedding], axis=1)
-		# Dense layers on top
-		orch_prediction = Dense(self.orch_dim, activation='sigmoid', name='orch_pred',
-								kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-								bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))(top_input)
+			dense_layer = Dense(self.orch_dim, activation='sigmoid', name='orch_pred',
+									kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
+									bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))
+			orch_prediction = dense_layer(top_input)
+			keras_layer_summary(dense_layer)
 		#####################
 
 		return orch_prediction
+
+
+# 'batch_size' : 200,
+# 'temporal_order' : 5,
+# 'dropout_probability' : 0,
+# 'weight_decay_coeff' : 0,
+# 'n_hidden': [500, 500],

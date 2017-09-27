@@ -53,6 +53,9 @@ class Conv_lstm_0(Model_lop):
 		return space
 
 	def predict(self, piano_t, orch_past):
+		
+		import pdb; pdb.set_trace()
+
 		#####################
 		# Piano embedding
 		with tf.name_scope("conv_piano"):
@@ -98,7 +101,7 @@ class Conv_lstm_0(Model_lop):
 		#####################
 		
 		#####################
-		# Prediction from both embeddings
+		# Prediction
 		input_pred = tf.concat([piano_embedding, orch_embedding], axis=1)
 		top_input = MLP(input_pred, self.mlp_pred, "mlp_pred", activation='relu')
 		# Dense layers on top
@@ -107,3 +110,14 @@ class Conv_lstm_0(Model_lop):
 		#####################
 
 		return orch_prediction
+
+
+# 'batch_size' : 200,
+# 'temporal_order' : 5,
+# 'dropout_probability' : 0,
+# 'weight_decay_coeff' : 0,
+# 'num_filter_piano': 20,
+# 'kernel_size_piano': 12,
+# 'mlp_piano': [500, 500],
+# 'mlp_pred': [500, 500],
+# 'gru_orch': [500, 500],

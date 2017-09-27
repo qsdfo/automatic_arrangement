@@ -14,7 +14,7 @@ import hyperopt
 
 from train import train
 from generate_midi import generate_midi
-from config import import_configs
+import config
 from LOP.Database.load_data import load_data_train, load_data_valid, load_data_test
 
 # MODEL
@@ -24,11 +24,11 @@ from LOP.Models.Conv_reccurent.conv_lstm_0 import Conv_lstm_0 as Model
 def main():
 	# DATABASE
 	DATABASE = "Data_DEBUG__event_level100__0"
-	DATABASE_PATH = "../../../Data/" + DATABASE
+	DATABASE_PATH = config.data_root() + "/" + DATABASE
 	# HYPERPARAM ?
 	DEFINED_CONFIG = True
 	# RESULTS
-	result_folder =  '../../../Results/' + DATABASE + '/' + Model.name()
+	result_folder =  config.result_root() + '/' + DATABASE + '/' + Model.name()
 	if not os.path.isdir(result_folder):
 		os.makedirs(result_folder)
 	# Parameters
@@ -97,13 +97,13 @@ def main():
 	# 1/ Random search
 	model_parameters_space = Model.get_hp_space()
 	# 2/ Defined configurations
-	configs = import_configs()
+	configs = config.import_configs()
 
 	track_paths_generation = [
-			'/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17/liszt_classical_archives/16',
-			'/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17/liszt_classical_archives/17',
-			# '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/liszt_classical_archives/26',
-			# '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/liszt_classical_archives/5',
+		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/16',
+		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/17',
+		# config.database_root() + '/LOP_database_30_06_17/liszt_classical_archives/26',
+		# config.database_root() + '/LOP_database_30_06_17/liszt_classical_archives/5',
 	]
 
 	############################################################
@@ -128,7 +128,7 @@ def main():
 					os.mkdir(config_folder)	
 				else:
 					raise Exception("Config not overwritten")
-			
+
 			# Prompt model parameters
 			logging.info('#### Model parameters')
 			logging.info((u'** Model : ' + Model.name()).encode('utf8'))

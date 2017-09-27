@@ -285,8 +285,9 @@ if __name__ == '__main__':
     max_translation = 0
     pitch_translations = range(-max_translation, max_translation+1)
 
-    DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17'
+    # DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17'
     # DATABASE_PATH = '/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_06_09_17'
+    DATABASE_PATH = '/home/mil/leo/Database/LOP_database_06_09_17'
     INDEX_PATH = DATABASE_PATH + '/tvt_split'
     data_folder = '../../../Data/Data_DEBUG'
     data_folder += '__' + temporal_granularity + str(quantization) + '__' + str(max_translation)

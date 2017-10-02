@@ -279,9 +279,7 @@ if __name__ == '__main__':
 
     # Set up
     temporal_granularity = 'event_level'
-    quantization = 100
-    if temporal_granularity == 'event_level':
-        quantization = 100
+    quantization = 8
     max_translation = 0
     pitch_translations = range(-max_translation, max_translation+1)
 

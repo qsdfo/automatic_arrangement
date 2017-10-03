@@ -3,6 +3,7 @@
 
 import cPickle as pkl
 import re
+import math
 import random
 import logging
 import glob
@@ -19,11 +20,11 @@ from LOP.Database.load_data import load_data_train, load_data_valid, load_data_t
 
 # MODEL
 # from LOP.Models.mlp_K import MLP_K as Model
-from LOP.Models.Conv_reccurent.conv_lstm_0 import Conv_lstm_0 as Model
+from LOP.Models.LSTM_plugged_base import LSTM_plugged_base as Model
 
 def main():
 	# DATABASE
-	DATABASE = "Data_DEBUG__event_level100__0"
+	DATABASE = "Data__event_level8__0"
 	DATABASE_PATH = config.data_root() + "/" + DATABASE
 	# HYPERPARAM ?
 	DEFINED_CONFIG = True
@@ -97,13 +98,24 @@ def main():
 	# 1/ Random search
 	model_parameters_space = Model.get_hp_space()
 	# 2/ Defined configurations
-	configs = config.import_configs()
-
+	configs__ = config.import_configs()
+	configs = {}
+	for k in range(6,10):
+		# Run 10 times each config, to have a statistically relevent plot
+		for j in range(10):
+			temp = {}
+			temp = dict(configs__["0"])
+			temp['percentage_training_set'] = (k+1)*10
+			config_ID = (k+1) * 10 + j
+			configs[str(config_ID)] = temp
+	
 	track_paths_generation = [
 		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/16',
 		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/17',
-		# config.database_root() + '/LOP_database_30_06_17/liszt_classical_archives/26',
-		# config.database_root() + '/LOP_database_30_06_17/liszt_classical_archives/5',
+		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/1',
+		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/10',
+		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/11',
+		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/12'
 	]
 
 	############################################################
@@ -122,28 +134,14 @@ def main():
 			if not os.path.isdir(config_folder):
 				os.mkdir(config_folder)
 			else:
-				user_input = raw_input("This folder already exists. Type y to overwrite : ")
-				if user_input == 'y':
-					shutil.rmtree(config_folder)
-					os.mkdir(config_folder)	
-				else:
-					raise Exception("Config not overwritten")
-
-			# Prompt model parameters
-			logging.info('#### Model parameters')
-			logging.info((u'** Model : ' + Model.name()).encode('utf8'))
-			for k, v in model_parameters.iteritems():
-				logging.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
-
-			# Persistency
-			pkl.dump(model_parameters, open(config_folder + '/model_parameters.pkl', 'wb'))
-			pkl.dump(parameters, open(config_folder + '/script_parameters.pkl', 'wb'))
-				
-			# Training
-			train_wrapper(parameters, model_parameters, config_folder, DATABASE_PATH)
-			
-			# Generating
-			generate_wrapper(config_folder, track_paths_generation)
+				continue
+				# user_input = raw_input(config_folder + " folder already exists. Type y to overwrite : ")
+				# if user_input == 'y':
+				# 	shutil.rmtree(config_folder)
+				# 	os.mkdir(config_folder)	
+				# else:
+				# 	raise Exception("Config not overwritten")
+			config_loop(config_folder, model_parameters, parameters, DATABASE_PATH, track_paths_generation)
 	else:
 		# Already tested configs
 		list_config_folders = glob.glob(result_folder + '/*')
@@ -175,30 +173,42 @@ def main():
 			# Sample model parameters from hyperparam space
 			model_parameters = hyperopt.pyll.stochastic.sample(model_parameters_space)
 
-			# Prompt model parameters
-			logging.info('#### Model parameters')
-			logging.info((u'** Model : ' + Model.name()).encode('utf8'))
-			for k, v in model_parameters.iteritems():
-				logging.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
-			
-			# Persistency
-			pkl.dump(model_parameters, open(config_folder + '/model_parameters.pkl', 'wb'))
-			pkl.dump(parameters, open(config_folder + '/script_parameters.pkl', 'wb'))
-
-			# Training
-			train_wrapper(parameters, model_parameters, config_folder, DATABASE_PATH)
-			
-			# Generating (NOT FOR HYPERPARAM ?)
-			generate_wrapper(config_folder, track_paths_generation)
+			config_loop(config_folder, model_parameters, parameters, DATABASE_PATH, track_paths_generation)
 
 			# Update folder list
 			list_config_folders.append(config_folder)
 
-			logging.info('#' * 60)
-			logging.info('#' * 60)
+
+def config_loop(config_folder, model_parameters, parameters, database_path, track_paths_generation):
+	# New logger
+	log_file_path = config_folder + '/' + 'log.txt'
+	with open(log_file_path, 'wb') as f:
+		f.close()
+	formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+	logger_config = logging.getLogger(config_folder)
+	hdlr = logging.FileHandler(log_file_path)
+	hdlr.setFormatter(formatter)
+	logger_config.addHandler(hdlr)
+	# Prompt model parameters
+	logger_config.info('#'*60)
+	logger_config.info('#### ' + config_folder)
+	logger_config.info('#### Model parameters')
+	logger_config.info((u'** Model : ' + Model.name()).encode('utf8'))
+	for k, v in model_parameters.iteritems():
+		logger_config.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
+	# Persistency
+	pkl.dump(model_parameters, open(config_folder + '/model_parameters.pkl', 'wb'))
+	pkl.dump(parameters, open(config_folder + '/script_parameters.pkl', 'wb'))
+	# Training
+	train_wrapper(parameters, model_parameters, config_folder, database_path, logger_config)
+	# Generating
+	generate_wrapper(config_folder, track_paths_generation, logger_config)
+	logger_config.info("#"*60)
+	logger_config.info("#"*60)
+	return
 
 
-def train_wrapper(parameters, model_params, config_folder, data_folder):
+def train_wrapper(parameters, model_params, config_folder, data_folder, logger):
 	############################################################
 	# Load data
 	############################################################
@@ -211,7 +221,7 @@ def train_wrapper(parameters, model_params, config_folder, data_folder):
 						  avoid_silence=parameters['avoid_silence'],
 						  binarize_piano=parameters["binarize_piano"],
 						  binarize_orchestra=parameters["binarize_orchestra"],
-						  logger_load=logging)
+						  logger_load=logger)
 	piano_valid, orch_valid, valid_index \
 		= load_data_valid(data_folder,
 						  model_params['temporal_order'],
@@ -220,7 +230,7 @@ def train_wrapper(parameters, model_params, config_folder, data_folder):
 						  avoid_silence=True,
 						  binarize_piano=parameters["binarize_piano"],
 						  binarize_orchestra=parameters["binarize_orchestra"],
-						  logger_load=logging)
+						  logger_load=logger)
 	piano_test, orch_test, _, _ \
 		= load_data_test(data_folder,
 						 model_params['temporal_order'],
@@ -229,8 +239,21 @@ def train_wrapper(parameters, model_params, config_folder, data_folder):
 						 avoid_silence=True,
 						 binarize_piano=parameters["binarize_piano"],
 						 binarize_orchestra=parameters["binarize_orchestra"],
-						 logger_load=logging)
+						 logger_load=logger)
 	time_load_1 = time.time()
+
+	################################################################################
+	################################################################################
+	################################################################################
+	################################################################################
+	# TEST
+	percentage_training_set = model_params['percentage_training_set']
+	last_index = int(math.floor((percentage_training_set / float(100)) * len(train_index)))
+	train_index = train_index[:last_index]
+	################################################################################
+	################################################################################
+	################################################################################
+	################################################################################################################################################################
 
 	############################################################
 	# Get dimensions of batches
@@ -249,10 +272,10 @@ def train_wrapper(parameters, model_params, config_folder, data_folder):
 	n_train_batches = len(train_index)
 	n_val_batches = len(valid_index)
 
-	logging.info((u'##### Data').encode('utf8'))
-	logging.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
-	logging.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
-	logging.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
+	logger.info((u'##### Data').encode('utf8'))
+	logger.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
+	logger.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
+	logger.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
 
 	parameters['n_train_batches'] = n_train_batches
 	parameters['n_val_batches'] = n_val_batches
@@ -279,30 +302,31 @@ def train_wrapper(parameters, model_params, config_folder, data_folder):
 	# Train
 	############################################################
 	time_train_0 = time.time()
-	loss, accuracy, best_epoch = train(model,
+	loss_val, accuracy_val, best_epoch = train(model,
 									piano_train, orch_train, train_index,
 									piano_valid, orch_valid, valid_index,
-									parameters, config_folder, time_train_0, logging)
+									parameters, config_folder, time_train_0, logger)
 
 	time_train_1 = time.time()
 	training_time = time_train_1-time_train_0
-	logging.info('TTT : Training data took {} seconds'.format(training_time))
-	logging.info((u'# Best model obtained at epoch :  {}'.format(best_epoch)).encode('utf8'))
-	logging.info((u'# Accuracy :  {}'.format(accuracy)).encode('utf8'))
-	logging.info((u'###################\n').encode('utf8'))
+	logger.info('TTT : Training data took {} seconds'.format(training_time))
+	logger.info((u'# Best model obtained at epoch :  {}'.format(best_epoch)).encode('utf8'))
+	logger.info((u'# Loss :  {}'.format(loss_val)).encode('utf8'))
+	logger.info((u'# Accuracy :  {}'.format(accuracy_val)).encode('utf8'))
+	logger.info((u'###################\n').encode('utf8'))
 
 	############################################################
 	# Write result in a txt file
 	############################################################
 	result_file_path = config_folder + '/result.csv'
 	with open(result_file_path, 'wb') as f:
-		f.write("accuracy;" + str(accuracy) + '\n' + "loss;" + str(loss))
+		f.write("accuracy;loss\n" + str(accuracy_val) + ";" + str(loss_val))
 
 	return
 
-def generate_wrapper(config_folder, track_paths_generation):
+def generate_wrapper(config_folder, track_paths_generation, logger):
 	for score_source in track_paths_generation:
-			generate_midi(config_folder, score_source, 5, logging)
+			generate_midi(config_folder, score_source, 5, logger)
 	
 
 if __name__ == '__main__':

@@ -53,8 +53,6 @@ class Conv_lstm_0(Model_lop):
 		return space
 
 	def predict(self, piano_t, orch_past):
-		
-		import pdb; pdb.set_trace()
 
 		#####################
 		# Piano embedding

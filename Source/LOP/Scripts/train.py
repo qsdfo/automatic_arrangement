@@ -16,9 +16,7 @@ from LOP.Utils.get_statistics import count_parameters
 
 DEBUG = False
 # Note : debug sans summarize, qui pollue le tableau de variables
-SUMMARIZE = False
-# Shuold almost always be set to True. Just useful for debugs, sometimes
-VALIDATION = False
+SUMMARIZE = True
 # Device to use
 # os.environ["CUDA_VISIBLE_DEVICES"]="1"
 # Logging deive use ?
@@ -34,9 +32,11 @@ def train(model,
 
 	# Reset graph before starting training
 	tf.reset_default_graph()
+		
 
-	if not VALIDATION:
-		piano_valid, orch_valid, valid_index = piano_train, orch_train, train_index
+	###### PETIT TEST VALIDATION
+	# Use same validation en train set
+	# piano_valid, orch_valid, valid_index = piano_train, orch_train, train_index
 
 	############################################################
 	# Compute train step
@@ -83,6 +83,7 @@ def train(model,
 	val_tab_rec = np.zeros(max(1, parameters['max_iter']))
 	val_tab_loss = np.zeros(max(1, parameters['max_iter']))
 	loss_tab = np.zeros(max(1, parameters['max_iter']))
+	best_val_loss = float("inf")
 	best_model = None
 	best_epoch = None
 
@@ -126,14 +127,14 @@ def train(model,
 
 				if SUMMARIZE:
 					_, loss_batch, summary = sess.run([train_step, loss, merged], feed_dict)
-					if (epoch<5) or (epoch%10==0):
-						train_writer.add_summary(summary, epoch)
-						logger_train.info("Yo")
 				else:
 					_, loss_batch = sess.run([train_step, loss], feed_dict)
 
 				# Keep track of cost
 				train_cost_epoch.append(loss_batch)
+
+			if (epoch<5) or (epoch%10==0):
+				train_writer.add_summary(summary, epoch)
  
 			mean_loss = np.mean(train_cost_epoch)
 			loss_tab[epoch] = mean_loss
@@ -179,7 +180,7 @@ def train(model,
 			#######################################
 			# Overfitting ?
 			if epoch >= parameters['min_number_iteration']:
-				OVERFITTING = up_criterion(-val_tab_acc, epoch, parameters["number_strips"], parameters["validation_order"])
+				OVERFITTING = up_criterion(val_tab_loss, epoch, parameters["number_strips"], parameters["validation_order"])
 			#######################################
 
 			#######################################
@@ -203,12 +204,13 @@ def train(model,
 			#######################################
 			# Best model ?
 			# if mean_accuracy >= np.max(val_tab_acc):
-			if mean_val_loss <= np.min(val_tab_loss):	
+			if mean_val_loss <= best_val_loss:
 				save_time_start = time.time()
 				save_path = saver.save(sess, config_folder + "/model/model")
 				best_epoch = epoch
 				save_time = time.time() - save_time_start
 				logger_train.info(('Save time : {}'.format(save_time)).encode('utf8'))
+				best_val_loss = mean_val_loss
 			#######################################
 
 			if OVERFITTING:
@@ -225,7 +227,5 @@ def train(model,
 		# Return best accuracy
 		best_accuracy = val_tab_acc[best_epoch]
 		best_validation_loss = val_tab_loss[best_epoch]
-
-		
 
 	return best_validation_loss, best_accuracy, best_epoch

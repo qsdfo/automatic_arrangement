@@ -15,7 +15,7 @@ import LOP.Database.build_data_aux as build_data_aux
 
 from LOP_database.midi.read_midi import Read_midi
 from LOP_database.midi.write_midi import write_midi
-from LOP_database.utils.pianoroll_processing import get_pianoroll_time
+from LOP_database.utils.pianoroll_processing import get_pianoroll_time, extract_pianoroll_part
 from LOP_database.utils.event_level import get_event_ind_dict, from_event_to_frame
 from LOP_database.utils.time_warping import warp_pr_aux
 from LOP_database.utils.reconstruct_pr import instrument_reconstruction, instrument_reconstruction_piano
@@ -64,6 +64,12 @@ def generate_midi(config_folder, score_source, number_of_version, logger_generat
         pr_piano, event_piano, name_piano, pr_orch, instru_orch, duration = load_solo(score_source, quantization, temporal_granularity)
     else:
         pr_piano, event_piano, name_piano, pr_orch, instru_orch, duration = load_from_pair(score_source, quantization, temporal_granularity)
+
+    # Keep only the beginning of the pieces (let's say a 100 events)
+    duration = 100
+    pr_piano = extract_pianoroll_part(pr_piano, 0, 100)
+    event_piano = event_piano[:100]
+    pr_orch = extract_pianoroll_part(pr_orch, 0, 100)
 
     # Instanciate piano pianoroll
     N_piano = instru_mapping['Piano']['index_max']

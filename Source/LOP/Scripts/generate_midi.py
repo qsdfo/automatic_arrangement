@@ -55,7 +55,8 @@ def generate_midi(config_folder, score_source, number_of_version, logger_generat
     ############################################################
     parameters = pkl.load(open(config_folder + '/script_parameters.pkl', 'rb'))
     model_parameters = pkl.load(open(config_folder + '/model_parameters.pkl', 'rb'))
-    seed_size = model_parameters['temporal_order'] - 1
+    # Set a minimum seed size, because for very short models you don't event see the beginning
+    seed_size = max(model_parameters['temporal_order'], 10) - 1
     quantization = parameters['quantization']
     temporal_granularity = parameters['temporal_granularity']
     instru_mapping = parameters['instru_mapping']
@@ -144,10 +145,11 @@ def generate_midi(config_folder, score_source, number_of_version, logger_generat
 
 if __name__ == '__main__':
     import logging
-    config_folder = '/home/mil/leo/lop/Results/Data_DEBUG__event_level100__0/Conv_lstm_0/0'
-    score_sources = ['/home/mil/leo/Database/LOP_database_06_09_17/liszt_classical_archives/16',
-        '/home/mil/leo/Database/LOP_database_06_09_17/liszt_classical_archives/17',
-        '/home/mil/leo/Database/LOP_database_06_09_17/liszt_classical_archives/18']
+    config_folder = '/Users/leo/TEMP/LSTM_plugged_base/100'
+    score_sources = ['/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17/liszt_classical_archives/16',
+        # '/home/mil/leo/Database/LOP_database_06_09_17/liszt_classical_archives/17',
+        # '/home/mil/leo/Database/LOP_database_06_09_17/liszt_classical_archives/18'
+        ]
 
     for score_source in score_sources:
         generate_midi(config_folder, score_source, 2, logging)

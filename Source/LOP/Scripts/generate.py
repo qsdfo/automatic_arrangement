@@ -64,6 +64,10 @@ def generate(piano, path_to_config, orch_init=None, batch_size=5):
 			# Get prediction
 			prediction = sess.run(preds, feed_dict)
 
-			orch_gen[:, t, :] = prediction
+			# Preds should be a probability distribution. Sample from it
+			# Note that it doesn't need to be part of the graph since we don't use the sampled value to compute the backproped error 
+			prediction_sampled = np.random.binomial(1, prediction)
+
+			orch_gen[:, t, :] = prediction_sampled
 
 	return orch_gen

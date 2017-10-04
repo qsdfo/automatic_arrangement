@@ -20,14 +20,14 @@ from LOP.Database.load_data import load_data_train, load_data_valid, load_data_t
 
 # MODEL
 # from LOP.Models.mlp_K import MLP_K as Model
-from LOP.Models.LSTM_plugged_base import LSTM_plugged_base as Model
+from LOP.Models.Conv_recurrent.conv_lstm_0 import Conv_lstm_0 as Model
 
 def main():
 	# DATABASE
 	DATABASE = "Data__event_level8__0"
 	DATABASE_PATH = config.data_root() + "/" + DATABASE
 	# HYPERPARAM ?
-	DEFINED_CONFIG = True
+	DEFINED_CONFIG = False
 	# RESULTS
 	result_folder =  config.result_root() + '/' + DATABASE + '/' + Model.name()
 	if not os.path.isdir(result_folder):
@@ -48,7 +48,7 @@ def main():
 		"validation_order": 2,
 		"number_strips": 3,
 		# Hyperopt
-		"max_hyperparam_configs": 10,            # number of hyper-parameter configurations evaluated
+		"max_hyperparam_configs": 50,            # number of hyper-parameter configurations evaluated
 	}
 
 	# Load the database metadata and add them to the script parameters to keep a record of the data processing pipeline
@@ -99,23 +99,37 @@ def main():
 	model_parameters_space = Model.get_hp_space()
 	# 2/ Defined configurations
 	configs__ = config.import_configs()
-	configs = {}
-	for k in range(6,10):
-		# Run 10 times each config, to have a statistically relevent plot
-		for j in range(10):
-			temp = {}
-			temp = dict(configs__["0"])
-			temp['percentage_training_set'] = (k+1)*10
-			config_ID = (k+1) * 10 + j
-			configs[str(config_ID)] = temp
 	
+	# configs = {}
+	# for k in range(6,10):
+	# 	# Run 10 times each config, to have a statistically relevent plot
+	# 	for j in range(10):
+	# 		temp = {}
+	# 		temp = dict(configs__["0"])
+	# 		temp['percentage_training_set'] = (k+1)*10
+	# 		config_ID = (k+1) * 10 + j
+	# 		configs[str(config_ID)] = temp
+	
+	# On from each database and each set
 	track_paths_generation = [
-		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/16',
+		# Bouliane train
+		config.database_root() + '/LOP_database_06_09_17/bouliane/0',
+		# Bouliane test
+		config.database_root() + '/LOP_database_06_09_17/bouliane/17',
+		# Bouliane valid
+		config.database_root() + '/LOP_database_06_09_17/bouliane/16',
+		# Spotify train
+		config.database_root() + '/LOP_database_06_09_17/hand_picked_Spotify/0',
+		# Spotify test
+		config.database_root() + '/LOP_database_06_09_17/hand_picked_Spotify/21',
+		# Spotify valid
+		config.database_root() + '/LOP_database_06_09_17/hand_picked_Spotify/20',
+		# Liszt train
+		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/0',
+		# Liszt test
 		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/17',
-		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/1',
-		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/10',
-		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/11',
-		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/12'
+		# Liszt valid
+		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/16'
 	]
 
 	############################################################
@@ -326,7 +340,7 @@ def train_wrapper(parameters, model_params, config_folder, data_folder, logger):
 
 def generate_wrapper(config_folder, track_paths_generation, logger):
 	for score_source in track_paths_generation:
-			generate_midi(config_folder, score_source, 5, logger)
+			generate_midi(config_folder, score_source, 3, logger)
 	
 
 if __name__ == '__main__':

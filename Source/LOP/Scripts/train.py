@@ -16,7 +16,7 @@ from LOP.Utils.get_statistics import count_parameters
 
 DEBUG = False
 # Note : debug sans summarize, qui pollue le tableau de variables
-SUMMARIZE = True
+SUMMARIZE = False
 # Device to use
 # os.environ["CUDA_VISIBLE_DEVICES"]="1"
 # Logging deive use ?

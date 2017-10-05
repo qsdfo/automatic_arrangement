@@ -46,7 +46,6 @@ class LSTM_plugged_base(Model_lop):
 		super_space = Model_lop.get_hp_space()
 
 		space = {'n_hidden': hp.choice('n_hidden', [
-				[],
 				[hopt_wrapper.qloguniform_int('n_hidden_1_'+str(i), log(100), log(5000), 10) for i in range(1)],
 				[hopt_wrapper.qloguniform_int('n_hidden_2_'+str(i), log(100), log(5000), 10) for i in range(2)],
 				[hopt_wrapper.qloguniform_int('n_hidden_3_'+str(i), log(100), log(5000), 10) for i in range(3)],

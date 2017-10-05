@@ -280,7 +280,7 @@ if __name__ == '__main__':
     # Set up
     temporal_granularity = 'event_level'
     quantization = 8
-    max_translation = 0
+    max_translation = 11
     pitch_translations = range(-max_translation, max_translation+1)
 
     # DATABASE_PATH = '/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17'

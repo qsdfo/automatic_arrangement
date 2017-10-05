@@ -43,10 +43,15 @@ def generate(piano, path_to_config, orch_init=None, batch_size=5):
 	orch_gen[:, :init_length, :] = orch_init
 
 	# Restore model and preds graph
+	tf.reset_default_graph() # First clear graph to avoid memory overflow when running training and generation in the same process
 	saver = tf.train.import_meta_graph(path_to_model + '/model.meta')
 	preds = tf.get_collection("preds")[0]
 
 	with tf.Session() as sess:
+		
+		if model.keras == True:
+			K.set_session(sess)
+
 		saver.restore(sess, path_to_model + '/model')
 
 		# for t in range(init_length, total_length): 	A REMPLACER PAR TOTAL_LENGTH - TEMPORAL ORDER QUAND ON FERA AUSSI BACKAARD

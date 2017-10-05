@@ -20,7 +20,7 @@ from LOP.Database.load_data import load_data_train, load_data_valid, load_data_t
 
 # MODEL
 # from LOP.Models.mlp_K import MLP_K as Model
-from LOP.Models.Conv_recurrent.conv_lstm_0 import Conv_lstm_0 as Model
+from LOP.Models.LSTM_plugged_base import LSTM_plugged_base as Model
 
 def main():
 	# DATABASE
@@ -261,9 +261,9 @@ def train_wrapper(parameters, model_params, config_folder, data_folder, logger):
 	################################################################################
 	################################################################################
 	# TEST
-	percentage_training_set = model_params['percentage_training_set']
-	last_index = int(math.floor((percentage_training_set / float(100)) * len(train_index)))
-	train_index = train_index[:last_index]
+	# percentage_training_set = model_params['percentage_training_set']
+	# last_index = int(math.floor((percentage_training_set / float(100)) * len(train_index)))
+	# train_index = train_index[:last_index]
 	################################################################################
 	################################################################################
 	################################################################################

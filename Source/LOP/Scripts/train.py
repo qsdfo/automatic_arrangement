@@ -33,7 +33,6 @@ def train(model,
 	# Reset graph before starting training
 	tf.reset_default_graph()
 		
-
 	###### PETIT TEST VALIDATION
 	# Use same validation en train set
 	# piano_valid, orch_valid, valid_index = piano_train, orch_train, train_index
@@ -133,8 +132,9 @@ def train(model,
 				# Keep track of cost
 				train_cost_epoch.append(loss_batch)
 
-			if (epoch<5) or (epoch%10==0):
-				train_writer.add_summary(summary, epoch)
+			if SUMMARIZE:
+				if (epoch<5) or (epoch%10==0):
+					train_writer.add_summary(summary, epoch)
  
 			mean_loss = np.mean(train_cost_epoch)
 			loss_tab[epoch] = mean_loss

@@ -11,10 +11,11 @@ def up_criterion(val_tab, epoch, number_strips=3, validation_order=2):
     UP = True
     OVERFITTING = True
     s = 0
+    epsilon = 0.001
     while(UP and s < number_strips):
         t = epoch - s
         tmk = epoch - s - validation_order
-        UP = val_tab[t] > val_tab[tmk] * 1.001
+        UP = val_tab[t] > val_tab[tmk] * (1 - epsilon)  # Avoid extremely small evolutions
         s = s + 1
         if not UP:
             OVERFITTING = False

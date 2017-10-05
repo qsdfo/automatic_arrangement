@@ -24,10 +24,10 @@ from LOP.Models.LSTM_plugged_base import LSTM_plugged_base as Model
 
 def main():
 	# DATABASE
-	DATABASE = "Data__event_level8__0"
+	DATABASE = "Data_DEBUG__event_level8__0"
 	DATABASE_PATH = config.data_root() + "/" + DATABASE
 	# HYPERPARAM ?
-	DEFINED_CONFIG = False
+	DEFINED_CONFIG = True
 	# RESULTS
 	result_folder =  config.result_root() + '/' + DATABASE + '/' + Model.name()
 	if not os.path.isdir(result_folder):
@@ -41,7 +41,7 @@ def main():
 		"skip_sample": 1,
 		"avoid_silence": True,
 		# Train
-		"max_iter": 100,            # nb max of iterations when training 1 configuration of hparams (~200)
+		"max_iter": 1,            # nb max of iterations when training 1 configuration of hparams (~200)
 		"walltime": 11,             # in hours
 		# Validation
 		"min_number_iteration": 10,
@@ -98,7 +98,7 @@ def main():
 	# 1/ Random search
 	model_parameters_space = Model.get_hp_space()
 	# 2/ Defined configurations
-	configs__ = config.import_configs()
+	configs = config.import_configs()
 	
 	# configs = {}
 	# for k in range(6,10):
@@ -148,13 +148,13 @@ def main():
 			if not os.path.isdir(config_folder):
 				os.mkdir(config_folder)
 			else:
-				continue
-				# user_input = raw_input(config_folder + " folder already exists. Type y to overwrite : ")
-				# if user_input == 'y':
-				# 	shutil.rmtree(config_folder)
-				# 	os.mkdir(config_folder)	
-				# else:
-				# 	raise Exception("Config not overwritten")
+				# continue
+				user_input = raw_input(config_folder + " folder already exists. Type y to overwrite : ")
+				if user_input == 'y':
+					shutil.rmtree(config_folder)
+					os.mkdir(config_folder)	
+				else:
+					raise Exception("Config not overwritten")
 			config_loop(config_folder, model_parameters, parameters, DATABASE_PATH, track_paths_generation)
 	else:
 		# Already tested configs
@@ -212,6 +212,7 @@ def config_loop(config_folder, model_parameters, parameters, database_path, trac
 		logger_config.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
 	# Persistency
 	pkl.dump(model_parameters, open(config_folder + '/model_parameters.pkl', 'wb'))
+	pkl.dump(Model.is_keras(), open(config_folder + '/is_keras.pkl', 'wb'))
 	pkl.dump(parameters, open(config_folder + '/script_parameters.pkl', 'wb'))
 	# Training
 	train_wrapper(parameters, model_parameters, config_folder, database_path, logger_config)

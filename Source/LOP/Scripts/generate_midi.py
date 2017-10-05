@@ -145,7 +145,7 @@ def generate_midi(config_folder, score_source, number_of_version, logger_generat
 
 if __name__ == '__main__':
     import logging
-    config_folder = '/Users/leo/TEMP/LSTM_plugged_base/100'
+    config_folder = '/Users/leo/Recherche/GitHub_Aciditeam/lop/Results/Data_DEBUG__event_level8__0/LSTM_plugged_base/0/'
     score_sources = ['/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17/liszt_classical_archives/16',
         # '/home/mil/leo/Database/LOP_database_06_09_17/liszt_classical_archives/17',
         # '/home/mil/leo/Database/LOP_database_06_09_17/liszt_classical_archives/18'

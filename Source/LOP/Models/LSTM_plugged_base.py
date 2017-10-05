@@ -26,9 +26,6 @@ class LSTM_plugged_base(Model_lop):
 		# Hidden layers architecture
 		self.n_hs = model_param['n_hidden']
 
-		# Is it a keras model ?
-		self.keras = True
-
 		return
 
 	@staticmethod
@@ -39,6 +36,9 @@ class LSTM_plugged_base(Model_lop):
 		return True
 	@staticmethod
 	def binarize_orchestra():
+		return True
+	@staticmethod
+	def is_keras():
 		return True
 
 	@staticmethod

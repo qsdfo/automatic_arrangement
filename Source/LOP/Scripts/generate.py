@@ -23,6 +23,7 @@ def generate(piano, path_to_config, orch_init=None, batch_size=5):
 	# Paths
 	path_to_model = path_to_config + '/model'
 	dimensions = pkl.load(open(path_to_config + '/dimensions.pkl', 'rb'))
+	is_keras = pkl.load(open(path_to_config + '/is_keras.pkl', 'rb'))
 
 	# Get dimensions
 	piano_dim = dimensions['piano_dim']
@@ -48,8 +49,8 @@ def generate(piano, path_to_config, orch_init=None, batch_size=5):
 	preds = tf.get_collection("preds")[0]
 
 	with tf.Session() as sess:
-		
-		if model.keras == True:
+			
+		if is_keras:
 			K.set_session(sess)
 
 		saver.restore(sess, path_to_model + '/model')

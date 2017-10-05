@@ -93,7 +93,7 @@ def train(model,
 			merged = tf.summary.merge_all()
 			train_writer = tf.summary.FileWriter(config_folder + '/summary', sess.graph)
 
-		if model.keras == True:
+		if model.is_keras():
 			K.set_session(sess)
 
 		# Initialize weights

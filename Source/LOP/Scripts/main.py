@@ -27,7 +27,7 @@ def main():
 	DATABASE = "Data_DEBUG__event_level8__0"
 	DATABASE_PATH = config.data_root() + "/" + DATABASE
 	# HYPERPARAM ?
-	DEFINED_CONFIG = True
+	DEFINED_CONFIG = False
 	# RESULTS
 	result_folder =  config.result_root() + '/' + DATABASE + '/' + Model.name()
 	if not os.path.isdir(result_folder):
@@ -41,7 +41,7 @@ def main():
 		"skip_sample": 1,
 		"avoid_silence": True,
 		# Train
-		"max_iter": 1,            # nb max of iterations when training 1 configuration of hparams (~200)
+		"max_iter": 100,            # nb max of iterations when training 1 configuration of hparams (~200)
 		"walltime": 11,             # in hours
 		# Validation
 		"min_number_iteration": 10,

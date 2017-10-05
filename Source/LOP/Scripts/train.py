@@ -53,6 +53,7 @@ def train(model,
 	loss = tf.reduce_mean(keras.losses.binary_crossentropy(labels_ph, preds), name="loss")
 	# train_step = tf.train.AdamOptimizer(0.5).minimize(loss)
 	train_step = tf.train.AdamOptimizer().minimize(loss)
+	keras_learning_phase = K.learning_phase()
 	time_building_graph = time.time() - start_time_building_graph
 	logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))
 	############################################################
@@ -62,6 +63,7 @@ def train(model,
 	# tf.add_to_collection('inputs', piano_t_ph)
 	# tf.add_to_collection('inputs', orch_past_ph)
 	tf.add_to_collection('preds', preds)
+	tf.add_to_collection('keras_learning_phase', keras_learning_phase)
 	saver = tf.train.Saver()
 	############################################################
 
@@ -122,7 +124,7 @@ def train(model,
 				feed_dict = {piano_t_ph: piano_t,
 							orch_past_ph: orch_past,
 							labels_ph: orch_t,
-							K.learning_phase(): 1}
+							keras_learning_phase: 1}
 
 				if SUMMARIZE:
 					_, loss_batch, summary = sess.run([train_step, loss, merged], feed_dict)
@@ -154,7 +156,7 @@ def train(model,
 				feed_dict = {piano_t_ph: piano_t,
 							orch_past_ph: orch_past,
 							labels_ph: orch_t,
-							K.learning_phase(): 0}
+							keras_learning_phase: 0}
 
 				preds_batch, loss_batch = sess.run([preds, loss], feed_dict)
 				val_loss += [loss_batch]

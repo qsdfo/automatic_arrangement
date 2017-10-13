@@ -19,12 +19,13 @@ import config
 from LOP.Database.load_data import load_data_train, load_data_valid, load_data_test
 
 # MODEL
-# from LOP.Models.mlp_K import MLP_K as Model
-from LOP.Models.LSTM_plugged_base import LSTM_plugged_base as Model
+from LOP.Models.Real_time.Baseline.mlp_K import MLP_K as Model
+
+GENERATE = False
 
 def main():
 	# DATABASE
-	DATABASE = "Data_DEBUG__event_level8__0"
+	DATABASE = "Data__event_level8__0"
 	DATABASE_PATH = config.data_root() + "/" + DATABASE
 	# HYPERPARAM ?
 	DEFINED_CONFIG = False
@@ -48,7 +49,7 @@ def main():
 		"validation_order": 2,
 		"number_strips": 3,
 		# Hyperopt
-		"max_hyperparam_configs": 50,            # number of hyper-parameter configurations evaluated
+		"max_hyperparam_configs": 20,            # number of hyper-parameter configurations evaluated
 	}
 
 	# Load the database metadata and add them to the script parameters to keep a record of the data processing pipeline
@@ -217,7 +218,8 @@ def config_loop(config_folder, model_parameters, parameters, database_path, trac
 	# Training
 	train_wrapper(parameters, model_parameters, config_folder, database_path, logger_config)
 	# Generating
-	generate_wrapper(config_folder, track_paths_generation, logger_config)
+	if GENERATE:
+		generate_wrapper(config_folder, track_paths_generation, logger_config)
 	logger_config.info("#"*60)
 	logger_config.info("#"*60)
 	return

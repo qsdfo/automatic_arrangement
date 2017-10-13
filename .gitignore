@@ -26,6 +26,7 @@ Articles/Figures/DRAFT_SOURCE
 **/*.csv
 **/*.html
 **/DEBUG/**
+Source/LOP/Scripts/config.py
 
 # Text and log files
 **/log

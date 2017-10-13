@@ -22,6 +22,35 @@ SUMMARIZE = False
 # Logging deive use ?
 LOGGING_DEVICE = False
 
+
+def validate(sess, model, valid_index, piano_valid, orch_valid, piano_t_ph, orch_past_ph, labels_ph, preds, loss, keras_learning_phase):
+	#######################################
+	# Validate
+	#######################################
+	accuracy = []
+	precision = []
+	recall = []
+	val_loss = []
+	for batch_index in valid_index:
+		# Build batch
+		piano_t, orch_past, orch_t = build_batch(batch_index, piano_valid, orch_valid, model.batch_size, model.temporal_order)
+
+		# Train step
+		feed_dict = {piano_t_ph: piano_t,
+					orch_past_ph: orch_past,
+					labels_ph: orch_t,
+					keras_learning_phase: 0}
+
+		preds_batch, loss_batch = sess.run([preds, loss], feed_dict)
+		val_loss += [loss_batch]
+		accuracy_batch = accuracy_measure(orch_t, preds_batch)
+		precision_batch = precision_measure(orch_t, preds_batch)
+		recall_batch = recall_measure(orch_t, preds_batch)
+		accuracy += [accuracy_batch]
+		precision += [precision_batch]
+		recall += [recall_batch]
+	return accuracy, precision, recall, val_loss
+
 def train(model,
 		  piano_train, orch_train, train_index,
 		  piano_valid, orch_valid, valid_index,
@@ -52,7 +81,9 @@ def train(model,
 	# Comme ça on pourra faire des classifier chains
 	loss = tf.reduce_mean(keras.losses.binary_crossentropy(labels_ph, preds), name="loss")
 	# train_step = tf.train.AdamOptimizer(0.5).minimize(loss)
-	train_step = tf.train.AdamOptimizer().minimize(loss)
+	if model.optimize():
+		# Some models don't need training
+		train_step = tf.train.AdamOptimizer().minimize(loss)
 	keras_learning_phase = K.learning_phase()
 	time_building_graph = time.time() - start_time_building_graph
 	logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))
@@ -64,7 +95,8 @@ def train(model,
 	# tf.add_to_collection('inputs', orch_past_ph)
 	tf.add_to_collection('preds', preds)
 	tf.add_to_collection('keras_learning_phase', keras_learning_phase)
-	saver = tf.train.Saver()
+	if model.optimize():
+		saver = tf.train.Saver()
 	############################################################
 
 	############################################################
@@ -90,6 +122,14 @@ def train(model,
 
 	# with tf.Session(config=tf.ConfigProto(log_device_placement=LOGGING_DEVICE)) as sess:        
 	with tf.Session() as sess:
+		if model.optimize() == False:
+			# Some baseline models don't need training step optimization
+			accuracy, precision, recall, val_loss = validate(sess, model, valid_index, piano_valid, orch_valid, piano_t_ph, orch_past_ph, labels_ph, preds, loss, keras_learning_phase)
+			mean_val_loss = np.mean(val_loss)
+			mean_accuracy = 100 * np.mean(accuracy)
+			mean_precision = 100 * np.mean(precision)
+			mean_recall = 100 * np.mean(recall)
+			return mean_val_loss, mean_accuracy, 0
 
 		if SUMMARIZE: 
 			merged = tf.summary.merge_all()
@@ -141,33 +181,11 @@ def train(model,
 			mean_loss = np.mean(train_cost_epoch)
 			loss_tab[epoch] = mean_loss
 
+
 			#######################################
 			# Validate
 			#######################################
-			accuracy = []
-			precision = []
-			recall = []
-			val_loss = []
-			for batch_index in valid_index:
-				# Build batch
-				piano_t, orch_past, orch_t = build_batch(batch_index, piano_valid, orch_valid, model.batch_size, model.temporal_order)
-
-				# Train step
-				feed_dict = {piano_t_ph: piano_t,
-							orch_past_ph: orch_past,
-							labels_ph: orch_t,
-							keras_learning_phase: 0}
-
-				preds_batch, loss_batch = sess.run([preds, loss], feed_dict)
-				val_loss += [loss_batch]
-				accuracy_batch = accuracy_measure(orch_t, preds_batch)
-				precision_batch = precision_measure(orch_t, preds_batch)
-				recall_batch = recall_measure(orch_t, preds_batch)
-				accuracy += [accuracy_batch]
-				precision += [precision_batch]
-				recall += [recall_batch]
-
-
+			accuracy, precision, recall, val_loss = validate(sess, model, valid_index, piano_valid, orch_valid, piano_t_ph, orch_past_ph, labels_ph, preds, loss, keras_learning_phase)
 			mean_val_loss = np.mean(val_loss)
 			val_tab_loss[epoch] = mean_val_loss
 			mean_accuracy = 100 * np.mean(accuracy)

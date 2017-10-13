@@ -1,18 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 #
-# Keras version of the MLP :
 # Simple feedforward MLP from the piano input with a binary cross-entropy cost
 # Used to test main scripts and as a baseline
 
 from LOP.Models.model_lop import Model_lop
-from LOP.Models.weight_summary import keras_layer_summary
+from LOP.Models.Utils.weight_summary import variable_summary
 
 # Tensorflow
 import tensorflow as tf
-
-# Keras
-from keras.layers import Dense, Dropout
 
 # Hyperopt
 from LOP.Utils import hopt_wrapper
@@ -20,21 +16,33 @@ from math import log
 from hyperopt import hp
 
 
-class MLP_K(Model_lop):
+class MLP(Model_lop):
 	def __init__(self, model_param, dimensions):
 
 		Model_lop.__init__(self, model_param, dimensions)
 
 		# Hidden layers architecture
-		self.layers = model_param['layers']
+		self.layers = [self.piano_dim] + list(model_param['layers'])
 		# Is it a keras model ?
-		self.keras = True
+		self.keras = False
 
 		return
 
 	@staticmethod
 	def name():
-		return "MLP_keras"
+		return "Baseline_MLP"
+	@staticmethod
+	def binarize_piano():
+		return True
+	@staticmethod
+	def binarize_orchestra():
+		return True
+	@staticmethod
+	def is_keras():
+		return False
+	@staticmethod
+	def optimize():
+		return True
 
 	@staticmethod
 	def get_hp_space():
@@ -52,15 +60,23 @@ class MLP_K(Model_lop):
 		return space
 
 	def predict(self, piano_t, orch_past):
+		def add_layer(input, W_shape, b_shape, sigmoid=False):
+			W = tf.get_variable("W", W_shape, initializer=tf.random_normal_initializer())
+			b = tf.get_variable("b", b_shape, initializer=tf.constant_initializer(0.0))
+			if sigmoid:
+				out = tf.nn.sigmoid(tf.matmul(x, W) + b)
+			else:
+				out = tf.nn.relu(tf.matmul(x, W) + b)
+
+			return out
+
 		x = piano_t
 		
-		for i, l in enumerate(self.layers):
-			with tf.name_scope("layer_" + str(i)):
-				dense = Dense(l, activation='relu')
-				x = dense(x)
-				keras_layer_summary(dense)
-				x = Dropout(0.5)(x)
+		for l in range(len(self.layers)-1):
+			with tf.variable_scope("layer_" + str(l)):
+				x = add_layer(x, [self.layers[l], self.layers[l+1]], [self.layers[l+1]])
 
-		orch_prediction = Dense(self.orch_dim, activation='sigmoid')(x)
+		with tf.variable_scope("layer_" + str(len(self.layers))):
+			orch_prediction = add_layer(x, [self.layers[-1], self.orch_dim], [self.orch_dim], True)
 
 		return orch_prediction

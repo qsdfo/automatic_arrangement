@@ -39,7 +39,8 @@ def load_data(data_folder, set_identifier, temporal_order=20, batch_size=100,
     tracks_start_end = pickle.load(open(data_folder + '/tracks_start_end_' + set_identifier + '.pkl', 'rb'))
 
     # Get valid indices given start_track, end_track and temporal_order
-    # Consider that you might use interval [t - temporal_order ; t + temporal_order]
+    # Consider that you might use both past and future indformation, 
+    # i.e.interval [t - temporal_order ; t + temporal_order]
     def valid_indices(tracks_start_end, temporal_order):
         valid_ind = []
         for (start_track, end_track) in tracks_start_end.values():

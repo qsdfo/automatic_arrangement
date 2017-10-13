@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pyth
 # -*- coding: utf8 -*-
 
 import cPickle as pkl
@@ -16,7 +16,7 @@ import hyperopt
 from train import train
 from generate_midi import generate_midi
 import config
-from LOP.Database.load_data import load_data_train, load_data_valid, load_data_test
+from LOP.Database.load_data_k_folds import build_folds
 
 # MODEL
 from LOP.Models.Real_time.Baseline.mlp_K import MLP_K as Model
@@ -25,10 +25,10 @@ GENERATE = False
 
 def main():
 	# DATABASE
-	DATABASE = "Data__event_level8__0"
+	DATABASE = "Data_DEBUG__event_level8"
 	DATABASE_PATH = config.data_root() + "/" + DATABASE
 	# HYPERPARAM ?
-	DEFINED_CONFIG = False
+	DEFINED_CONFIG = True
 	# RESULTS
 	result_folder =  config.result_root() + '/' + DATABASE + '/' + Model.name()
 	if not os.path.isdir(result_folder):
@@ -39,12 +39,11 @@ def main():
 		# Data
 		"binarize_piano": True,
 		"binarize_orchestra": True,
-		"skip_sample": 1,
-		"avoid_silence": True,
 		# Train
 		"max_iter": 100,            # nb max of iterations when training 1 configuration of hparams (~200)
 		"walltime": 11,             # in hours
 		# Validation
+		"k_folds": 10,				# If -1, no k-folds, use only the first fold of a 10-fold (i.e. 8-1-1 split)
 		"min_number_iteration": 10,
 		"validation_order": 2,
 		"number_strips": 3,
@@ -194,7 +193,7 @@ def main():
 			list_config_folders.append(config_folder)
 
 
-def config_loop(config_folder, model_parameters, parameters, database_path, track_paths_generation):
+def config_loop(config_folder, model_params, parameters, database_path, track_paths_generation):
 	# New logger
 	log_file_path = config_folder + '/' + 'log.txt'
 	with open(log_file_path, 'wb') as f:
@@ -209,56 +208,68 @@ def config_loop(config_folder, model_parameters, parameters, database_path, trac
 	logger_config.info('#### ' + config_folder)
 	logger_config.info('#### Model parameters')
 	logger_config.info((u'** Model : ' + Model.name()).encode('utf8'))
-	for k, v in model_parameters.iteritems():
+	for k, v in model_params.iteritems():
 		logger_config.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
 	# Persistency
-	pkl.dump(model_parameters, open(config_folder + '/model_parameters.pkl', 'wb'))
+	pkl.dump(model_params, open(config_folder + '/model_params.pkl', 'wb'))
 	pkl.dump(Model.is_keras(), open(config_folder + '/is_keras.pkl', 'wb'))
 	pkl.dump(parameters, open(config_folder + '/script_parameters.pkl', 'wb'))
-	# Training
-	train_wrapper(parameters, model_parameters, config_folder, database_path, logger_config)
-	# Generating
-	if GENERATE:
-		generate_wrapper(config_folder, track_paths_generation, logger_config)
+
+	# Get data and tvt splits (=folds)
+	piano, orch, K_folds, dimensions = get_data_and_folds(database_path, parameters, model_params, logger_config)
+	pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
+
+	for K_fold_ind, K_fold in enumerate(K_folds):
+		config_folder_fold = config_folder + '/' + str(K_fold_ind)
+		os.makedirs(config_folder_fold)
+		# Training
+		train_wrapper(parameters, model_params, dimensions, config_folder_fold, piano, orch, K_fold, logger_config)
+		# Generating
+		if GENERATE:
+			generate_wrapper(config_folder_fold, track_paths_generation, logger_config)
 	logger_config.info("#"*60)
 	logger_config.info("#"*60)
 	return
 
 
-def train_wrapper(parameters, model_params, config_folder, data_folder, logger):
-	############################################################
-	# Load data
-	############################################################
+def get_data_and_folds(database_path, parameters, model_params, logger):
+	logger.info((u'##### Data').encode('utf8'))
+	
+	# Load data and build K_folds
 	time_load_0 = time.time()
-	piano_train, orch_train, train_index \
-		= load_data_train(data_folder,
-						  model_params['temporal_order'],
-						  model_params['batch_size'],
-						  skip_sample=parameters['skip_sample'],
-						  avoid_silence=parameters['avoid_silence'],
-						  binarize_piano=parameters["binarize_piano"],
-						  binarize_orchestra=parameters["binarize_orchestra"],
-						  logger_load=logger)
-	piano_valid, orch_valid, valid_index \
-		= load_data_valid(data_folder,
-						  model_params['temporal_order'],
-						  model_params['batch_size'],
-						  skip_sample=parameters['skip_sample'],
-						  avoid_silence=True,
-						  binarize_piano=parameters["binarize_piano"],
-						  binarize_orchestra=parameters["binarize_orchestra"],
-						  logger_load=logger)
-	piano_test, orch_test, _, _ \
-		= load_data_test(data_folder,
-						 model_params['temporal_order'],
-						 model_params['batch_size'],
-						 skip_sample=parameters['skip_sample'],
-						 avoid_silence=True,
-						 binarize_piano=parameters["binarize_piano"],
-						 binarize_orchestra=parameters["binarize_orchestra"],
-						 logger_load=logger)
-	time_load_1 = time.time()
+	
+	## Load the matrices
+	piano = np.load(database_path + '/piano.npy')
+	orch = np.load(database_path + '/orchestra.npy')
+	# Binarize inputs ?
+	if parameters["binarize_piano"]:
+		piano[np.nonzero(piano)] = 1
+	else:
+		piano = piano / 127
+	if parameters["binarize_orchestra"]:
+		orch[np.nonzero(orch)] = 1
+	else:
+		orch = orch / 127
 
+	## Load the folds
+	if parameters["k_folds"] == -1:
+		K_folds = build_folds(database_path, 10, model_params["temporal_order"], model_params["batch_size"], logger_load=None)
+		K_folds = [K_folds[0]]
+	else:
+		K_folds = build_folds(database_path, parameters["k_folds"], model_params["temporal_order"], model_params["batch_size"], logger_load=None)
+	time_load = time.time() - time_load_0
+
+	## Get dimensions of batches
+	piano_dim = piano.shape[1]
+	orch_dim = orch.shape[1]
+	dimensions = {'batch_size': model_params['batch_size'],
+				  'temporal_order': model_params['temporal_order'],
+				  'piano_dim': piano_dim,
+				  'orch_dim': orch_dim}
+	logger.info('TTT : Loading data took {} seconds'.format(time_load))
+	return piano, orch, K_folds, dimensions
+
+def train_wrapper(parameters, model_params, dimensions, config_folder, piano, orch, K_fold, logger):
 	################################################################################
 	################################################################################
 	################################################################################
@@ -272,16 +283,9 @@ def train_wrapper(parameters, model_params, config_folder, data_folder, logger):
 	################################################################################
 	################################################################################################################################################################
 
-	############################################################
-	# Get dimensions of batches
-	############################################################
-	piano_dim = piano_train.shape[1]
-	orch_dim = orch_train.shape[1]
-	dimensions = {'batch_size': model_params['batch_size'],
-				  'temporal_order': model_params['temporal_order'],
-				  'piano_dim': piano_dim,
-				  'orch_dim': orch_dim}
-	pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
+	train_index = K_fold['train']
+	valid_index = K_fold['valid']
+	test_index = K_fold['test']
 
 	############################################################
 	# Update train_param and model_param dicts with new information from load data
@@ -292,22 +296,27 @@ def train_wrapper(parameters, model_params, config_folder, data_folder, logger):
 	logger.info((u'##### Data').encode('utf8'))
 	logger.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
 	logger.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
-	logger.info('TTT : Loading data took {} seconds'.format(time_load_1-time_load_0))
 
 	parameters['n_train_batches'] = n_train_batches
 	parameters['n_val_batches'] = n_val_batches
 
-	# Class normalization
-	notes_activation = orch_train.sum(axis=0)
-	notes_activation_norm = notes_activation.mean() / (notes_activation+1e-10)
-	class_normalization = np.maximum(1, np.minimum(20, notes_activation_norm))
-	model_params['class_normalization'] = class_normalization
+	################################################################################################################################################################
+	################################################################################################################################################################
+	# A REECRIRE !!!!!
+	# IZY : juste mettre tous les indices des train batches en 1 colonne et ça définira orch_train
+	# # Class normalization
+	# notes_activation = orch_train.sum(axis=0)
+	# notes_activation_norm = notes_activation.mean() / (notes_activation+1e-10)
+	# class_normalization = np.maximum(1, np.minimum(20, notes_activation_norm))
+	# model_params['class_normalization'] = class_normalization
 
-	# Other kind of regularization
-	L_train = orch_train.shape[0]
-	mean_notes_activation = notes_activation / L_train
-	mean_notes_activation = np.where(mean_notes_activation == 0, 1. / L_train, mean_notes_activation)
-	model_params['mean_notes_activation'] = mean_notes_activation
+	# # Other kind of regularization
+	# L_train = orch_train.shape[0]
+	# mean_notes_activation = notes_activation / L_train
+	# mean_notes_activation = np.where(mean_notes_activation == 0, 1. / L_train, mean_notes_activation)
+	# model_params['mean_notes_activation'] = mean_notes_activation
+	################################################################################################################################################################
+	################################################################################################################################################################
 
 	############################################################
 	# Instanciate model and save folder
@@ -319,9 +328,7 @@ def train_wrapper(parameters, model_params, config_folder, data_folder, logger):
 	# Train
 	############################################################
 	time_train_0 = time.time()
-	loss_val, accuracy_val, best_epoch = train(model,
-									piano_train, orch_train, train_index,
-									piano_valid, orch_valid, valid_index,
+	loss_val, accuracy_val, best_epoch = train(model, piano, orch, train_index, valid_index,
 									parameters, config_folder, time_train_0, logger)
 
 	time_train_1 = time.time()

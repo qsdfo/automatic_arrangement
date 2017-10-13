@@ -188,27 +188,11 @@ def build_data(root_dir, folder_paths, meta_info_path='temp.p', quantization=12,
                 statistics[instrument_name]['n_track_present'] = 1
                 statistics[instrument_name]['n_note_played'] = n_note_played
 
-        with open(store_folder + '/orchestra_' + set_identifier + '.npy', 'wb') as outfile:
-            np.save(outfile, pr_orchestra)
-        with open(store_folder + '/piano_' + set_identifier + '.npy', 'wb') as outfile:
-            np.save(outfile, pr_piano)
-        pickle.dump(tracks_start_end, open(store_folder + '/tracks_start_end_' + set_identifier + '.pkl', 'wb'))
-
-        ####################################################################
-        ####################################################################
-        ####################################################################
-        # aux(var=pr_piano,
-        #     name='piano_' + set_identifier + '_' + temporal_granularity,
-        #     csv_path='DEBUG/piano_' + set_identifier + '_' + temporal_granularity + '.csv',
-        #     html_path='DEBUG/piano_' + set_identifier + '_' + temporal_granularity + '.html')
-        #
-        # aux(var=pr_orchestra,
-        #     name='orchestra_' + set_identifier + '_' + temporal_granularity,
-        #     csv_path='DEBUG/orchestra_' + set_identifier + '_' + temporal_granularity +'.csv',
-        #     html_path='DEBUG/orchestra_' + set_identifier + '_' + temporal_granularity + '.html')
-        ####################################################################
-        ####################################################################
-        ####################################################################
+    with open(store_folder + '/orchestra.npy', 'wb') as outfile:
+        np.save(outfile, pr_orchestra)
+    with open(store_folder + '/piano.npy', 'wb') as outfile:
+        np.save(outfile, pr_piano)
+    pickle.dump(tracks_start_end, open(store_folder + '/tracks_start_end.pkl', 'wb'))
 
     # Save pr_orchestra, pr_piano, instru_mapping
     metadata = {}
@@ -260,9 +244,10 @@ if __name__ == '__main__':
     quantization = 8
 
     DATABASE_PATH = config.database_root() + '/LOP_database_06_09_17'
-    DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
+    # DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
+    DATABASE_NAMES = ["debug"]
 
-    data_folder = '../../../Data_DEBUG/Data'
+    data_folder = '../../../Data_folds/Data_DEBUG'
     data_folder += '__' + temporal_granularity + str(quantization)
 
     if not os.path.isdir(data_folder):

@@ -23,7 +23,7 @@ SUMMARIZE = False
 LOGGING_DEVICE = False
 
 
-def validate(sess, model, valid_index, piano_valid, orch_valid, piano_t_ph, orch_past_ph, labels_ph, preds, loss, keras_learning_phase):
+def validate(sess, model, valid_index, piano, orch, piano_t_ph, orch_past_ph, labels_ph, preds, loss, keras_learning_phase):
 	#######################################
 	# Validate
 	#######################################
@@ -33,7 +33,7 @@ def validate(sess, model, valid_index, piano_valid, orch_valid, piano_t_ph, orch
 	val_loss = []
 	for batch_index in valid_index:
 		# Build batch
-		piano_t, orch_past, orch_t = build_batch(batch_index, piano_valid, orch_valid, model.batch_size, model.temporal_order)
+		piano_t, orch_past, orch_t = build_batch(batch_index, piano, orch, model.batch_size, model.temporal_order)
 
 		# Train step
 		feed_dict = {piano_t_ph: piano_t,
@@ -51,9 +51,7 @@ def validate(sess, model, valid_index, piano_valid, orch_valid, piano_t_ph, orch
 		recall += [recall_batch]
 	return accuracy, precision, recall, val_loss
 
-def train(model,
-		  piano_train, orch_train, train_index,
-		  piano_valid, orch_valid, valid_index,
+def train(model, piano, orch, train_index, valid_index,
 		  parameters, config_folder, start_time_train, logger_train):
    
 	# Time information used
@@ -124,7 +122,7 @@ def train(model,
 	with tf.Session() as sess:
 		if model.optimize() == False:
 			# Some baseline models don't need training step optimization
-			accuracy, precision, recall, val_loss = validate(sess, model, valid_index, piano_valid, orch_valid, piano_t_ph, orch_past_ph, labels_ph, preds, loss, keras_learning_phase)
+			accuracy, precision, recall, val_loss = validate(sess, model, valid_index, piano, orch, piano_t_ph, orch_past_ph, labels_ph, preds, loss, keras_learning_phase)
 			mean_val_loss = np.mean(val_loss)
 			mean_accuracy = 100 * np.mean(accuracy)
 			mean_precision = 100 * np.mean(precision)
@@ -158,7 +156,7 @@ def train(model,
 			train_cost_epoch = []			
 			for batch_index in train_index:
 				# Build batch
-				piano_t, orch_past, orch_t = build_batch(batch_index, piano_train, orch_train, model.batch_size, model.temporal_order)
+				piano_t, orch_past, orch_t = build_batch(batch_index, piano, orch, model.batch_size, model.temporal_order)
 				
 				# Train step
 				feed_dict = {piano_t_ph: piano_t,
@@ -185,7 +183,7 @@ def train(model,
 			#######################################
 			# Validate
 			#######################################
-			accuracy, precision, recall, val_loss = validate(sess, model, valid_index, piano_valid, orch_valid, piano_t_ph, orch_past_ph, labels_ph, preds, loss, keras_learning_phase)
+			accuracy, precision, recall, val_loss = validate(sess, model, valid_index, piano, orch, piano_t_ph, orch_past_ph, labels_ph, preds, loss, keras_learning_phase)
 			mean_val_loss = np.mean(val_loss)
 			val_tab_loss[epoch] = mean_val_loss
 			mean_accuracy = 100 * np.mean(accuracy)

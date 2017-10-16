@@ -40,7 +40,9 @@ class LSTM_plugged_base(Model_lop):
 	@staticmethod
 	def is_keras():
 		return True
-
+        @staticmethod
+        def optimize():
+                return True
 	@staticmethod
 	def get_hp_space():
 		super_space = Model_lop.get_hp_space()

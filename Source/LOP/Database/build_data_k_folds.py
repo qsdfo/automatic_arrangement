@@ -244,10 +244,10 @@ if __name__ == '__main__':
     quantization = 8
 
     DATABASE_PATH = config.database_root() + '/LOP_database_06_09_17'
-    # DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
-    DATABASE_NAMES = ["debug"]
+    DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
+    # DATABASE_NAMES = ["debug"]
 
-    data_folder = '../../../Data_folds/Data_DEBUG'
+    data_folder = '../../../Data_folds/Data'
     data_folder += '__' + temporal_granularity + str(quantization)
 
     if not os.path.isdir(data_folder):

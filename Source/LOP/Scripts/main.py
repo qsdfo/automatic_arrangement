@@ -19,16 +19,17 @@ import config
 from LOP.Database.load_data_k_folds import build_folds
 
 # MODEL
-from LOP.Models.Real_time.Baseline.mlp_K import MLP_K as Model
+from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
 
 GENERATE = False
+SAVE = False
 
 def main():
 	# DATABASE
-	DATABASE = "Data_DEBUG__event_level8"
+	DATABASE = "Data__event_level8"
 	DATABASE_PATH = config.data_root() + "/" + DATABASE
 	# HYPERPARAM ?
-	DEFINED_CONFIG = True
+	DEFINED_CONFIG = False
 	# RESULTS
 	result_folder =  config.result_root() + '/' + DATABASE + '/' + Model.name()
 	if not os.path.isdir(result_folder):
@@ -53,7 +54,6 @@ def main():
 
 	# Load the database metadata and add them to the script parameters to keep a record of the data processing pipeline
 	parameters.update(pkl.load(open(DATABASE_PATH + '/metadata.pkl', 'rb')))
-
 
 	############################################################
 	# Logging
@@ -227,6 +227,8 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 		# Generating
 		if GENERATE:
 			generate_wrapper(config_folder_fold, track_paths_generation, logger_config)
+                if not SAVE:
+                        shutil.rmtree(config_folder_fold + '/model')
 	logger_config.info("#"*60)
 	logger_config.info("#"*60)
 	return

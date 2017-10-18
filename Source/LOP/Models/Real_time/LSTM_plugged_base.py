@@ -40,9 +40,9 @@ class LSTM_plugged_base(Model_lop):
 	@staticmethod
 	def is_keras():
 		return True
-        @staticmethod
-        def optimize():
-                return True
+    @staticmethod
+    def optimize():
+        return True
 	@staticmethod
 	def get_hp_space():
 		super_space = Model_lop.get_hp_space()
@@ -57,7 +57,10 @@ class LSTM_plugged_base(Model_lop):
 		space.update(super_space)
 		return space
 
-	def predict(self, piano_t, orch_past):
+	def predict(self, inputs_ph):
+
+		piano_t, _, _, orch_past, _ = inputs_ph
+		
 		#####################
 		# Batch norm
 		# if self.binarize_piano:

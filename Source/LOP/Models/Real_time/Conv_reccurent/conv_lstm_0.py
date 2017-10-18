@@ -12,7 +12,7 @@ from keras.layers import Conv1D, GRU, Dense
 
 # Hyperopt
 from LOP.Utils.hopt_wrapper import quniform_int
-from LOP.Utils.hopt_utils import multi_layer_hopt
+from LOP.Utils.hopt_utils import list_log_hopt
 
 from LOP.Models.Utils.mlp import MLP
 from LOP.Models.Utils.weight_summary import variable_summary, keras_layer_summary
@@ -45,9 +45,9 @@ class Conv_lstm_0(Model_lop):
 		space = {
 			'num_filter_piano': quniform_int('num_filter_piano', 20, 50, 1),
 			'kernel_size_piano': quniform_int('kernel_size_piano', 8, 16, 1),
-			'mlp_piano': multi_layer_hopt(500, 2000, 10, 1, 3, "mlp_piano"),
-			'mlp_pred': multi_layer_hopt(500, 2000, 10, 1, 3, "mlp_pred"),
-			'gru_orch': multi_layer_hopt(500, 2000, 10, 1, 3, "gru_orch"),
+			'mlp_piano': list_log_hopt(500, 2000, 10, 1, 3, "mlp_piano"),
+			'mlp_pred': list_log_hopt(500, 2000, 10, 1, 3, "mlp_pred"),
+			'gru_orch': list_log_hopt(500, 2000, 10, 1, 3, "gru_orch"),
 		}
 		space.update(super_space)
 		return space

@@ -19,17 +19,17 @@ import config
 from LOP.Database.load_data_k_folds import build_folds
 
 # MODEL
-from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
+from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
 
 GENERATE = False
 SAVE = False
 
 def main():
 	# DATABASE
-	DATABASE = "Data__event_level8"
+	DATABASE = "Data_DEBUG__event_level8"
 	DATABASE_PATH = config.data_root() + "/" + DATABASE
 	# HYPERPARAM ?
-	DEFINED_CONFIG = False
+	DEFINED_CONFIG = True
 	# RESULTS
 	result_folder =  config.result_root() + '/' + DATABASE + '/' + Model.name()
 	if not os.path.isdir(result_folder):
@@ -41,10 +41,10 @@ def main():
 		"binarize_piano": True,
 		"binarize_orchestra": True,
 		# Train
-		"max_iter": 100,            # nb max of iterations when training 1 configuration of hparams (~200)
+		"max_iter": 5,            # nb max of iterations when training 1 configuration of hparams (~200)
 		"walltime": 11,             # in hours
 		# Validation
-		"k_folds": 10,				# If -1, no k-folds, use only the first fold of a 10-fold (i.e. 8-1-1 split)
+		"k_folds": -1,				# If -1, no k-folds, use only the first fold of a 10-fold (i.e. 8-1-1 split)
 		"min_number_iteration": 10,
 		"validation_order": 2,
 		"number_strips": 3,

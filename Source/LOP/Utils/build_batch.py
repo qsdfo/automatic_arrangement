@@ -6,13 +6,18 @@ import numpy as np
 def build_batch(batch_index, piano, orch, batch_size, temporal_order):
 	# Build batch
 	piano_t = piano[batch_index]
+	piano_past = build_sequence(piano, batch_index-1, batch_size, temporal_order-1)
+	piano_future = build_sequence(piano, batch_index+temporal_order-1, batch_size, temporal_order-1)
+
 	if len(orch.shape) == 2:
 		orch_past = build_sequence(orch, batch_index-1, batch_size, temporal_order-1)
+		orch_future = build_sequence(orch, batch_index+temporal_order-1, batch_size, temporal_order-1)
 		orch_t = orch[batch_index]
 	elif len(orch.shape) == 3:
 		orch_past = build_sequence_from_3D_matrix(orch, batch_index-1, temporal_order-1)
+		orch_future = build_sequence_from_3D_matrix(orch, batch_index+temporal_order-1, temporal_order-1)
 		orch_t = np.stack([orch[batch_ind, t] for batch_ind, t in enumerate(batch_index)])
-	return piano_t, orch_past, orch_t
+	return piano_t, piano_past, piano_future, orch_past, orch_future, orch_t
 
 def build_sequence(pr, index, batch_size, seq_length):
 	last_dim = pr.shape[1]

@@ -22,8 +22,8 @@ def generate(piano, path_to_config, orch_init=None, batch_size=5):
 
 	# Paths
 	path_to_model = path_to_config + '/model'
-	dimensions = pkl.load(open(path_to_config + '/dimensions.pkl', 'rb'))
-	is_keras = pkl.load(open(path_to_config + '/is_keras.pkl', 'rb'))
+	dimensions = pkl.load(open(path_to_config + '/../dimensions.pkl', 'rb'))
+	is_keras = pkl.load(open(path_to_config + '/../is_keras.pkl', 'rb'))
 
 	# Get dimensions
 	piano_dim = dimensions['piano_dim']

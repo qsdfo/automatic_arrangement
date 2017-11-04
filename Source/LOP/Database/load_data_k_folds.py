@@ -8,13 +8,17 @@ import random
 import numpy as np
 
 
-def build_folds(data_folder, k_folds=10, temporal_order=20, batch_size=100, logger_load=None):
+def build_folds(data_folder, k_folds=10, temporal_order=20, batch_size=100, random_seed=None, logger_load=None):
     tracks_start_end = pkl.load(open(data_folder + "/tracks_start_end.pkl", "rb"))
     list_files = tracks_start_end.keys()
 
     # Folds are built on files, not directly the indices
     # By doing so, we prevent the same file being spread over train, test and validate sets
+    random.seed(random_seed)
     random.shuffle(list_files)
+
+    if k_folds == -1:
+        k_folds = len(list_files)
 
     folds = []
     for k in range(k_folds):

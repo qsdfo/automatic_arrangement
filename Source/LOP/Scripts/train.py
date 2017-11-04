@@ -104,7 +104,7 @@ def train(model, piano, orch, train_index, valid_index,
 	############################################################
 
 	############################################################
-	# Display informations about the model
+	# Display informations about the models
 	num_parameters = count_parameters(tf.get_default_graph())
 	logger_train.info((u'** Num trainable parameters :  {}'.format(num_parameters)).encode('utf8'))
 

@@ -21,8 +21,11 @@ from LOP.Database.load_data_k_folds import build_folds
 # MODEL
 from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
 
-GENERATE = False
-SAVE = False
+GENERATE=False
+SAVE=False
+# For reproducibility
+RANDOM_SEED_FOLDS=1234 # This is useful to detect "biased" folds
+RANDOM_SEED=None
 
 def main():
 	# DATABASE
@@ -44,7 +47,7 @@ def main():
 		"max_iter": 5,            # nb max of iterations when training 1 configuration of hparams (~200)
 		"walltime": 11,             # in hours
 		# Validation
-		"k_folds": -1,				# If -1, no k-folds, use only the first fold of a 10-fold (i.e. 8-1-1 split)
+		"k_folds": 0,				# 0: no k-folds(use only the first fold of a 10-fold (i.e. 8-1-1 split)), -1: leave-one-out
 		"min_number_iteration": 10,
 		"validation_order": 2,
 		"number_strips": 3,
@@ -254,11 +257,13 @@ def get_data_and_folds(database_path, parameters, model_params, logger):
 		orch = orch / 127
 
 	## Load the folds
-	if parameters["k_folds"] == -1:
-		K_folds = build_folds(database_path, 10, model_params["temporal_order"], model_params["batch_size"], logger_load=None)
+	if parameters["k_folds"] == 0:
+		K_folds = build_folds(database_path, 10, model_params["temporal_order"], model_params["batch_size"], RANDOM_SEED, logger_load=None)
 		K_folds = [K_folds[0]]
+	if parameters["k_folds"] == -1:
+		K_folds = build_folds(database_path, -1, model_params["temporal_order"], model_params["batch_size"], RANDOM_SEED, logger_load=None)
 	else:
-		K_folds = build_folds(database_path, parameters["k_folds"], model_params["temporal_order"], model_params["batch_size"], logger_load=None)
+		K_folds = build_folds(database_path, parameters["k_folds"], model_params["temporal_order"], model_params["batch_size"], RANDOM_SEED, logger_load=None)
 	time_load = time.time() - time_load_0
 
 	## Get dimensions of batches

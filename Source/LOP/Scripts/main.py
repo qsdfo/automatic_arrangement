@@ -23,16 +23,15 @@ from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_
 
 GENERATE=False
 SAVE=False
+DEFINED_CONFIG = True  # HYPERPARAM ?
 # For reproducibility
-RANDOM_SEED_FOLDS=1234 # This is useful to detect "biased" folds
+RANDOM_SEED_FOLDS=1234 # This is useful to use always the same fold split
 RANDOM_SEED=None
 
 def main():
 	# DATABASE
-	DATABASE = "Data_DEBUG__event_level8"
+	DATABASE = "Data__event_level8"
 	DATABASE_PATH = config.data_root() + "/" + DATABASE
-	# HYPERPARAM ?
-	DEFINED_CONFIG = True
 	# RESULTS
 	result_folder =  config.result_root() + '/' + DATABASE + '/' + Model.name()
 	if not os.path.isdir(result_folder):
@@ -85,12 +84,13 @@ def main():
 	logging.info('#'*60)
 	logging.info('* L * O * P *')
 	logging.info((u'** Model : ' + Model.name()).encode('utf8'))
-	logging.info((u'** Optimization technic : ##########').encode('utf8'))
-	logging.info((u'** Temporal granularity : ' + parameters['temporal_granularity']).encode('utf8'))
-	logging.info((u'** Quantization : ' + str(parameters['quantization'])).encode('utf8'))
-	logging.info((u'** Binary piano : ' + str(parameters["binarize_piano"])).encode('utf8'))
-	logging.info((u'** Binary orchestra : ' + str(parameters["binarize_orchestra"])).encode('utf8'))
-	logging.info((u'** Result folder : ' + result_folder).encode('utf8'))
+	for k, v in parameters.iteritems():
+		logging.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
+	# logging.info((u'** Temporal granularity : ' + parameters['temporal_granularity']).encode('utf8'))
+	# logging.info((u'** Quantization : ' + str(parameters['quantization'])).encode('utf8'))
+	# logging.info((u'** Binary piano : ' + str(parameters["binarize_piano"])).encode('utf8'))
+	# logging.info((u'** Binary orchestra : ' + str(parameters["binarize_orchestra"])).encode('utf8'))
+	# logging.info((u'** Result folder : ' + result_folder).encode('utf8'))
 	logging.info('#'*60)
 	logging.info('#'*60)
 
@@ -219,12 +219,21 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 	pkl.dump(parameters, open(config_folder + '/script_parameters.pkl', 'wb'))
 
 	# Get data and tvt splits (=folds)
-	piano, orch, K_folds, dimensions = get_data_and_folds(database_path, parameters, model_params, logger_config)
+	piano, orch, K_folds, valid_names, test_names, dimensions = get_data_and_folds(database_path, parameters, model_params, logger_config)
+	import pdb; pdb.set_trace()
 	pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
 
 	for K_fold_ind, K_fold in enumerate(K_folds):
 		config_folder_fold = config_folder + '/' + str(K_fold_ind)
 		os.makedirs(config_folder_fold)
+		# Write filenames of this split
+		with open(os.path.join(config_folder_fold, "test_names.txt"), "wb") as f:
+			for filename in test_names:
+				f.write(filename + "\n")
+		with open(os.path.join(config_folder_fold, "valid_names.txt"), "wb") as f:
+			for filename in valid_names:
+				f.write(filename + "\n")
+		import pdb; pdb.set_trace()
 		# Training
 		train_wrapper(parameters, model_params, dimensions, config_folder_fold, piano, orch, K_fold, logger_config)
 		# Generating
@@ -258,12 +267,14 @@ def get_data_and_folds(database_path, parameters, model_params, logger):
 
 	## Load the folds
 	if parameters["k_folds"] == 0:
-		K_folds = build_folds(database_path, 10, model_params["temporal_order"], model_params["batch_size"], RANDOM_SEED, logger_load=None)
+		K_folds, valid_names, test_names = build_folds(database_path, 10, model_params["temporal_order"], model_params["batch_size"], RANDOM_SEED, logger_load=None)
 		K_folds = [K_folds[0]]
+		valid_names = [valid_names[0]]
+		test_names = [test_names[0]]
 	if parameters["k_folds"] == -1:
-		K_folds = build_folds(database_path, -1, model_params["temporal_order"], model_params["batch_size"], RANDOM_SEED, logger_load=None)
+		K_folds, valid_names, test_names = build_folds(database_path, -1, model_params["temporal_order"], model_params["batch_size"], RANDOM_SEED, logger_load=None)
 	else:
-		K_folds = build_folds(database_path, parameters["k_folds"], model_params["temporal_order"], model_params["batch_size"], RANDOM_SEED, logger_load=None)
+		K_folds, valid_names, test_names = build_folds(database_path, parameters["k_folds"], model_params["temporal_order"], model_params["batch_size"], RANDOM_SEED, logger_load=None)
 	time_load = time.time() - time_load_0
 
 	## Get dimensions of batches
@@ -274,7 +285,7 @@ def get_data_and_folds(database_path, parameters, model_params, logger):
 				  'piano_dim': piano_dim,
 				  'orch_dim': orch_dim}
 	logger.info('TTT : Loading data took {} seconds'.format(time_load))
-	return piano, orch, K_folds, dimensions
+	return piano, orch, K_folds, valid_names, test_names, dimensions
 
 def train_wrapper(parameters, model_params, dimensions, config_folder, piano, orch, K_fold, logger):
 	################################################################################

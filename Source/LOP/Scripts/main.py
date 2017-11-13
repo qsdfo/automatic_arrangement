@@ -29,7 +29,7 @@ RANDOM_SEED=None
 
 def main():
 	# DATABASE
-	DATABASE = "Data_DEBUG__event_level8"
+	DATABASE = "Data__event_level8"
 	DATABASE_PATH = config.data_root() + "/" + DATABASE
 	# HYPERPARAM ?
 	DEFINED_CONFIG = True
@@ -48,7 +48,7 @@ def main():
 		"walltime": 11,             # in hours
 		# Validation
 		"k_folds": 0,				# 0: no k-folds(use only the first fold of a 10-fold (i.e. 8-1-1 split)), -1: leave-one-out
-		"min_number_iteration": 10,
+		"min_number_iteration": 100,
 		"validation_order": 2,
 		"number_strips": 3,
 		# Hyperopt
@@ -246,6 +246,7 @@ def get_data_and_folds(database_path, parameters, model_params, logger):
 	## Load the matrices
 	piano = np.load(database_path + '/piano.npy')
 	orch = np.load(database_path + '/orchestra.npy')
+
 	# Binarize inputs ?
 	if parameters["binarize_piano"]:
 		piano[np.nonzero(piano)] = 1
@@ -256,11 +257,22 @@ def get_data_and_folds(database_path, parameters, model_params, logger):
 	else:
 		orch = orch / 127
 
+	# ####################################################
+	# ####################################################
+	# # TEMP : plot random parts of the data to check alignment
+	# from LOP_database.visualization.numpy_array.visualize_numpy import visualize_mat
+	# T = len(piano)
+	# for t in np.arange(100, T, 1000):
+	# 	AAA = np.concatenate((piano[t-20:t]*2, orch[t-20:t]), axis=1)
+	# 	visualize_mat(AAA, "debug", str(t))
+	# ####################################################
+	# ####################################################
+
 	## Load the folds
 	if parameters["k_folds"] == 0:
 		K_folds = build_folds(database_path, 10, model_params["temporal_order"], model_params["batch_size"], RANDOM_SEED, logger_load=None)
 		K_folds = [K_folds[0]]
-	if parameters["k_folds"] == -1:
+	elif parameters["k_folds"] == -1:
 		K_folds = build_folds(database_path, -1, model_params["temporal_order"], model_params["batch_size"], RANDOM_SEED, logger_load=None)
 	else:
 		K_folds = build_folds(database_path, parameters["k_folds"], model_params["temporal_order"], model_params["batch_size"], RANDOM_SEED, logger_load=None)

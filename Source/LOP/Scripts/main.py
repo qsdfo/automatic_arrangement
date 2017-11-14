@@ -215,8 +215,8 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
         # Generating
         if GENERATE:
             generate_wrapper(config_folder_fold, track_paths_generation, logger_config)
-                if not SAVE:
-                        shutil.rmtree(config_folder_fold + '/model')
+        if not SAVE:
+            shutil.rmtree(config_folder_fold + '/model')
     logger_config.info("#"*60)
     logger_config.info("#"*60)
     return

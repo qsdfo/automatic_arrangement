@@ -26,7 +26,6 @@ def generate(piano, path_to_config, orch_init=None, batch_size=5):
 	is_keras = pkl.load(open(path_to_config + '/../is_keras.pkl', 'rb'))
 
 	# Get dimensions
-	piano_dim = dimensions['piano_dim']
 	orch_dim = dimensions['orch_dim']
 	temporal_order = dimensions['temporal_order']
 	total_length = piano.shape[0]
@@ -61,7 +60,7 @@ def generate(piano, path_to_config, orch_init=None, batch_size=5):
 			# Just duplicate the temporal index to create batch generation
 			batch_index = np.tile(t, batch_size)
 
-			piano_t, orch_past, _ = build_batch(batch_index, piano, orch_gen, batch_size, temporal_order)
+			piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch_gen, batch_size, temporal_order)
 
 			# Feed dict
 			feed_dict = {'piano_t:0': piano_t,

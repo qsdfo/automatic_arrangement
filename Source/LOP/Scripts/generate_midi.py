@@ -77,7 +77,7 @@ def generate_midi(config_folder, score_source, number_of_version, logger_generat
     pr_piano_gen = np.zeros((duration, N_piano), dtype=np.float32)
     pr_piano_gen = build_data_aux.cast_small_pr_into_big_pr(pr_piano, {}, 0, duration, instru_mapping, pr_piano_gen)
 
-    # Instanciate orchestra pianoroll with orchestra seed
+    # Instanciate orchestra pianoroll with orchestra seed
     N_orchestra = parameters['N_orchestra']
     if pr_orch:
         pr_orchestra_gen = np.zeros((seed_size, N_orchestra), dtype=np.float32)
@@ -110,7 +110,7 @@ def generate_midi(config_folder, score_source, number_of_version, logger_generat
     time_generate_0 = time.time()
     generated_sequences = generate(pr_piano_gen, config_folder, pr_orchestra_gen, batch_size=number_of_version)
     time_generate_1 = time.time()
-    logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
+    logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 
     ############################################################
     # Reconstruct and write
@@ -122,13 +122,13 @@ def generate_midi(config_folder, score_source, number_of_version, logger_generat
         # Reconstruct
         pr_orchestra_clean = from_event_to_frame(this_seq, event_piano)
         pr_orchestra = instrument_reconstruction(pr_orchestra_clean, instru_mapping)
-        # Write
+        # Write
         write_path = generated_folder + '/' + str(write_counter) + '_generated.mid'
         write_midi(pr_orchestra, quantization, write_path, tempo=80)
 
     ############################################################
     ############################################################
-    # Write original orchestration and piano scores, but reconstructed version, just to check
+    # Write original orchestration and piano scores, but reconstructed version, just to check
     A = from_event_to_frame(pr_piano_gen, event_piano)
     B = A * 127
     piano_reconstructed = instrument_reconstruction_piano(B, instru_mapping)
@@ -144,8 +144,7 @@ def generate_midi(config_folder, score_source, number_of_version, logger_generat
     ############################################################
 
 if __name__ == '__main__':
-    import logging
-    config_folder = '/Users/leo/Recherche/GitHub_Aciditeam/lop/Results/Data_DEBUG__event_level8__0/LSTM_plugged_base/0/'
+    config_folder = '/Users/leo/Recherche/GitHub_Aciditeam/lop/Results/Data__event_level8/LSTM_plugged_base/0/0'
     score_sources = ['/Users/leo/Recherche/GitHub_Aciditeam/database/Orchestration/LOP_database_06_09_17/liszt_classical_archives/16',
         # '/home/mil/leo/Database/LOP_database_06_09_17/liszt_classical_archives/17',
         # '/home/mil/leo/Database/LOP_database_06_09_17/liszt_classical_archives/18'

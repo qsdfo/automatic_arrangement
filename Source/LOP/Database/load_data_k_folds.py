@@ -3,9 +3,7 @@
 
 
 import cPickle as pkl
-import LOP.Scripts.config as config
 import random
-import numpy as np
 
 
 def build_folds(data_folder, k_folds=10, temporal_order=20, batch_size=100, random_seed=None, logger_load=None):
@@ -52,15 +50,20 @@ def build_folds(data_folder, k_folds=10, temporal_order=20, batch_size=100, rand
 def build_batches(ind, batch_size):
         batches = []
         position = 0
-        n_batch = int(len(ind) // batch_size)
+        n_ind = len(ind)
+        
+        n_batch = int(n_ind // batch_size)
 
         # Shuffle indices
         random.shuffle(ind)
-
+       
         for i in range(n_batch):
             batches.append(ind[position:position+batch_size])
             position += batch_size
-        return np.asarray(batches, dtype=int)
+        # Smaller last batch
+        if position < n_ind:
+            batches.append(ind[position:n_ind])
+        return batches
 
 if __name__ == '__main__':
-    build_folds("/Users/leo/Recherche/GitHub_Aciditeam/lop/Data_DEBUG/Data__event_level8")
+    build_folds("/Users/leo/Recherche/GitHub_Aciditeam/lop/Data_folds/Data__event_level8")

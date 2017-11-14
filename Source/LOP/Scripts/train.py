@@ -33,7 +33,7 @@ def validate(sess, model, valid_index, piano, orch, inputs_ph, orch_t_ph, preds,
 	val_loss = []
 	for batch_index in valid_index:
 		# Build batch
-		piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch, model.batch_size, model.temporal_order)
+		piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch, len(batch_index), model.temporal_order)
 		# Input nodes
 		feed_dict = {piano_t_ph: piano_t,
 					piano_past_ph: piano_past,
@@ -48,9 +48,9 @@ def validate(sess, model, valid_index, piano, orch, inputs_ph, orch_t_ph, preds,
 		accuracy_batch = accuracy_measure(orch_t, preds_batch)
 		precision_batch = precision_measure(orch_t, preds_batch)
 		recall_batch = recall_measure(orch_t, preds_batch)
-		accuracy += [accuracy_batch]
-		precision += [precision_batch]
-		recall += [recall_batch]
+		accuracy.extend(accuracy_batch)
+		precision.extend(precision_batch)
+		recall.extend(recall_batch)
 	return accuracy, precision, recall, val_loss
 
 def train(model, piano, orch, train_index, valid_index,
@@ -160,7 +160,7 @@ def train(model, piano, orch, train_index, valid_index,
 			train_cost_epoch = []			
 			for batch_index in train_index:
 				# Build batch
-				piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch, model.batch_size, model.temporal_order)
+				piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch, len(batch_index), model.temporal_order)
 				
 				# Train step
 				feed_dict = {piano_t_ph: piano_t,

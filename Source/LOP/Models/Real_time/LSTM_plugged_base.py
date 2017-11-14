@@ -40,9 +40,9 @@ class LSTM_plugged_base(Model_lop):
 	@staticmethod
 	def is_keras():
 		return True
-    @staticmethod
-    def optimize():
-        return True
+	@staticmethod
+	def optimize():
+		return True
 	@staticmethod
 	def get_hp_space():
 		super_space = Model_lop.get_hp_space()
@@ -69,7 +69,7 @@ class LSTM_plugged_base(Model_lop):
 
 
 		#####################
-		# GRU for modelling past orchestra
+		# GRU for modelling past orchestra
 		# First layer
 		if len(self.n_hs) > 1:
 			return_sequences = True
@@ -85,7 +85,7 @@ class LSTM_plugged_base(Model_lop):
 			keras_layer_summary(gru_layer)
 		
 		if len(self.n_hs) > 1:
-			# Intermediates layers
+			# Intermediates layers
 			for layer_ind in range(1, len(self.n_hs)):
 				# Last layer ?
 				if layer_ind == len(self.n_hs)-1:
@@ -125,7 +125,6 @@ class LSTM_plugged_base(Model_lop):
 		return orch_prediction
 
 
-# 'batch_size' : 200,
 # 'temporal_order' : 5,
 # 'dropout_probability' : 0,
 # 'weight_decay_coeff' : 0,

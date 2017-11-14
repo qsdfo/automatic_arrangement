@@ -12,12 +12,11 @@ class Model_lop(object):
 	
 	def __init__(self, model_param, dimensions):
 		# Dimensions
-		self.batch_size = dimensions['batch_size']
 		self.temporal_order = dimensions['temporal_order']
 		self.piano_dim = dimensions['piano_dim']
 		self.orch_dim = dimensions['orch_dim']
 
-		# Regularization paramters
+		# Regularization paramters
 		self.dropout_probability = model_param['dropout_probability']
 		self.weight_decay_coeff = model_param['weight_decay_coeff']
 
@@ -26,9 +25,7 @@ class Model_lop(object):
 
 	@staticmethod
 	def get_hp_space():
-		space_training = {'batch_size': hopt_wrapper.quniform_int('batch_size', 50, 500, 1),
-						  'temporal_order': hopt_wrapper.qloguniform_int('temporal_order', log(3), log(20), 1)
-						  }
+		space_training = {'temporal_order': hopt_wrapper.qloguniform_int('temporal_order', log(3), log(20), 1)}
 
 		space_regularization = {'dropout_probability': hp.choice('dropout', [
 			0.0,

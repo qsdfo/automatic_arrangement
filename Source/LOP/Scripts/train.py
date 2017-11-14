@@ -7,7 +7,6 @@ import keras
 from keras import backend as K
 import numpy as np
 import time
-import os
 
 from LOP.Utils.early_stopping import up_criterion
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure
@@ -121,7 +120,6 @@ def train(model, piano, orch, train_index, valid_index,
 	val_tab_loss = np.zeros(max(1, parameters['max_iter']))
 	loss_tab = np.zeros(max(1, parameters['max_iter']))
 	best_val_loss = float("inf")
-	best_model = None
 	best_epoch = None
 
 	# with tf.Session(config=tf.ConfigProto(log_device_placement=LOGGING_DEVICE)) as sess:        
@@ -233,7 +231,7 @@ def train(model, piano, orch, train_index, valid_index,
 			# if mean_accuracy >= np.max(val_tab_acc):
 			if mean_val_loss <= best_val_loss:
 				save_time_start = time.time()
-				save_path = saver.save(sess, config_folder + "/model/model")
+				saver.save(sess, config_folder + "/model/model")
 				best_epoch = epoch
 				save_time = time.time() - save_time_start
 				logger_train.info(('Save time : {}'.format(save_time)).encode('utf8'))
@@ -251,7 +249,7 @@ def train(model, piano, orch, train_index, valid_index,
 			#######################################
 			epoch += 1
 
-		# Return best accuracy
+		# Return best accuracy
 		best_accuracy = val_tab_acc[best_epoch]
 		best_validation_loss = val_tab_loss[best_epoch]
 

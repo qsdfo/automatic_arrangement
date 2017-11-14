@@ -67,7 +67,7 @@ def get_dim_matrix(root_dir, folder_paths, meta_info_path='temp.p', quantization
             build_data_aux.process_folder(folder_path, quantization, temporal_granularity, gapopen=3, gapextend=1)
 
         if duration is None:
-            # Files that could not be aligned
+            # Files that could not be aligned
             continue
         T += duration
 
@@ -175,7 +175,7 @@ def build_data(root_dir, folder_paths, meta_info_path='temp.p', quantization=12,
 
         # Compute statistics
         for track_name, instrument_name in new_instru_orchestra.iteritems():
-            # Number of note played by this instru
+            # Number of note played by this instru
             if track_name not in new_pr_orchestra.keys():
                 continue
             n_note_played = (new_pr_orchestra[track_name] > 0).sum()
@@ -207,7 +207,7 @@ def build_data(root_dir, folder_paths, meta_info_path='temp.p', quantization=12,
     with open(store_folder + '/metadata.pkl', 'wb') as outfile:
         pickle.dump(metadata, outfile)
 
-    # Write statistics in a csv
+    # Write statistics in a csv
     header = "instrument_name;n_track_present;n_note_played"
     with open(store_folder + '/statistics.csv', 'wb') as csvfile:
         csvfile.write(header+'\n')
@@ -244,8 +244,8 @@ if __name__ == '__main__':
     quantization = 8
 
     DATABASE_PATH = config.database_root() + '/LOP_database_06_09_17'
-    DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
-    # DATABASE_NAMES = ["debug"]
+#    DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
+    DATABASE_NAMES = ["debug"]
 
     data_folder = '../../../Data_folds/Data'
     data_folder += '__' + temporal_granularity + str(quantization)

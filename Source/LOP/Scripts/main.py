@@ -2,8 +2,6 @@
 # -*- coding: utf8 -*-
 
 import cPickle as pkl
-import re
-import math
 import random
 import logging
 import glob
@@ -37,22 +35,7 @@ def main():
 	if not os.path.isdir(result_folder):
 		os.makedirs(result_folder)
 	# Parameters
-	parameters = {
-		"result_folder": result_folder,
-		# Data
-		"binarize_piano": True,
-		"binarize_orchestra": True,
-		# Train
-		"max_iter": 5,            # nb max of iterations when training 1 configuration of hparams (~200)
-		"walltime": 11,             # in hours
-		# Validation
-		"k_folds": 0,				# 0: no k-folds(use only the first fold of a 10-fold (i.e. 8-1-1 split)), -1: leave-one-out
-		"min_number_iteration": 100,
-		"validation_order": 2,
-		"number_strips": 3,
-		# Hyperopt
-		"max_hyperparam_configs": 20,            # number of hyper-parameter configurations evaluated
-	}
+	parameters = config.parameters(result_folder)
 
 	# Load the database metadata and add them to the script parameters to keep a record of the data processing pipeline
 	parameters.update(pkl.load(open(DATABASE_PATH + '/metadata.pkl', 'rb')))
@@ -86,11 +69,6 @@ def main():
 	logging.info((u'** Model : ' + Model.name()).encode('utf8'))
 	for k, v in parameters.iteritems():
 		logging.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
-	# logging.info((u'** Temporal granularity : ' + parameters['temporal_granularity']).encode('utf8'))
-	# logging.info((u'** Quantization : ' + str(parameters['quantization'])).encode('utf8'))
-	# logging.info((u'** Binary piano : ' + str(parameters["binarize_piano"])).encode('utf8'))
-	# logging.info((u'** Binary orchestra : ' + str(parameters["binarize_orchestra"])).encode('utf8'))
-	# logging.info((u'** Result folder : ' + result_folder).encode('utf8'))
 	logging.info('#'*60)
 	logging.info('#'*60)
 
@@ -139,7 +117,7 @@ def main():
 	# Grid search loop
 	############################################################
 	# Organisation :
-	# Each config is a folder with a random ID (integer)
+	# Each config is a folder with a random ID (integer)
 	# In eahc of this folder there is :
 	#    - a config.pkl file with the hyper-parameter space
 	#    - a result.txt file with the result
@@ -160,7 +138,7 @@ def main():
 					raise Exception("Config not overwritten")
 			config_loop(config_folder, model_parameters, parameters, DATABASE_PATH, track_paths_generation)
 	else:
-		# Already tested configs
+		# Already tested configs
 		list_config_folders = glob.glob(result_folder + '/*')
 		number_hp_config = max(0, parameters["max_hyperparam_configs"] - len(list_config_folders))
 		for hp_config in range(number_hp_config):
@@ -173,12 +151,12 @@ def main():
 					ID_SET = True
 			os.mkdir(config_folder)
 
-			# Find a point in space that has never been tested
+			# Find a point in space that has never been tested
 			# UNTESTED_POINT_FOUND = False
 			# while not UNTESTED_POINT_FOUND:
 			# 	model_parameters = hyperopt.pyll.stochastic.sample(model_parameters_space)
-			# 	# Check that this point in space has never been tested
-			# 	# By looking in all directories and reading the config.pkl file
+			# 	# Check that this point in space has never been tested
+			# 	# By looking in all directories and reading the config.pkl file
 
 			# 	UNTESTED_POINT_FOUND = True
 			# 	for dirname in list_config_folders:
@@ -220,7 +198,6 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 
 	# Get data and tvt splits (=folds)
 	piano, orch, K_folds, valid_names, test_names, dimensions = get_data_and_folds(database_path, parameters, model_params, logger_config)
-	import pdb; pdb.set_trace()
 	pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
 
 	for K_fold_ind, K_fold in enumerate(K_folds):
@@ -228,12 +205,11 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 		os.makedirs(config_folder_fold)
 		# Write filenames of this split
 		with open(os.path.join(config_folder_fold, "test_names.txt"), "wb") as f:
-			for filename in test_names:
+			for filename in test_names[K_fold_ind]:
 				f.write(filename + "\n")
 		with open(os.path.join(config_folder_fold, "valid_names.txt"), "wb") as f:
-			for filename in valid_names:
+			for filename in valid_names[K_fold_ind]:
 				f.write(filename + "\n")
-		import pdb; pdb.set_trace()
 		# Training
 		train_wrapper(parameters, model_params, dimensions, config_folder_fold, piano, orch, K_fold, logger_config)
 		# Generating
@@ -296,7 +272,7 @@ def get_data_and_folds(database_path, parameters, model_params, logger):
 				  'temporal_order': model_params['temporal_order'],
 				  'piano_dim': piano_dim,
 				  'orch_dim': orch_dim}
-	logger.info('TTT : Loading data took {} seconds'.format(time_load))
+	logger.info('TTT : Loading data took {} seconds'.format(time_load))
 	return piano, orch, K_folds, valid_names, test_names, dimensions
 
 def train_wrapper(parameters, model_params, dimensions, config_folder, piano, orch, K_fold, logger):
@@ -315,10 +291,9 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
 
 	train_index = K_fold['train']
 	valid_index = K_fold['valid']
-	test_index = K_fold['test']
 
 	############################################################
-	# Update train_param and model_param dicts with new information from load data
+	# Update train_param and model_param dicts with new information from load data
 	############################################################
 	n_train_batches = len(train_index)
 	n_val_batches = len(valid_index)
@@ -334,7 +309,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
 	################################################################################################################################################################
 	# A REECRIRE !!!!!
 	# IZY : juste mettre tous les indices des train batches en 1 colonne et ça définira orch_train
-	# # Class normalization
+	# # Class normalization
 	# notes_activation = orch_train.sum(axis=0)
 	# notes_activation_norm = notes_activation.mean() / (notes_activation+1e-10)
 	# class_normalization = np.maximum(1, np.minimum(20, notes_activation_norm))
@@ -363,7 +338,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
 
 	time_train_1 = time.time()
 	training_time = time_train_1-time_train_0
-	logger.info('TTT : Training data took {} seconds'.format(training_time))
+	logger.info('TTT : Training data took {} seconds'.format(training_time))
 	logger.info((u'# Best model obtained at epoch :  {}'.format(best_epoch)).encode('utf8'))
 	logger.info((u'# Loss :  {}'.format(loss_val)).encode('utf8'))
 	logger.info((u'# Accuracy :  {}'.format(accuracy_val)).encode('utf8'))

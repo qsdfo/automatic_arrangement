@@ -46,6 +46,8 @@ def generate(piano, path_to_config, orch_init=None, batch_size=5):
     tf.reset_default_graph() # First clear graph to avoid memory overflow when running training and generation in the same process
     saver = tf.train.import_meta_graph(path_to_model + '/model.meta')
     preds = tf.get_collection("preds")[0]
+    inputs_ph = tf.get_collection('inputs_ph')
+    piano_t_ph, piano_past_ph, piano_future_ph, orch_past_ph, orch_future_ph = inputs_ph
     keras_learning_phase = tf.get_collection("keras_learning_phase")[0]
 
     with tf.Session() as sess:
@@ -63,8 +65,11 @@ def generate(piano, path_to_config, orch_init=None, batch_size=5):
             piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch_gen, batch_size, temporal_order)
 
             # Feed dict
-            feed_dict = {'piano_t:0': piano_t,
-                        'orch_past:0': orch_past,
+            feed_dict = {piano_t_ph: piano_t,
+                        piano_past_ph: piano_past,
+                        piano_future_ph: piano_future,
+                        orch_past_ph: orch_past,
+                        orch_future_ph: orch_future,
                         keras_learning_phase: 0}
 
             # Get prediction

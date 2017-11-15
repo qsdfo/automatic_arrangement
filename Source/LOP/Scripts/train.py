@@ -269,7 +269,9 @@ def train(model, piano, orch, train_index, valid_index,
                 best_val_loss = mean_val_loss
                 
                 # Do some analysis
-                accuracy_and_binary_Xent(context, valid_index, "/Users/leo/Recherche/GitHub_Aciditeam/lop/Source/LOP/Scripts/debug/acc_Xent", 2)
+                import os
+                print(os.getcwd())
+                accuracy_and_binary_Xent(context, valid_index, "debug/acc_Xent", 2)
             #######################################
 
             if OVERFITTING:

@@ -50,7 +50,7 @@ def accuracy_and_binary_Xent(context, batches, plot_folder, N_example):
     # Clean plot directory
     if os.path.isdir(plot_folder):
         shutil.rmtree(plot_folder)
-    os.mkdir(plot_folder)
+    os.makedirs(plot_folder)
         
     # Unpack context variables    
     sess = context['sess']

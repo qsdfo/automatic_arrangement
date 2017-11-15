@@ -1,17 +1,16 @@
-# Folders
+# Some Folders
 **/.DS_Store
 Data
+Data_folds
 Notes
 Backup_code
 Articles
 Results
 Site_web
 TRASH
-Source/Needlepote
-Source/test.py
-Articles/ICCC/Corrections/
-Articles/ICCC/Corrections2/
-Source/LOP/Scripts/graph/
+Doc
+.spyderworkspace
+.spyproject
 
 # Image files
 **/*.pdf

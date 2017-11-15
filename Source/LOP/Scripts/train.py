@@ -7,6 +7,7 @@ import keras
 from keras import backend as K
 import numpy as np
 import time
+import os
 
 from LOP.Utils.early_stopping import up_criterion
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure
@@ -269,7 +270,7 @@ def train(model, piano, orch, train_index, valid_index,
                 best_val_loss = mean_val_loss
                 
                 # Do some analysis
-                accuracy_and_binary_Xent(context, valid_index, "/Users/leo/Recherche/GitHub_Aciditeam/lop/Source/LOP/Scripts/debug/acc_Xent", 2)
+                accuracy_and_binary_Xent(context, valid_index, os.get_cwd() + "debug/acc_Xent", 2)
             #######################################
 
             if OVERFITTING:

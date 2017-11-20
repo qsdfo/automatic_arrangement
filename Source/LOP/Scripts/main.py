@@ -21,8 +21,8 @@ from LOP.Utils.normalization import get_whitening_mat
 #from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
 from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
 
-GENERATE=True
-SAVE=True
+GENERATE=False
+SAVE=False
 DEFINED_CONFIG = True  # HYPERPARAM ?
 # For reproducibility
 RANDOM_SEED_FOLDS=1234 # This is useful to use always the same fold split

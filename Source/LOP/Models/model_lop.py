@@ -5,7 +5,6 @@
 from LOP.Utils import hopt_wrapper
 from math import log
 from hyperopt import hp
-import tensorflow as tf
 
 
 class Model_lop(object):

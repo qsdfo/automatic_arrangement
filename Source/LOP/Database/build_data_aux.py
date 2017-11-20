@@ -18,7 +18,7 @@ from simplify_instrumentation import get_simplify_mapping
 def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
     # There should be 2 files
     mid_files = glob.glob(folder_path + '/*.mid')
-    # Deduce csv files
+    # Deduce csv files
     csv_files = [re.sub(r'\.mid', '.csv', e) for e in mid_files]
 
     # Time
@@ -69,7 +69,7 @@ def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from
             # listed in the csv file, but not return by the read_midi function...
             # FIX THAT (don't write them in the csv file when generating it)
             continue
-        # Get unmixed instru names
+        # Get unmixed instru names
         instru_names = unmixed_instru(v)
         # Avoid mixed instrumentation for determining the range.
         # Why ?
@@ -121,31 +121,35 @@ def clean_event(event, trace, trace_prod):
     return new_event
 
 
-def discriminate_between_piano_and_orchestra(pr0, event0, instru0, name0, pr1, event1, instru1, name1, duration):
+def discriminate_between_piano_and_orchestra(pr0, event0, duration0, instru0, name0, pr1, event1, duration1, instru1, name1, duration):
     if len(set(instru0.values())) > len(set(instru1.values())):
         pr_orch = pr0
         event_orch = event0
+        duration_orch = duration0
         instru_orch = instru0
         name_orch = name0
         #
         pr_piano = pr1
         event_piano = event1
+        duration_piano = duration1
         instru_piano = instru1
         name_piano = name1
     elif len(set(instru0.values())) < len(set(instru1.values())):
         pr_orch = pr1
         event_orch = event1
+        duration_orch = duration1
         instru_orch = instru1
         name_orch = name1
         #
         pr_piano = pr0
         event_piano = event0
+        duration_piano = duration0
         instru_piano = instru0
         name_piano = name0
     else:
-        # Both tracks have the same number of instruments
-        return [None] * 9
-    return pr_piano, event_piano, instru_piano, name_piano, pr_orch, event_orch, instru_orch, name_orch, duration
+        # Both tracks have the same number of instruments
+        return [None] * 11
+    return pr_piano, event_piano, duration_piano, instru_piano, name_piano, pr_orch, event_orch, duration_orch, instru_orch, name_orch, duration
 
 
 def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, pr_big):
@@ -169,7 +173,7 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
             instru_names = unmixed_instru(instru[track_name.rstrip('\x00')])
         
         for instru_name in instru_names:
-            # "Remove" tracks
+            # "Remove" tracks
             if instru_name == 'Remove':
                 continue
 
@@ -202,12 +206,22 @@ def simplify_instrumentation(instru_name_complex):
 
 def process_folder(folder_path, quantization, temporal_granularity, gapopen=3, gapextend=1):
     # Get instrus and prs from a folder name name
-    pr0, instru0, _, name0, pr1, instru1, _, name1 = get_instru_and_pr_from_folder_path(folder_path, quantization)
+    pr0, instru0, T0, name0, pr1, instru1, T1, name1 = get_instru_and_pr_from_folder_path(folder_path, quantization)
 
     # Temporal granularity
     if temporal_granularity == 'event_level':
         event_0 = get_event_ind_dict(pr0)
         event_1 = get_event_ind_dict(pr1)
+        def get_duration(event, last_time):
+            start_ind = event[:]
+            end_ind = np.zeros(event.shape, dtype=np.int)
+            end_ind[:-1] = event[1:]
+            end_ind[-1] = last_time
+            duration_list = end_ind - start_ind
+            return duration_list
+        duration0 = get_duration(event_0, T0)
+        duration1 = get_duration(event_1, T1)
+        # Get the duration of each event
         pr0 = warp_pr_aux(pr0, event_0)
         pr1 = warp_pr_aux(pr1, event_1)
     else:
@@ -222,22 +236,28 @@ def process_folder(folder_path, quantization, temporal_granularity, gapopen=3, g
         if (trace_0 is None) or (trace_1 is None):
             event0_aligned = None
             event1_aligned = None
+            duration0_aligned = None
+            duration1_aligned = None
         else:
             event0_aligned = clean_event(event_0, trace_0, trace_prod)
             event1_aligned = clean_event(event_1, trace_1, trace_prod)
+            duration0_aligned = clean_event(duration0, trace_0, trace_prod)
+            duration1_aligned = clean_event(duration1, trace_1, trace_prod)
     else:
         event0_aligned = []
         event1_aligned = []
+        duration0_aligned = []
+        duration1_aligned = []
 
     # Find which pr is orchestra, which one is piano
-    pr_piano, event_piano, instru_piano, name_piano,\
-        pr_orch, event_orch, instru_orch, name_orch,\
+    pr_piano, event_piano, duration_piano, instru_piano, name_piano,\
+        pr_orch, event_orch, duration_orch, instru_orch, name_orch,\
         duration =\
-        discriminate_between_piano_and_orchestra(pr0_aligned, event0_aligned, instru0, name0,
-                                                 pr1_aligned, event1_aligned, instru1, name1,
+            discriminate_between_piano_and_orchestra(pr0_aligned, event0_aligned, duration0_aligned, instru0, name0,
+                                                 pr1_aligned, event1_aligned, duration1_aligned, instru1, name1,
                                                  duration)
 
-    return pr_piano, event_piano, instru_piano, name_piano, pr_orch, event_orch, instru_orch, name_orch, duration
+    return pr_piano, event_piano, duration_piano, instru_piano, name_piano, pr_orch, event_orch, duration_orch, instru_orch, name_orch, duration
 
 
 if __name__ == '__main__':

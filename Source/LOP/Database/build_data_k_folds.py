@@ -21,7 +21,6 @@ import numpy as np
 import LOP.Scripts.config as config
 
 from LOP_database.utils.build_dico import build_dico
-import LOP_database.utils.data_augmentation as data_augmentation
 import build_data_aux
 import cPickle as pickle
 
@@ -63,7 +62,7 @@ def get_dim_matrix(root_dir, folder_paths, meta_info_path='temp.p', quantization
             continue
 
         # Read pr
-        pr_piano, _, instru_piano, _, pr_orch, _, instru_orch, _, duration =\
+        pr_piano, _, _, instru_piano, _, pr_orch, _, _, instru_orch, _, duration =\
             build_data_aux.process_folder(folder_path, quantization, temporal_granularity, gapopen=3, gapextend=1)
 
         if duration is None:
@@ -140,6 +139,8 @@ def build_data(root_dir, folder_paths, meta_info_path='temp.p', quantization=12,
 
     pr_orchestra = np.zeros((T, N_orchestra), dtype=np.float32)
     pr_piano = np.zeros((T, N_piano), dtype=np.float32)
+    duration_piano = np.zeros((T), dtype=np.int)
+    duration_orch = np.zeros((T), dtype=np.int)
 
     # Write the prs in the matrix
     time = 0
@@ -152,7 +153,7 @@ def build_data(root_dir, folder_paths, meta_info_path='temp.p', quantization=12,
             continue
 
         # Get pr, warped and duration
-        new_pr_piano, _, _, _, new_pr_orchestra, _, new_instru_orchestra, _, duration\
+        new_pr_piano, _, new_duration_piano, _, _, new_pr_orchestra, _, new_duration_orch, new_instru_orchestra, _, duration\
             = build_data_aux.process_folder(folder_path, quantization, temporal_granularity, gapopen=3, gapextend=1)
 
         # SKip shitty files
@@ -166,6 +167,9 @@ def build_data(root_dir, folder_paths, meta_info_path='temp.p', quantization=12,
         # and cast them in the appropriate bigger structure
         cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, time,
                 duration, instru_mapping, pr_orchestra, pr_piano, logging)
+
+        duration_piano[time:time+duration] = new_duration_piano
+        duration_orch[time:time+duration] = new_duration_orch
 
         # Store beginning and end of this track
         tracks_start_end[folder_path] = (time, time+duration)
@@ -192,6 +196,10 @@ def build_data(root_dir, folder_paths, meta_info_path='temp.p', quantization=12,
         np.save(outfile, pr_orchestra)
     with open(store_folder + '/piano.npy', 'wb') as outfile:
         np.save(outfile, pr_piano)
+    with open(store_folder + '/duration_orchestra.npy', 'wb') as outfile:
+        np.save(outfile, duration_orch)
+    with open(store_folder + '/duration_piano.npy', 'wb') as outfile:
+        np.save(outfile, duration_piano)
     pickle.dump(tracks_start_end, open(store_folder + '/tracks_start_end.pkl', 'wb'))
 
     # Save pr_orchestra, pr_piano, instru_mapping
@@ -244,8 +252,8 @@ if __name__ == '__main__':
     quantization = 8
 
     DATABASE_PATH = config.database_root() + '/LOP_database_06_09_17'
-#    DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
-    DATABASE_NAMES = ["debug"]
+    DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
+#    DATABASE_NAMES = ["debug"]
 
     data_folder = '../../../Data_folds/Data'
     data_folder += '__' + temporal_granularity + str(quantization)

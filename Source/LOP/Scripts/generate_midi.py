@@ -89,7 +89,7 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     if re.search(ur'mid$', score_source):
         pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration = load_solo(score_source, quantization, temporal_granularity)
     else:
-        pr_piano, event_piano, name_piano, pr_orch, instru_orch, duration = load_from_pair(score_source, quantization, temporal_granularity)
+        pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration = load_from_pair(score_source, quantization, temporal_granularity)
     ########################
 
     ########################
@@ -97,7 +97,7 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     # Keep only the beginning of the pieces (let's say a 100 events)
     pr_piano = extract_pianoroll_part(pr_piano, 0, duration_gen)
     duration_piano = duration_piano[:duration_gen]
-    event_piano = event_piano[:duration_gen]
+    event_piano = event_piano[:duration_gen] 
     pr_orch = extract_pianoroll_part(pr_orch, 0, duration_gen)
     ########################
 
@@ -106,6 +106,8 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     N_piano = instru_mapping['Piano']['index_max']
     pr_piano_gen = np.zeros((duration_gen, N_piano), dtype=np.float32)
     pr_piano_gen = build_data_aux.cast_small_pr_into_big_pr(pr_piano, {}, 0, duration_gen, instru_mapping, pr_piano_gen)
+    pr_piano_gen_flat = pr_piano_gen.sum(axis=1)
+    silence_piano = [e for e in range(duration_gen) if pr_piano_gen_flat[e]== 0]
     ########################
 
     ########################
@@ -137,10 +139,10 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
         if parameters["normalize"] == "standard_pca":
             # load whitening params
             standard_pca_piano = np.load(os.path.join(config_folder, "standard_pca_piano"))
-            pr_piano_gen = apply_pca(pr_piano_gen, standard_pca_piano['mean_piano'], standard_pca_piano['std_piano'], standard_pca_piano['pca_piano'], standard_pca_piano['epsilon']) 
+            pr_piano_gen_norm = apply_pca(pr_piano_gen, standard_pca_piano['mean_piano'], standard_pca_piano['std_piano'], standard_pca_piano['pca_piano'], standard_pca_piano['epsilon']) 
         elif parameters["normalize"] == "standard_zca":
             standard_zca_piano = np.load(os.path.join(config_folder, "standard_zca_piano"))
-            pr_piano_gen = apply_zca(pr_piano_gen, standard_zca_piano['mean_piano'], standard_zca_piano['std_piano'], standard_zca_piano['zca_piano'], standard_zca_piano['epsilon'])
+            pr_piano_gen_norm = apply_zca(pr_piano_gen, standard_zca_piano['mean_piano'], standard_zca_piano['std_piano'], standard_zca_piano['zca_piano'], standard_zca_piano['epsilon'])
         else:
             raise Exception(str(parameters["normalize"]) + " is not a possible value for normalization parameter")        
     ########################
@@ -158,8 +160,8 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     # Generate
     ############################################################
     time_generate_0 = time.time()
-    generated_sequences_Xent = generate(pr_piano_gen, config_folder, 'model_Xent', pr_orchestra_gen, batch_size=number_of_version)
-    generated_sequences_acc = generate(pr_piano_gen, config_folder, 'model_acc', pr_orchestra_gen, batch_size=number_of_version)
+    generated_sequences_Xent = generate(pr_piano_gen_norm, silence_piano, config_folder, 'model_Xent', pr_orchestra_gen, batch_size=number_of_version)
+    generated_sequences_acc = generate(pr_piano_gen_norm, silence_piano, config_folder, 'model_acc', pr_orchestra_gen, batch_size=number_of_version)
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 
@@ -195,6 +197,8 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     else:
         A = pr_piano_gen
     B = A * 127
+    if parameters['duration_piano']:
+        B = B[:, :-1]  # Remove duration column
     piano_reconstructed = instrument_reconstruction_piano(B, instru_mapping)
     write_path = generated_folder + '/piano_reconstructed.mid'
     if rhythmic_reconstruction:

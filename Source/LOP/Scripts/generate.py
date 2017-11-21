@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-
+import os
 import numpy as np
 import cPickle as pkl
 import tensorflow as tf
@@ -10,7 +10,7 @@ from keras import backend as K
 from LOP.Utils.build_batch import build_batch
 
 
-def generate(piano, path_to_config, model_name='model', orch_init=None, batch_size=5):
+def generate(piano, silence_ind, path_to_config, model_name='model', orch_init=None, batch_size=5):
     # Perform N=batch_size orchestrations
     # Sample by sample generation
     # Input : 
@@ -21,7 +21,7 @@ def generate(piano, path_to_config, model_name='model', orch_init=None, batch_si
     #   - orchestration by the model    
 
     # Paths
-    path_to_model = path_to_config + '/model'
+    path_to_model = os.path.join(path_to_config, model_name)
     dimensions = pkl.load(open(path_to_config + '/../dimensions.pkl', 'rb'))
     is_keras = pkl.load(open(path_to_config + '/../is_keras.pkl', 'rb'))
 
@@ -59,26 +59,28 @@ def generate(piano, path_to_config, model_name='model', orch_init=None, batch_si
         
         # for t in range(init_length, total_length):    A REMPLACER PAR TOTAL_LENGTH - TEMPORAL ORDER QUAND ON FERA AUSSI BACKAARD
         for t in range(init_length, total_length-temporal_order):
-            # Just duplicate the temporal index to create batch generation
-            batch_index = np.tile(t, batch_size)
+            # If piano is a silence, we automatically orchestrate by a silence (i.e. we do nothing)
+            if t not in silence_ind:
+                # Just duplicate the temporal index to create batch generation
+                batch_index = np.tile(t, batch_size)
+                    
+                piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch_gen, batch_size, temporal_order)
+    
+                # Feed dict
+                feed_dict = {piano_t_ph: piano_t,
+                            piano_past_ph: piano_past,
+                            piano_future_ph: piano_future,
+                            orch_past_ph: orch_past,
+                            orch_future_ph: orch_future,
+                            keras_learning_phase: 0}
+    
+                # Get prediction
+                prediction = sess.run(preds, feed_dict)
                 
-            piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch_gen, batch_size, temporal_order)
-
-            # Feed dict
-            feed_dict = {piano_t_ph: piano_t,
-                        piano_past_ph: piano_past,
-                        piano_future_ph: piano_future,
-                        orch_past_ph: orch_past,
-                        orch_future_ph: orch_future,
-                        keras_learning_phase: 0}
-
-            # Get prediction
-            prediction = sess.run(preds, feed_dict)
-
-            # Preds should be a probability distribution. Sample from it
-            # Note that it doesn't need to be part of the graph since we don't use the sampled value to compute the backproped error 
-            prediction_sampled = np.random.binomial(1, prediction)
-
-            orch_gen[:, t, :] = prediction_sampled
+                # Preds should be a probability distribution. Sample from it
+                # Note that it doesn't need to be part of the graph since we don't use the sampled value to compute the backproped error
+                prediction_sampled = np.random.binomial(1, prediction)
+    
+                orch_gen[:, t, :] = prediction_sampled
 
     return orch_gen

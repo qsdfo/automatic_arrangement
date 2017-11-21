@@ -31,7 +31,7 @@ RANDOM_SEED=None
 
 def main():
     # DATABASE
-    DATABASE = "Data__event_level8"
+    DATABASE = "Data_DEBUG__event_level8"
     DATABASE_PATH = config.data_root() + "/" + DATABASE
     # RESULTS
     result_folder =  config.result_root() + '/' + DATABASE + '/' + Model.name()
@@ -224,13 +224,13 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
                 mean_piano, std_piano, pca_piano, _ = get_whitening_mat(piano_train, epsilon)
                 piano = apply_pca(piano, mean_piano, std_piano, pca_piano, epsilon) 
                 # Save the transformations for later
-                standard_pca_piano = {'mean_piano': mean_piano, 'std_piano': std_piano, 'pca_piano': pca_piano}
+                standard_pca_piano = {'mean_piano': mean_piano, 'std_piano': std_piano, 'pca_piano': pca_piano, 'epsilon': epsilon}
                 pkl.dump(standard_pca_piano, open(os.path.join(config_folder_fold, "standard_pca_piano"), 'wb'))
             elif parameters["normalize"] == "standard_zca":
                 mean_piano, std_piano, _, zca_piano = get_whitening_mat(piano_train, epsilon)
                 piano = apply_zca(piano, mean_piano, std_piano, zca_piano, epsilon)
                 # Save the transformations for later
-                standard_zca_piano = {'mean_piano': mean_piano, 'std_piano': std_piano, 'zca_piano': zca_piano}
+                standard_zca_piano = {'mean_piano': mean_piano, 'std_piano': std_piano, 'zca_piano': zca_piano, 'epsilon': epsilon}
                 pkl.dump(standard_zca_piano, open(os.path.join(config_folder_fold, "standard_zca_piano"), 'wb'))
             else:
                 raise Exception(str(parameters["normalize"]) + " is not a possible value for normalization parameter")
@@ -348,7 +348,8 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
     # Instanciate model and save folder
     ############################################################
     model = Model(model_params, dimensions)
-    os.mkdir(config_folder + '/model/')
+    os.mkdir(config_folder + '/model_Xent/')
+    os.mkdir(config_folder + '/model_acc/')
 
     ############################################################
     # Train

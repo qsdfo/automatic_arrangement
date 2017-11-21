@@ -273,7 +273,7 @@ def train(model, piano, orch, train_index, valid_index,
                 # Analysis
                 # accuracy_and_binary_Xent(context, valid_index, os.path.join(os.getcwd(), "debug/acc_Xent"), 20)
             
-            if mean_accuracy <= best_acc:
+            if mean_accuracy >= best_acc:
                 saver.save(sess, config_folder + "/model_acc/model")
                 best_acc = mean_accuracy
             #######################################

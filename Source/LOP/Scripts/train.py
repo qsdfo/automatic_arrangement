@@ -138,6 +138,7 @@ def train(model, piano, orch, train_index, valid_index,
     val_tab_loss = np.zeros(max(1, parameters['max_iter']))
     loss_tab = np.zeros(max(1, parameters['max_iter']))
     best_val_loss = float("inf")
+    best_acc = 0.
     best_epoch = None
 
     # with tf.Session(config=tf.ConfigProto(log_device_placement=LOGGING_DEVICE)) as sess:        
@@ -263,14 +264,18 @@ def train(model, piano, orch, train_index, valid_index,
             # if mean_accuracy >= np.max(val_tab_acc):
             if mean_val_loss <= best_val_loss:
                 save_time_start = time.time()
-                saver.save(sess, config_folder + "/model/model")
+                saver.save(sess, config_folder + "/model_Xent/model")
                 best_epoch = epoch
                 save_time = time.time() - save_time_start
                 logger_train.info(('Save time : {}'.format(save_time)).encode('utf8'))
                 best_val_loss = mean_val_loss
                 
-                # Do some analysis
-                accuracy_and_binary_Xent(context, valid_index, os.path.join(os.getcwd(), "debug/acc_Xent"), 20)
+                # Analysis
+                # accuracy_and_binary_Xent(context, valid_index, os.path.join(os.getcwd(), "debug/acc_Xent"), 20)
+            
+            if mean_accuracy <= best_acc:
+                saver.save(sess, config_folder + "/model_acc/model")
+                best_acc = mean_accuracy
             #######################################
 
             if OVERFITTING:

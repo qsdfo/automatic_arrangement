@@ -158,30 +158,35 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     # Generate
     ############################################################
     time_generate_0 = time.time()
-    generated_sequences = generate(pr_piano_gen, config_folder, pr_orchestra_gen, batch_size=number_of_version)
+    generated_sequences_Xent = generate(pr_piano_gen, config_folder, 'model_Xent', pr_orchestra_gen, batch_size=number_of_version)
+    generated_sequences_acc = generate(pr_piano_gen, config_folder, 'model_acc', pr_orchestra_gen, batch_size=number_of_version)
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 
     ############################################################
     # Reconstruct and write
     ############################################################
-    for write_counter in xrange(generated_sequences.shape[0]):
-        # To distinguish when seed stop, insert a sustained note
-        this_seq = generated_sequences[write_counter] * 127
-        this_seq[:seed_size, 0] = 1
-        # Reconstruct
-        if rhythmic_reconstruction:
-            pr_orchestra_clean = from_event_to_frame(this_seq, event_piano)
-        else:
-            pr_orchestra_clean = this_seq
-        pr_orchestra = instrument_reconstruction(pr_orchestra_clean, instru_mapping)
-        # Write
-        write_path = generated_folder + '/' + str(write_counter) + '_generated.mid'
-        if rhythmic_reconstruction:
-            write_midi(pr_orchestra, quantization, write_path, tempo=80)
-        else:
-            write_midi(pr_orchestra, 1, write_path, tempo=80)
-
+    def reconstruct_write_aux(generated_sequences, prefix):
+        for write_counter in xrange(generated_sequences.shape[0]):
+            # To distinguish when seed stop, insert a sustained note
+            this_seq = generated_sequences[write_counter] * 127
+            this_seq[:seed_size, 0] = 20
+            # Reconstruct
+            if rhythmic_reconstruction:
+                pr_orchestra_clean = from_event_to_frame(this_seq, event_piano)
+            else:
+                pr_orchestra_clean = this_seq
+            pr_orchestra = instrument_reconstruction(pr_orchestra_clean, instru_mapping)
+            # Write
+            write_path = generated_folder + '/' + prefix + '_' + str(write_counter) + '_generated.mid'
+            if rhythmic_reconstruction:
+                write_midi(pr_orchestra, quantization, write_path, tempo=80)
+            else:
+                write_midi(pr_orchestra, 1, write_path, tempo=80)
+        return
+    reconstruct_write_aux(generated_sequences_Xent, 'Xent')
+    reconstruct_write_aux(generated_sequences_acc, 'acc')
+    
     ############################################################
     ############################################################
     # Write original orchestration and piano scores, but reconstructed version, just to check

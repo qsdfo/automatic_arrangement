@@ -10,7 +10,7 @@ from keras import backend as K
 from LOP.Utils.build_batch import build_batch
 
 
-def generate(piano, path_to_config, orch_init=None, batch_size=5):
+def generate(piano, path_to_config, model_name='model', orch_init=None, batch_size=5):
     # Perform N=batch_size orchestrations
     # Sample by sample generation
     # Input : 

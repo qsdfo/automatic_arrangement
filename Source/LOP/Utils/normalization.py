@@ -9,6 +9,16 @@ Created on Thu Nov 16 12:17:39 2017
 import numpy as np
 
 
+def apply_pca(piano, mean_piano, std_piano, pca_piano, epsilon):
+    piano_std = (piano-mean_piano) / (std_piano + epsilon)
+    piano = np.dot(piano_std, pca_piano)
+    return piano
+
+def apply_zca(piano, mean_piano, std_piano, zca_piano, epsilon):
+    piano_std = (piano-mean_piano) / (std_piano + epsilon)
+    piano = np.dot(piano_std, zca_piano)
+    return piano
+
 def get_whitening_mat(matrix, epsilon_std):
     """Compute statistics for standardization and zca pre-processing
     

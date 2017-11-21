@@ -15,7 +15,8 @@ from train import train
 from generate_midi import generate_midi
 import config
 from LOP.Database.load_data_k_folds import build_folds
-from LOP.Utils.normalization import get_whitening_mat
+from LOP.Utils.normalization import get_whitening_mat, apply_pca, apply_zca
+from LOP.Utils.process_data import process_data_piano, process_data_orch
 
 # MODEL
 #from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
@@ -212,28 +213,29 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
         with open(os.path.join(config_folder_fold, "valid_names.txt"), "wb") as f:
             for filename in valid_names[K_fold_ind]:
                 f.write(filename + "\n")
+        
         ## Normalize the data
         # Normalization must be computed only on training data, but performed over all the dataset
-        if parameters["normalize"] in ["standard_zca", "standard_pca"] :
+        if parameters["normalize"] is not None:
             train_indices_flat = [item for sublist in K_fold['train'] for item in sublist]
             piano_train = piano[train_indices_flat]
             epsilon = 0.0001
-            mean_piano, std_piano, pca_piano, zca_piano = get_whitening_mat(piano_train, epsilon)
-            # Note : the first eigen value in the decomposition of the covariance matrix is much higher than the other ones.
-            # The corresponding eigen vector discards almost completely the duration information, which suggests that it is absolutely not correlated with the other data
-            piano_std = (piano-mean_piano) / (std_piano + epsilon)
             if parameters["normalize"] == "standard_pca":
-                piano = np.dot(piano_std, pca_piano)
+                mean_piano, std_piano, pca_piano, _ = get_whitening_mat(piano_train, epsilon)
+                piano = apply_pca(piano, mean_piano, std_piano, pca_piano, epsilon) 
                 # Save the transformations for later
-                standard_pca_piano = {'mean': mean_piano, 'pca': pca_piano}
+                standard_pca_piano = {'mean_piano': mean_piano, 'std_piano': std_piano, 'pca_piano': pca_piano}
                 pkl.dump(standard_pca_piano, open(os.path.join(config_folder_fold, "standard_pca_piano"), 'wb'))
             elif parameters["normalize"] == "standard_zca":
-                piano = np.dot(piano_std, zca_piano)
+                mean_piano, std_piano, _, zca_piano = get_whitening_mat(piano_train, epsilon)
+                piano = apply_zca(piano, mean_piano, std_piano, zca_piano, epsilon)
                 # Save the transformations for later
-                standard_zca_piano = {'mean': mean_piano, 'zca': zca_piano}
+                standard_zca_piano = {'mean_piano': mean_piano, 'std_piano': std_piano, 'zca_piano': zca_piano}
                 pkl.dump(standard_zca_piano, open(os.path.join(config_folder_fold, "standard_zca_piano"), 'wb'))
-        elif parameters["normalize"] != None:
-            raise Exception(parameters["normalize"] + " is not a possible value for normalization parameter")
+            else:
+                raise Exception(str(parameters["normalize"]) + " is not a possible value for normalization parameter")
+            
+        
         # Training
         train_wrapper(parameters, model_params, dimensions, config_folder_fold, piano, orch, K_fold, logger_config)
         # Generating
@@ -251,26 +253,13 @@ def get_data_and_folds(database_path, parameters, model_params, logger):
     
     # Load data and build K_folds
     time_load_0 = time.time()
-    
+
     ## Load the matrices
     piano = np.load(database_path + '/piano.npy')
     orch = np.load(database_path + '/orchestra.npy')
-
-    # Binarize inputs ?
-    if parameters["binarize_piano"]:
-        piano[np.nonzero(piano)] = 1
-    else:
-        piano = piano / 127
-    if parameters["binarize_orchestra"]:
-        orch[np.nonzero(orch)] = 1
-    else:
-        orch = orch / 127
-        
-    # Add duration of the piano score ?
-    if parameters["duration_piano"]:
-        duration_piano = np.load(database_path + '/duration_piano.npy')
-        duration_piano_reshape = np.reshape(duration_piano, [-1, 1])
-        piano = np.concatenate((piano, duration_piano_reshape), axis=1)
+    duration_piano = np.load(database_path + '/duration_piano.npy')
+    piano = process_data_piano(piano, duration_piano, parameters)
+    orch = process_data_orch(orch, parameters)
     
     # ####################################################
     # ####################################################
@@ -384,7 +373,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
 
 def generate_wrapper(config_folder, track_paths_generation, logger):
     for score_source in track_paths_generation:
-            generate_midi(config_folder, score_source, 3, logger)
+            generate_midi(config_folder, score_source, number_of_version=3, duration_gen=100, rhythmic_reconstruction=False, logger_generate=logger)
     
 
 if __name__ == '__main__':

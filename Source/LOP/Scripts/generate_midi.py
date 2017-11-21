@@ -145,6 +145,8 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
             pr_piano_gen_norm = apply_zca(pr_piano_gen, standard_zca_piano['mean_piano'], standard_zca_piano['std_piano'], standard_zca_piano['zca_piano'], standard_zca_piano['epsilon'])
         else:
             raise Exception(str(parameters["normalize"]) + " is not a possible value for normalization parameter")        
+    else:
+        pr_piano_gen_norm = pr_piano_gen
     ########################
     
     ########################

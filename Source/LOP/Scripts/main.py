@@ -22,7 +22,7 @@ from LOP.Utils.process_data import process_data_piano, process_data_orch
 #from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
 from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
 
-GENERATE=False
+GENERATE=True
 SAVE=False
 DEFINED_CONFIG = True  # HYPERPARAM ?
 # For reproducibility
@@ -257,7 +257,10 @@ def get_data_and_folds(database_path, parameters, model_params, logger):
     ## Load the matrices
     piano = np.load(database_path + '/piano.npy')
     orch = np.load(database_path + '/orchestra.npy')
-    duration_piano = np.load(database_path + '/duration_piano.npy')
+    if parameters['duration_piano']:
+        duration_piano = np.load(database_path + '/duration_piano.npy')
+    else:
+        duration_piano = None
     piano = process_data_piano(piano, duration_piano, parameters)
     orch = process_data_orch(orch, parameters)
     

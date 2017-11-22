@@ -10,7 +10,7 @@ import time
 import os
 
 from LOP.Utils.early_stopping import up_criterion
-from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure
+from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure
 from LOP.Utils.build_batch import build_batch
 from LOP.Utils.get_statistics import count_parameters
 from LOP.Utils.Analysis.accuracy_and_binary_Xent import accuracy_and_binary_Xent
@@ -44,6 +44,8 @@ def validate(context, valid_index):
     precision = []
     recall = []
     val_loss = []
+    true_accuracy = []
+    f_score = []
     for batch_index in valid_index:
         # Build batch
         piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch, len(batch_index), temporal_order)
@@ -61,10 +63,14 @@ def validate(context, valid_index):
         accuracy_batch = accuracy_measure(orch_t, preds_batch)
         precision_batch = precision_measure(orch_t, preds_batch)
         recall_batch = recall_measure(orch_t, preds_batch)
+        true_accuracy_batch = true_accuracy_measure(orch_t, preds_batch)
+        f_score_batch = f_measure(orch_t, preds_batch)
         accuracy.extend(accuracy_batch)
         precision.extend(precision_batch)
         recall.extend(recall_batch)
-    return accuracy, precision, recall, val_loss
+        true_accuracy.extend(true_accuracy_batch)
+        f_score.extend(f_score_batch)
+    return accuracy, precision, recall, val_loss, true_accuracy, f_score
 
 def train(model, piano, orch, train_index, valid_index,
           parameters, config_folder, start_time_train, logger_train):
@@ -136,6 +142,8 @@ def train(model, piano, orch, train_index, valid_index,
     val_tab_prec = np.zeros(max(1, parameters['max_iter']))
     val_tab_rec = np.zeros(max(1, parameters['max_iter']))
     val_tab_loss = np.zeros(max(1, parameters['max_iter']))
+    val_tab_true_acc = np.zeros(max(1, parameters['max_iter']))
+    val_tab_f_score = np.zeros(max(1, parameters['max_iter']))
     loss_tab = np.zeros(max(1, parameters['max_iter']))
     best_val_loss = float("inf")
     best_acc = 0.
@@ -174,12 +182,14 @@ def train(model, piano, orch, train_index, valid_index,
         
         if model.optimize() == False:
             # Some baseline models don't need training step optimization
-            accuracy, precision, recall, val_loss = validate(context, valid_index)
+            accuracy, precision, recall, val_loss, true_accuracy, f_score = validate(context, valid_index)
             mean_val_loss = np.mean(val_loss)
             mean_accuracy = 100 * np.mean(accuracy)
             mean_precision = 100 * np.mean(precision)
             mean_recall = 100 * np.mean(recall)
-            return mean_val_loss, mean_accuracy, 0
+            mean_true_accuracy = 100 * np.mean(true_accuracy)
+            mean_f_score = 100 * np.mean(f_score)
+            return mean_val_loss, mean_accuracy, mean_true_accuracy, mean_f_score, 0
         
         # Training iteration
         while (not OVERFITTING and not TIME_LIMIT
@@ -223,20 +233,24 @@ def train(model, piano, orch, train_index, valid_index,
             #######################################
             # Validate
             #######################################
-            accuracy, precision, recall, val_loss = validate(context, valid_index)
+            accuracy, precision, recall, val_loss, true_accuracy, f_score = validate(context, valid_index)
             mean_val_loss = np.mean(val_loss)
-            val_tab_loss[epoch] = mean_val_loss
             mean_accuracy = 100 * np.mean(accuracy)
             mean_precision = 100 * np.mean(precision)
             mean_recall = 100 * np.mean(recall)
+            mean_true_accuracy = 100 * np.mean(true_accuracy)
+            mean_f_score = 100 * np.mean(f_score)
+            val_tab_loss[epoch] = mean_val_loss
             val_tab_acc[epoch] = mean_accuracy
             val_tab_prec[epoch] = mean_precision
             val_tab_rec[epoch] = mean_recall
+            val_tab_true_acc[epoch] = mean_true_accuracy
+            val_tab_f_score[epoch] = mean_f_score
 
             end_time_epoch = time.time()
             
             #######################################
-            # Overfitting ?
+            # Overfitting ? Based on Xentr
             if epoch >= parameters['min_number_iteration']:
                 OVERFITTING = up_criterion(val_tab_loss, epoch, parameters["number_strips"], parameters["validation_order"])
             #######################################
@@ -251,8 +265,10 @@ def train(model, piano, orch, train_index, valid_index,
             # Log training
             #######################################
             logger_train.info("############################################################")
-            logger_train.info(('Epoch : {} , Training loss : {} , Validation binary_crossentr : {}, Validation accuracy : {} %, precision : {} %, recall : {} %'
-                              .format(epoch, mean_loss, mean_val_loss, mean_accuracy, mean_precision, mean_recall))
+            logger_train.info(('Epoch : {} , Training loss : {} , Validation binary_crossentr : {} \n \
+                               Validation accuracy : {} %, precision : {} %, recall : {} % \n \
+                               True_accuracy : {} %, f_score : {} %'
+                              .format(epoch, mean_loss, mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score))
                               .encode('utf8'))
 
             logger_train.info(('Time : {}'
@@ -271,7 +287,13 @@ def train(model, piano, orch, train_index, valid_index,
                 best_val_loss = mean_val_loss
                 
                 # Analysis
-                # accuracy_and_binary_Xent(context, valid_index, os.path.join(os.getcwd(), "debug/acc_Xent"), 20)
+#                accuracy_and_binary_Xent(context, valid_index, os.path.join(os.getcwd(), "debug/acc_Xent"), 20)
+                # Save the table containing acuracy, true_accyuracy, loss and f_score
+                np.save(os.path.join(config_folder, 'accuracy.npy'), 100 * accuracy)
+                np.save(os.path.join(config_folder, 'true_accuracy.npy'), 100 * true_accuracy)
+                np.save(os.path.join(config_folder, 'f_measure.npy'), 100 * f_score)
+                np.save(os.path.join(config_folder, 'Xent.npy'), val_loss)
+                
             
             if mean_accuracy >= best_acc:
                 saver.save(sess, config_folder + "/model_acc/model")

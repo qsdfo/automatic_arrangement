@@ -22,7 +22,7 @@ from LOP.Utils.process_data import process_data_piano, process_data_orch
 #from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
 from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
 
-GENERATE=True
+GENERATE=False
 SAVE=False
 DEFINED_CONFIG = True  # HYPERPARAM ?
 # For reproducibility

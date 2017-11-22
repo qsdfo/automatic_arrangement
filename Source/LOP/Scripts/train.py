@@ -59,7 +59,7 @@ def validate(context, valid_index):
                     keras_learning_phase: 0}
         # Compute validation loss
         preds_batch, loss_batch = sess.run([preds, loss], feed_dict)
-        val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean
+        val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
         accuracy_batch = accuracy_measure(orch_t, preds_batch)
         precision_batch = precision_measure(orch_t, preds_batch)
         recall_batch = recall_measure(orch_t, preds_batch)
@@ -70,6 +70,7 @@ def validate(context, valid_index):
         recall.extend(recall_batch)
         true_accuracy.extend(true_accuracy_batch)
         f_score.extend(f_score_batch)
+                
     return accuracy, precision, recall, val_loss, true_accuracy, f_score
 
 def train(model, piano, orch, train_index, valid_index,

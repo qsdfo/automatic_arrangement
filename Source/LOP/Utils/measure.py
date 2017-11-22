@@ -80,3 +80,13 @@ def precision_measure(true_frame, pred_frame):
     precision_measure = np.where(quotient == 0, 0, true_positive / quotient)
 
     return precision_measure
+
+
+def binary_cross_entropy(true_frame, pred_frame):
+    axis = true_frame.ndim - 1
+    cross_entr_dot = np.multiply(true_frame, np.log(pred_frame)) + np.multiply((1-true_frame), np.log((1-pred_frame)))
+    # Mean over feature dimension
+    cross_entr = - np.mean(cross_entr_dot, axis=axis)
+    return cross_entr
+    
+    

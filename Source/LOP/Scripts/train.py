@@ -71,7 +71,7 @@ def validate(context, valid_index):
         true_accuracy.extend(true_accuracy_batch)
         f_score.extend(f_score_batch)
                 
-    return accuracy, precision, recall, val_loss, true_accuracy, f_score
+    return np.asarray(accuracy), np.assarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score)
 
 def train(model, piano, orch, train_index, valid_index,
           parameters, config_folder, start_time_train, logger_train):
@@ -293,7 +293,7 @@ def train(model, piano, orch, train_index, valid_index,
                 np.save(os.path.join(config_folder, 'accuracy.npy'), 100 * accuracy)
                 np.save(os.path.join(config_folder, 'true_accuracy.npy'), 100 * true_accuracy)
                 np.save(os.path.join(config_folder, 'f_measure.npy'), 100 * f_score)
-                np.save(os.path.join(config_folder, 'Xent.npy'), val_loss)
+                np.save(os.path.join(config_folder, 'Xent.npy'), 100 * val_loss)
                 
             
             if mean_accuracy >= best_acc:

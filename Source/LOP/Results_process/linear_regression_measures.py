@@ -11,15 +11,13 @@ Plot relation between two measures and their linear regression.
 # -*- coding: utf8 -*-
 
 
-from sklearn import datasets, linear_model
+from sklearn import linear_model
 from matplotlib import pyplot as plt
 from sklearn.metrics import mean_squared_error
 
 import os
 import shutil
 import numpy as np
-
-import LOP.Scripts.config as config
 
 def compare(x, name_measure_A, y, name_measure_B, result_folder):
     """Compute the linear regression, scatter plot the points in a plan along with the curve derived from the linear reg.
@@ -67,17 +65,16 @@ def process_measure(config_folders, name_measure_A, name_measure_B, result_folde
     measure_B_list = []
     for config_folder in config_folders:
         # Read npy
-        measure_A_list.append(np.load(os.path.join(config_folder, name_measure_A)))
-        measure_B_list.append(np.load(os.path.join(config_folder, name_measure_B)))
+        measure_A_list.append(np.load(os.path.join(config_folder, name_measure_A + '.npy')))
+        measure_B_list.append(np.load(os.path.join(config_folder, name_measure_B + '.npy')))
     measure_A = np.concatenate(measure_A_list)
     measure_B = np.concatenate(measure_B_list)
-    compare(measure_A, name_measure_A, measure_B, name_measure_B)
+    compare(measure_A, name_measure_A, measure_B, name_measure_B, result_folder)
     return
 
 if __name__ == '__main__':
-    config_folders = [
-        '',
-    ]
+    source_folder = '/Users/leo/Recherche/GitHub_Aciditeam/lop/Results/MEASURE/scatter_measures_link'
+    config_folders = [os.path.join(source_folder, str(e)) for e in range(10)]
     result_folder = 'compare_measure'
 
     if os.path.isdir(result_folder):

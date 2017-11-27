@@ -18,6 +18,23 @@ def accuracy_measure(true_frame, pred_frame):
     return accuracy_measure
 
 
+def accuracy_measure_test(true_frame, pred_frame):
+    axis = len(true_frame.shape) - 1
+
+    C = 0
+    K = 0
+    
+    true_positive = np.sum(pred_frame * true_frame, axis=axis)
+    false_negative = np.sum((1 - pred_frame) * true_frame, axis=axis)
+    false_positive = np.sum(pred_frame * (1 - true_frame), axis=axis)
+
+    quotient = true_positive + false_negative + false_positive
+    
+    accuracy_measure = np.where(np.equal(quotient, 0), 0, np.true_divide(true_positive + C, quotient + K))
+
+    return accuracy_measure
+
+
 def true_accuracy_measure(true_frame, pred_frame):
     axis = len(true_frame.shape) - 1
 
@@ -89,5 +106,3 @@ def binary_cross_entropy(true_frame, pred_frame):
     # Mean over feature dimension
     cross_entr = - np.mean(cross_entr_dot, axis=axis)
     return cross_entr
-    
-    

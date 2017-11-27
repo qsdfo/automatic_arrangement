@@ -10,7 +10,7 @@ import time
 import os
 
 from LOP.Utils.early_stopping import up_criterion
-from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure
+from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure, binary_cross_entropy
 from LOP.Utils.build_batch import build_batch
 from LOP.Utils.get_statistics import count_parameters
 from LOP.Utils.Analysis.accuracy_and_binary_Xent import accuracy_and_binary_Xent
@@ -59,12 +59,15 @@ def validate(context, valid_index):
                     keras_learning_phase: 0}
         # Compute validation loss
         preds_batch, loss_batch = sess.run([preds, loss], feed_dict)
-        val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
+#        val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
+        Xent_batch = binary_cross_entropy(orch_t, preds_batch)
         accuracy_batch = accuracy_measure(orch_t, preds_batch)
         precision_batch = precision_measure(orch_t, preds_batch)
         recall_batch = recall_measure(orch_t, preds_batch)
         true_accuracy_batch = true_accuracy_measure(orch_t, preds_batch)
         f_score_batch = f_measure(orch_t, preds_batch)
+        
+        val_loss.extend(Xent_batch)
         accuracy.extend(accuracy_batch)
         precision.extend(precision_batch)
         recall.extend(recall_batch)

@@ -30,6 +30,10 @@ def compare(x, name_measure_A, y, name_measure_B, result_folder):
         values corresponding to the second measure
     
     """
+    plt.clf()
+    N_sample = 10000
+    x = x[:N_sample]
+    y = y[:N_sample]
     # Linear regression
     regr = linear_model.LinearRegression()
     regr.fit(np.reshape(x, (-1, 1)), y)

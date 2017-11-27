@@ -31,7 +31,7 @@ def compare(x, name_measure_A, y, name_measure_B, result_folder):
     
     """
     plt.clf()
-    N_sample = 10000
+    N_sample = 1000
     x = x[:N_sample]
     y = y[:N_sample]
     # Linear regression

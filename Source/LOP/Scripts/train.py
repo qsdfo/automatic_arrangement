@@ -71,7 +71,7 @@ def validate(context, valid_index):
         true_accuracy.extend(true_accuracy_batch)
         f_score.extend(f_score_batch)
                 
-    return np.asarray(accuracy), np.assarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score)
+    return np.asarray(accuracy), np.asarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score)
 
 def train(model, piano, orch, train_index, valid_index,
           parameters, config_folder, start_time_train, logger_train):

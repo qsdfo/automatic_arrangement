@@ -19,6 +19,7 @@ from LOP.Utils.Analysis.compare_Xent_acc_corresponding_preds import compare_Xent
 DEBUG = False
 # Note : debug sans summarize, qui pollue le tableau de variables
 SUMMARIZE = False
+ANALYSIS = False
 # Device to use
 # os.environ["CUDA_VISIBLE_DEVICES"]="1"
 # Logging deive use ?
@@ -123,7 +124,7 @@ def train(model, piano, orch, train_index, valid_index,
     # Comme ça on pourra faire des classifier chains
     
     loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
-#    loss = tf.reduce_mean(-accuracy_tf(orch_t_ph, preds, axis=1), name="loss")
+    loss = tf.reduce_mean(-accuracy_tf(orch_t_ph, preds, axis=1), name="loss")
     
     # train_step = tf.train.AdamOptimizer(0.5).minimize(loss)
     if model.optimize():
@@ -308,13 +309,15 @@ def train(model, piano, orch, train_index, valid_index,
                 best_val_loss = mean_val_loss
                 
                 # Analysis
-#                accuracy_and_binary_Xent(context, valid_index, os.path.join(os.getcwd(), "debug/acc_Xent"), 20)
-                compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Xent_criterion"))
+                if ANALYSIS:
+#                    accuracy_and_binary_Xent(context, valid_index, os.path.join(os.getcwd(), "debug/acc_Xent"), 20)
+                    compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Xent_criterion"))
             # Accuracy criterion
             if mean_accuracy >= best_acc:
                 saver.save(sess, config_folder + "/model_acc/model")
                 best_acc = mean_accuracy
-                compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Acc_criterion"))
+                if ANALYSIS:
+                    compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Acc_criterion"))
             #######################################
 
             if OVERFITTING:

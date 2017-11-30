@@ -5,6 +5,7 @@ import tensorflow as tf
 from tensorflow.python import debug as tf_debug
 from keras import backend as K
 import numpy as np
+import keras
 import time
 import os
 
@@ -121,8 +122,8 @@ def train(model, piano, orch, train_index, valid_index,
     # TODO : remplacer cette ligne par une fonction qui prends labels et preds et qui compute la loss
     # Comme ça on pourra faire des classifier chains
     
-#    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
-    loss = tf.reduce_mean(accuracy_tf(orch_t_ph, preds, axis=1), name="loss")
+    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
+#    loss = tf.reduce_mean(-accuracy_tf(orch_t_ph, preds, axis=1), name="loss")
     
     # train_step = tf.train.AdamOptimizer(0.5).minimize(loss)
     if model.optimize():

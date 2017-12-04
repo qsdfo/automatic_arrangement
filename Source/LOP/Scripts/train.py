@@ -69,7 +69,7 @@ def validate(context, valid_index):
         true_accuracy_batch = true_accuracy_measure(orch_t, preds_batch)
         f_score_batch = f_measure(orch_t, preds_batch)
         
-        val_loss.extend(Xent_batch)
+#        val_loss.extend(Xent_batch)
         accuracy.extend(accuracy_batch)
         precision.extend(precision_batch)
         recall.extend(recall_batch)

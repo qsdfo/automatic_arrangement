@@ -41,7 +41,7 @@ def accuracy_tf(true_frame, pred_frame):
 
     accuracy_measure = tf.div((true_positive), quotient)
 
-    return -accuracy_measure
+    return -100 * accuracy_measure
 
 def bin_Xent_tf(true_frame, pred_frame):
     """Binary cross-entropy. Should be exactly the same as keras.losses.binary_crossentropy

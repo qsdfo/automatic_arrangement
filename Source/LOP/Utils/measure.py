@@ -51,9 +51,10 @@ def true_accuracy_measure(true_frame, pred_frame):
 
 
 def f_measure(true_frame, pred_frame):
+    epsilon = 0.00001
     precision = precision_measure(true_frame, pred_frame)
     recall = recall_measure(true_frame, pred_frame)
-    f_measure = 2 * np.true_divide((precision * recall), (precision + recall))
+    f_measure = 2 * np.true_divide((precision * recall), (precision + recall + epsilon))
     return f_measure
 
 

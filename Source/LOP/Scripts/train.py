@@ -10,6 +10,7 @@ import time
 import os
 
 from LOP.Utils.early_stopping import up_criterion
+from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure, binary_cross_entropy
 from LOP.Utils.build_batch import build_batch
 from LOP.Utils.get_statistics import count_parameters
@@ -24,20 +25,6 @@ ANALYSIS = False
 # os.environ["CUDA_VISIBLE_DEVICES"]="1"
 # Logging deive use ?
 LOGGING_DEVICE = False
-
-
-def accuracy_tf(true_frame, pred_frame, axis):
-    W = 1. / 500
-    true_positive = tf.reduce_sum(pred_frame * true_frame, axis)
-    true_negative_weighted = W * tf.reduce_sum(tf.multiply((1-pred_frame), (1-true_frame)), axis)
-    false_negative = tf.reduce_sum(tf.multiply((1 - pred_frame), true_frame), axis)
-    false_positive = tf.reduce_sum(tf.multiply(pred_frame, (1 - true_frame)), axis)
-
-    quotient = true_positive + false_negative + false_positive + true_negative_weighted
-
-    accuracy_measure = tf.div((true_negative_weighted + true_positive), quotient)
-
-    return accuracy_measure
 
 def validate(context, valid_index):
     
@@ -123,8 +110,11 @@ def train(model, piano, orch, train_index, valid_index,
     # TODO : remplacer cette ligne par une fonction qui prends labels et preds et qui compute la loss
     # Comme ça on pourra faire des classifier chains
     
-    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
-    loss = tf.reduce_mean(-accuracy_tf(orch_t_ph, preds, axis=1), name="loss")
+    # Loss
+#    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
+#    loss = tf.reduce_mean(Xent_tf(orch_t_ph, preds), name="loss") 
+    loss = tf.reduce_mean(bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
+#    loss = tf.reduce_mean(-accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500), name="loss")
     
     # train_step = tf.train.AdamOptimizer(0.5).minimize(loss)
     if model.optimize():

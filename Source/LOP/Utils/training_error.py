@@ -1,0 +1,50 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Tensorflow implementations of several losses
+Created on Mon Dec  4 16:09:35 2017
+
+@author: leo
+"""
+
+import tensorflow as tf
+
+
+def accuracy_low_TN_tf(true_frame, pred_frame, weight):
+    """Modified accuracy function that includes the true negative (TN) but with a coefficient keep its influence low.
+    
+    """
+    axis = len(tf.shape(true_frame))-1
+    true_positive = tf.reduce_sum(pred_frame * true_frame, axis)
+    true_negative_weighted = weight * tf.reduce_sum(tf.multiply((1-pred_frame), (1-true_frame)), axis)
+    false_negative = tf.reduce_sum(tf.multiply((1 - pred_frame), true_frame), axis)
+    false_positive = tf.reduce_sum(tf.multiply(pred_frame, (1 - true_frame)), axis)
+
+    quotient = true_positive + false_negative + false_positive + true_negative_weighted
+
+    accuracy_measure = tf.div((true_negative_weighted + true_positive), quotient)
+
+    return accuracy_measure
+
+
+def bin_Xent_tf(true_frame, pred_frame):
+    """Binary cross-entropy. Should be exactly the same as keras.losses.binary_crossentropy
+    
+    """
+    axis = len(true_frame.shape)-1
+    epsilon = 0.00001
+    cross_entr_dot = tf.multiply(true_frame, tf.log(pred_frame+epsilon)) + tf.multiply((1-true_frame), tf.log((1-pred_frame+epsilon)))
+    # Mean over feature dimension
+    cross_entr = - tf.reduce_mean(cross_entr_dot, axis=axis)
+    return cross_entr
+
+def bin_Xen_weighted_0_tf(true_frame, pred_frame, activation_ratio):
+    """Binary cross-entropy. Should be exactly the same as keras.losses.binary_crossentropy
+    
+    """
+    axis = len(true_frame.shape)-1
+    epsilon = 0.00001
+    cross_entr_dot = (1-activation_ratio) * (true_frame * tf.log(pred_frame+epsilon)) + activation_ratio * (1-true_frame) * tf.log((1-pred_frame+epsilon))
+    # Mean over feature dimension
+    cross_entr = - tf.reduce_mean(cross_entr_dot, axis=axis)
+    return cross_entr

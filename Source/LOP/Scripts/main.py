@@ -17,6 +17,7 @@ import config
 from LOP.Database.load_data_k_folds import build_folds
 from LOP.Utils.normalization import get_whitening_mat, apply_pca, apply_zca
 from LOP.Utils.process_data import process_data_piano, process_data_orch
+from LOP.Utils.analysis_data import get_activation_ratio
 
 # MODEL
 #from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
@@ -84,16 +85,6 @@ def main():
     # 2/ Defined configurations
     configs = config.import_configs()
     
-    # configs = {}
-    # for k in range(6,10):
-    #   # Run 10 times each config, to have a statistically relevent plot
-    #   for j in range(10):
-    #       temp = {}
-    #       temp = dict(configs__["0"])
-    #       temp['percentage_training_set'] = (k+1)*10
-    #       config_ID = (k+1) * 10 + j
-    #       configs[str(config_ID)] = temp
-    
     # On from each database and each set
     track_paths_generation = [
         # Bouliane train
@@ -154,20 +145,6 @@ def main():
                     ID_SET = True
             os.mkdir(config_folder)
 
-            # Find a point in space that has never been tested
-            # UNTESTED_POINT_FOUND = False
-            # while not UNTESTED_POINT_FOUND:
-            #   model_parameters = hyperopt.pyll.stochastic.sample(model_parameters_space)
-            #   # Check that this point in space has never been tested
-            #   # By looking in all directories and reading the config.pkl file
-
-            #   UNTESTED_POINT_FOUND = True
-            #   for dirname in list_config_folders:
-            #       this_config = pkl.load(open(dirname + '/model_parameters.pkl', 'rb'))
-            #       if space == this_config:
-            #           UNTESTED_POINT_FOUND = False
-            #           break
-
             # Sample model parameters from hyperparam space
             model_parameters = hyperopt.pyll.stochastic.sample(model_parameters_space)
 
@@ -187,6 +164,7 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
     hdlr = logging.FileHandler(log_file_path)
     hdlr.setFormatter(formatter)
     logger_config.addHandler(hdlr)
+    
     # Prompt model parameters
     logger_config.info('#'*60)
     logger_config.info('#### ' + config_folder)
@@ -194,6 +172,7 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
     logger_config.info((u'** Model : ' + Model.name()).encode('utf8'))
     for k, v in model_params.iteritems():
         logger_config.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
+    
     # Persistency
     pkl.dump(model_params, open(config_folder + '/model_params.pkl', 'wb'))
     pkl.dump(Model.is_keras(), open(config_folder + '/is_keras.pkl', 'wb'))
@@ -216,8 +195,8 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
         
         ## Normalize the data
         # Normalization must be computed only on training data, but performed over all the dataset
+        train_indices_flat = [item for sublist in K_fold['train'] for item in sublist]
         if parameters["normalize"] is not None:
-            train_indices_flat = [item for sublist in K_fold['train'] for item in sublist]
             piano_train = piano[train_indices_flat]
             epsilon = 0.0001
             if parameters["normalize"] == "standard_pca":
@@ -234,7 +213,12 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
                 pkl.dump(standard_zca_piano, open(os.path.join(config_folder_fold, "standard_zca_piano"), 'wb'))
             else:
                 raise Exception(str(parameters["normalize"]) + " is not a possible value for normalization parameter")
-            
+        
+        # Compute training data's statistics for improving learning (e.g. weighted Xent)
+        activation_ratio = get_activation_ratio(orch[train_indices_flat])
+        # It's okay to add this value to the parameters now because we don't need it for persistency, 
+        # this is only training regularization
+        parameters['activation_ratio'] = activation_ratio
         
         # Training
         train_wrapper(parameters, model_params, dimensions, config_folder_fold, piano, orch, K_fold, logger_config)
@@ -310,7 +294,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
     ################################################################################
     ################################################################################
     ################################################################################
-    ################################################################################################################################################################
+    ################################################################################
 
     train_index = K_fold['train']
     valid_index = K_fold['valid']
@@ -327,24 +311,6 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
 
     parameters['n_train_batches'] = n_train_batches
     parameters['n_val_batches'] = n_val_batches
-
-    ################################################################################################################################################################
-    ################################################################################################################################################################
-    # A REECRIRE !!!!!
-    # IZY : juste mettre tous les indices des train batches en 1 colonne et ça définira orch_train
-    # # Class normalization
-    # notes_activation = orch_train.sum(axis=0)
-    # notes_activation_norm = notes_activation.mean() / (notes_activation+1e-10)
-    # class_normalization = np.maximum(1, np.minimum(20, notes_activation_norm))
-    # model_params['class_normalization'] = class_normalization
-
-    # # Other kind of regularization
-    # L_train = orch_train.shape[0]
-    # mean_notes_activation = notes_activation / L_train
-    # mean_notes_activation = np.where(mean_notes_activation == 0, 1. / L_train, mean_notes_activation)
-    # model_params['mean_notes_activation'] = mean_notes_activation
-    ################################################################################################################################################################
-    ################################################################################################################################################################
 
     ############################################################
     # Instanciate model and save folder

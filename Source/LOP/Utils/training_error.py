@@ -14,7 +14,7 @@ def accuracy_low_TN_tf(true_frame, pred_frame, weight):
     """Modified accuracy function that includes the true negative (TN) but with a coefficient keep its influence low.
     
     """
-    axis = len(tf.shape(true_frame))-1
+    axis = len(true_frame.shape)-1
     true_positive = tf.reduce_sum(pred_frame * true_frame, axis)
     true_negative_weighted = weight * tf.reduce_sum(tf.multiply((1-pred_frame), (1-true_frame)), axis)
     false_negative = tf.reduce_sum(tf.multiply((1 - pred_frame), true_frame), axis)
@@ -31,7 +31,7 @@ def accuracy_tf(true_frame, pred_frame):
     """Modified accuracy function that includes the true negative (TN) but with a coefficient keep its influence low.
     
     """
-    axis = len(tf.shape(true_frame))-1
+    axis = len(true_frame.shape)-1
     epsilon = 0.00001
     true_positive = tf.reduce_sum(pred_frame * true_frame, axis)
     false_negative = tf.reduce_sum(tf.multiply((1 - pred_frame), true_frame), axis)

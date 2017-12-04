@@ -114,7 +114,7 @@ def train(model, piano, orch, train_index, valid_index,
 #    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
 #    loss = tf.reduce_mean(Xent_tf(orch_t_ph, preds), name="loss") 
 #    loss = tf.reduce_mean(bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
-    loss = tf.reduce_mean(accuracy_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
+    loss = tf.reduce_mean(accuracy_tf(orch_t_ph, preds), name="loss")
 #    loss = tf.reduce_mean(-accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500), name="loss")
     
     # train_step = tf.train.AdamOptimizer(0.5).minimize(loss)

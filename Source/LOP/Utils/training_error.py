@@ -24,8 +24,24 @@ def accuracy_low_TN_tf(true_frame, pred_frame, weight):
 
     accuracy_measure = tf.div((true_negative_weighted + true_positive), quotient)
 
-    return accuracy_measure
+    return -accuracy_measure
 
+
+def accuracy_tf(true_frame, pred_frame):
+    """Modified accuracy function that includes the true negative (TN) but with a coefficient keep its influence low.
+    
+    """
+    axis = len(tf.shape(true_frame))-1
+    epsilon = 0.00001
+    true_positive = tf.reduce_sum(pred_frame * true_frame, axis)
+    false_negative = tf.reduce_sum(tf.multiply((1 - pred_frame), true_frame), axis)
+    false_positive = tf.reduce_sum(tf.multiply(pred_frame, (1 - true_frame)), axis)
+
+    quotient = true_positive + false_negative + false_positive + epsilon
+
+    accuracy_measure = tf.div((true_positive), quotient)
+
+    return -accuracy_measure
 
 def bin_Xent_tf(true_frame, pred_frame):
     """Binary cross-entropy. Should be exactly the same as keras.losses.binary_crossentropy

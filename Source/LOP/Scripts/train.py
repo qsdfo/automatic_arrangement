@@ -10,7 +10,7 @@ import time
 import os
 
 from LOP.Utils.early_stopping import up_criterion
-from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf
+from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure, binary_cross_entropy
 from LOP.Utils.build_batch import build_batch
 from LOP.Utils.get_statistics import count_parameters
@@ -113,7 +113,8 @@ def train(model, piano, orch, train_index, valid_index,
     # Loss
 #    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
 #    loss = tf.reduce_mean(Xent_tf(orch_t_ph, preds), name="loss") 
-    loss = tf.reduce_mean(bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
+#    loss = tf.reduce_mean(bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
+    loss = tf.reduce_mean(accuracy_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
 #    loss = tf.reduce_mean(-accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500), name="loss")
     
     # train_step = tf.train.AdamOptimizer(0.5).minimize(loss)
@@ -277,7 +278,7 @@ def train(model, piano, orch, train_index, valid_index,
             # Log training
             #######################################
             logger_train.info("############################################################")
-            logger_train.info(('Epoch : {} , Training loss : {} , Validation binary_crossentr : {} \n \
+            logger_train.info(('Epoch : {} , Training loss : {} , Validation loss : {} \n \
                                Validation accuracy : {} %, precision : {} %, recall : {} % \n \
                                True_accuracy : {} %, f_score : {} %'
                               .format(epoch, mean_loss, mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score))

@@ -61,8 +61,8 @@ def validate(context, valid_index):
                     keras_learning_phase: 0}
         # Compute validation loss
         preds_batch, loss_batch = sess.run([preds, loss], feed_dict)
-#        val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
-        Xent_batch = binary_cross_entropy(orch_t, preds_batch)
+        val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
+#        Xent_batch = binary_cross_entropy(orch_t, preds_batch)
         accuracy_batch = accuracy_measure(orch_t, preds_batch)
         precision_batch = precision_measure(orch_t, preds_batch)
         recall_batch = recall_measure(orch_t, preds_batch)
@@ -119,7 +119,7 @@ def train(model, piano, orch, train_index, valid_index,
     # train_step = tf.train.AdamOptimizer(0.5).minimize(loss)
     if model.optimize():
         # Some models don't need training
-        train_step = tf.train.AdamOptimizer().minimize(loss)
+        train_step = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
     keras_learning_phase = K.learning_phase()
     time_building_graph = time.time() - start_time_building_graph
     logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))

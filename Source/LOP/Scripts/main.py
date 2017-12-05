@@ -21,7 +21,7 @@ from LOP.Utils.analysis_data import get_activation_ratio
 
 # MODEL
 #from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
-from LOP.Models.Real_time.Baseline.repeat import Repeat as Model
+from LOP.Models.Real_time.Baseline.zeros import Zeros as Model
 
 GENERATE=False
 SAVE=False
@@ -323,15 +323,14 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
     # Train
     ############################################################
     time_train_0 = time.time()
-    loss_val, accuracy_val, best_epoch = train(model, piano, orch, train_index, valid_index,
-                                    parameters, config_folder, time_train_0, logger)
-
+    best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_epoch =\
+        train(model, piano, orch, train_index, valid_index, parameters, config_folder, time_train_0, logger)
     time_train_1 = time.time()
     training_time = time_train_1-time_train_0
     logger.info('TTT : Training data took {} seconds'.format(training_time))
     logger.info((u'# Best model obtained at epoch :  {}'.format(best_epoch)).encode('utf8'))
-    logger.info((u'# Loss :  {}'.format(loss_val)).encode('utf8'))
-    logger.info((u'# Accuracy :  {}'.format(accuracy_val)).encode('utf8'))
+    logger.info((u'# Loss :  {}'.format(best_validation_loss)).encode('utf8'))
+    logger.info((u'# Accuracy :  {}'.format(best_accuracy)).encode('utf8'))
     logger.info((u'###################\n').encode('utf8'))
 
     ############################################################
@@ -339,8 +338,8 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
     ############################################################
     result_file_path = config_folder + '/result.csv'
     with open(result_file_path, 'wb') as f:
-        f.write("accuracy;loss\n" + str(accuracy_val) + ";" + str(loss_val))
-
+        f.write("loss;accuracy;precision;recall;true_accuracy;f_score\n" +\
+                "{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f}".format(best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score))
     return
 
 def generate_wrapper(config_folder, track_paths_generation, logger):

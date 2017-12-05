@@ -202,7 +202,7 @@ def train(model, piano, orch, train_index, valid_index,
             mean_recall = 100 * np.mean(recall)
             mean_true_accuracy = 100 * np.mean(true_accuracy)
             mean_f_score = 100 * np.mean(f_score)
-            return mean_val_loss, mean_accuracy, 0
+            return mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score, 0
         
         # Training iteration
         while (not OVERFITTING and not TIME_LIMIT
@@ -325,5 +325,9 @@ def train(model, piano, orch, train_index, valid_index,
         # Return best accuracy
         best_accuracy = val_tab_acc[best_epoch]
         best_validation_loss = val_tab_loss[best_epoch]
+        best_precision = val_tab_prec[best_epoch]
+        best_recall = val_tab_rec[best_epoch]
+        best_true_accuracy = val_tab_true_acc[best_epoch]
+        best_f_score = val_tab_f_score[best_epoch]
 
-    return best_validation_loss, best_accuracy, best_epoch
+    return best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_epoch

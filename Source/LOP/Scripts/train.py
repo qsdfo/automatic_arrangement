@@ -202,7 +202,7 @@ def train(model, piano, orch, train_index, valid_index,
             mean_recall = 100 * np.mean(recall)
             mean_true_accuracy = 100 * np.mean(true_accuracy)
             mean_f_score = 100 * np.mean(f_score)
-            return mean_val_loss, mean_accuracy, mean_true_accuracy, mean_f_score, 0
+            return mean_val_loss, mean_accuracy, 0
         
         # Training iteration
         while (not OVERFITTING and not TIME_LIMIT

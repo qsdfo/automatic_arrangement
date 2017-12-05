@@ -32,7 +32,7 @@ RANDOM_SEED=None
 
 def main():
     # DATABASE
-    DATABASE = "Data_DEBUG__event_level8"
+    DATABASE = config.data_name()
     DATABASE_PATH = config.data_root() + "/" + DATABASE
     # RESULTS
     result_folder =  config.result_root() + '/' + DATABASE + '/' + Model.name()

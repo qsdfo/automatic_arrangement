@@ -21,6 +21,8 @@ def accuracy_measure(true_frame, pred_frame):
 def accuracy_measure_test(true_frame, pred_frame):
     axis = len(true_frame.shape) - 1
 
+#    C = 1.8
+#    K = 1.8 + 500*0.01 + 2*(1-0.8)
     C = 0
     K = 0
     
@@ -31,6 +33,29 @@ def accuracy_measure_test(true_frame, pred_frame):
     quotient = true_positive + false_negative + false_positive
     
     accuracy_measure = np.where(np.equal(quotient, 0), 0, np.true_divide(true_positive + C, quotient + K))
+
+    return accuracy_measure
+
+
+def accuracy_measure_test_2(true_frame, pred_frame):
+    axis = len(true_frame.shape) - 1
+
+#    C = 1.8
+#    K = 1.8 + 500*0.01 + 2*(1-0.8)
+    C = 0
+    K = 0
+    epsilon = 0.00001
+    
+    pred_frame_log = np.log(pred_frame + epsilon)
+    non_pred_frame_log = np.log(1 - pred_frame + epsilon)
+    
+    true_positive = np.sum(pred_frame_log * true_frame, axis=axis)
+    false_negative = np.sum(non_pred_frame_log * true_frame, axis=axis)
+    false_positive = np.sum(pred_frame_log * (1 - true_frame), axis=axis)
+
+    quotient = true_positive + false_negative + false_positive
+    
+    accuracy_measure = np.where(np.equal(quotient, 0), 0, np.log(np.true_divide(true_positive + C, quotient + K)))
 
     return accuracy_measure
 
@@ -107,3 +132,26 @@ def binary_cross_entropy(true_frame, pred_frame):
     # Mean over feature dimension
     cross_entr = - np.mean(cross_entr_dot, axis=axis)
     return cross_entr
+
+
+def compute_numerical_gradient(measure_fun, true_frame, pred_frame, epsilon):
+    num_dim = len(pred_frame)
+    # Cost function are one dimensional
+    numeric_grad = np.zeros((num_dim, 1))
+    for i in range(num_dim):
+        ei = np.zeros((num_dim))
+        ei[i] = 1
+        f_neg = measure_fun(true_frame, pred_frame-epsilon*ei)
+        f_pos = measure_fun(true_frame, pred_frame+epsilon*ei)
+        numeric_grad[i] = (f_pos - f_neg) / (2*epsilon)
+    return numeric_grad
+
+if __name__=='__main__':
+    true_frame = np.zeros((2, 1))
+    pred_frame = np.zeros((2, 1))
+    
+    true_frame[0] = 1
+    pred_frame[0] = 0.8
+    pred_frame[1] = 0.2
+    
+    compute_numerical_gradient(binary_cross_entropy, true_frame, pred_frame,)

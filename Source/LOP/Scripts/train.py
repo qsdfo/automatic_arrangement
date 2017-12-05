@@ -97,7 +97,7 @@ def train(model, piano, orch, train_index, valid_index,
     logger_train.info((u'#### Graph'))
     start_time_building_graph = time.time()
     #
-    piano_t_ph = tf.placeholder(tf.float32, shape=(None, model.piano_dim), name="piano_t")
+    piano_t_ph = tf.placeholder(tf.float32, shape=(None, model.piano_dim), name="piano_t")zze
     piano_past_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.piano_dim), name="piano_past")
     piano_future_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.piano_dim), name="piano_future")
     #
@@ -111,16 +111,16 @@ def train(model, piano, orch, train_index, valid_index,
     # Comme ça on pourra faire des classifier chains
     
     # Loss
-    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
+#    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
 #    loss = tf.reduce_mean(Xent_tf(orch_t_ph, preds), name="loss") 
 #    loss = tf.reduce_mean(bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
 #    loss = tf.reduce_mean(accuracy_tf(orch_t_ph, preds), name="loss")
-#    loss = tf.reduce_mean(-accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500), name="loss")
+#    loss = tf.reduce_mean(accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500), name="loss")
     
     # train_step = tf.train.AdamOptimizer(0.5).minimize(loss)
     if model.optimize():
         # Some models don't need training
-        train_step = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
+        train_step = tf.train.AdamOptimizer(learning_rate=0.1).minimize(loss)
     keras_learning_phase = K.learning_phase()
     time_building_graph = time.time() - start_time_building_graph
     logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))

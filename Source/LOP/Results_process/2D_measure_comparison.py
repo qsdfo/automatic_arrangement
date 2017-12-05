@@ -15,7 +15,7 @@ from matplotlib import cm
 import numpy as np
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
-from LOP.Utils.measure import accuracy_measure, accuracy_measure_test, true_accuracy_measure, f_measure, binary_cross_entropy 
+from LOP.Utils.measure import accuracy_measure, accuracy_measure_test, true_accuracy_measure, f_measure, binary_cross_entropy, accuracy_measure_test_2
 
 def plot_measure_2D(measure_fun, step_size, result_folder):
 
@@ -63,8 +63,9 @@ if __name__ == '__main__':
         
 #    plot_measure_2D(accuracy_measure, 0.01, result_dir)
 #    plot_measure_2D(binary_cross_entropy, 0.01, result_dir)
-    plot_measure_2D(accuracy_measure_test, 0.01, result_dir)
 #    plot_measure_2D(true_accuracy_measure, (0,1), 0.01, result_dir)
 #    plot_measure_2D(f_measure, (0,1), 0.01, result_dir)
 #    plot_measure_2D(binary_cross_entropy, (0,1), 0.01, result_dir)
     
+    plot_measure_2D(accuracy_measure_test, 0.01, result_dir)
+#    plot_measure_2D(accuracy_measure_test_2, 0.01, result_dir)

@@ -21,9 +21,9 @@ from LOP.Utils.analysis_data import get_activation_ratio
 
 # MODEL
 #from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
-from LOP.Models.Real_time.Baseline.zeros import Zeros as Model
+from LOP.Models.Real_time.LSTM_static_bias import LSTM_static_bias as Model
 
-GENERATE=False
+GENERATE=True
 SAVE=False
 DEFINED_CONFIG = True  # HYPERPARAM ?
 # For reproducibility
@@ -173,11 +173,6 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
     for k, v in model_params.iteritems():
         logger_config.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
     
-    # Persistency
-    pkl.dump(model_params, open(config_folder + '/model_params.pkl', 'wb'))
-    pkl.dump(Model.is_keras(), open(config_folder + '/is_keras.pkl', 'wb'))
-    pkl.dump(parameters, open(config_folder + '/script_parameters.pkl', 'wb'))
-
     # Get data and tvt splits (=folds)
     piano, orch, K_folds, valid_names, test_names, dimensions = get_data_and_folds(database_path, parameters, model_params, logger_config)
     pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
@@ -218,8 +213,13 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
         activation_ratio = get_activation_ratio(orch[train_indices_flat])
         # It's okay to add this value to the parameters now because we don't need it for persistency, 
         # this is only training regularization
-        parameters['activation_ratio'] = activation_ratio
+        model_params['activation_ratio'] = activation_ratio
         
+        ########################################################
+        # Persistency
+        pkl.dump(model_params, open(config_folder + '/model_params.pkl', 'wb'))
+        pkl.dump(Model.is_keras(), open(config_folder + '/is_keras.pkl', 'wb'))
+        pkl.dump(parameters, open(config_folder + '/script_parameters.pkl', 'wb'))
         # Training
         train_wrapper(parameters, model_params, dimensions, config_folder_fold, piano, orch, K_fold, logger_config)
         # Generating
@@ -229,6 +229,7 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 #            shutil.rmtree(config_folder_fold + '/model')
             shutil.rmtree(config_folder_fold + '/model_Xent')
             shutil.rmtree(config_folder_fold + '/model_acc')
+        ########################################################
     logger_config.info("#"*60)
     logger_config.info("#"*60)
     return
@@ -323,7 +324,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
     # Train
     ############################################################
     time_train_0 = time.time()
-    best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_epoch =\
+    best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch =\
         train(model, piano, orch, train_index, valid_index, parameters, config_folder, time_train_0, logger)
     time_train_1 = time.time()
     training_time = time_train_1-time_train_0
@@ -338,8 +339,8 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
     ############################################################
     result_file_path = config_folder + '/result.csv'
     with open(result_file_path, 'wb') as f:
-        f.write("loss;accuracy;precision;recall;true_accuracy;f_score\n" +\
-                "{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f}".format(best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score))
+        f.write("loss;accuracy;precision;recall;true_accuracy;f_score;Xent\n" +\
+                "{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f}".format(best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent))
     return
 
 def generate_wrapper(config_folder, track_paths_generation, logger):

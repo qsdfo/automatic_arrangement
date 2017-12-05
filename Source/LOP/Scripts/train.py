@@ -19,7 +19,7 @@ from LOP.Utils.Analysis.compare_Xent_acc_corresponding_preds import compare_Xent
 
 DEBUG = False
 # Note : debug sans summarize, qui pollue le tableau de variables
-SUMMARIZE = False
+SUMMARIZE = True
 ANALYSIS = False
 # Device to use
 # os.environ["CUDA_VISIBLE_DEVICES"]="1"
@@ -48,6 +48,7 @@ def validate(context, valid_index):
     val_loss = []
     true_accuracy = []
     f_score = []
+    Xent = []
     for batch_index in valid_index:
         # Build batch
         piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch, len(batch_index), temporal_order)
@@ -62,21 +63,21 @@ def validate(context, valid_index):
         # Compute validation loss
         preds_batch, loss_batch = sess.run([preds, loss], feed_dict)
         val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
-#        Xent_batch = binary_cross_entropy(orch_t, preds_batch)
+        Xent_batch = binary_cross_entropy(orch_t, preds_batch)
         accuracy_batch = accuracy_measure(orch_t, preds_batch)
         precision_batch = precision_measure(orch_t, preds_batch)
         recall_batch = recall_measure(orch_t, preds_batch)
         true_accuracy_batch = true_accuracy_measure(orch_t, preds_batch)
         f_score_batch = f_measure(orch_t, preds_batch)
         
-#        val_loss.extend(Xent_batch)
         accuracy.extend(accuracy_batch)
         precision.extend(precision_batch)
         recall.extend(recall_batch)
         true_accuracy.extend(true_accuracy_batch)
         f_score.extend(f_score_batch)
+        Xent.extend(Xent_batch)
                 
-    return np.asarray(accuracy), np.asarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score)
+    return np.asarray(accuracy), np.asarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score), np.asarray(Xent)
 
 def train(model, piano, orch, train_index, valid_index,
           parameters, config_folder, start_time_train, logger_train):
@@ -111,16 +112,16 @@ def train(model, piano, orch, train_index, valid_index,
     # Comme ça on pourra faire des classifier chains
     
     # Loss
-#    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
+    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
 #    loss = tf.reduce_mean(Xent_tf(orch_t_ph, preds), name="loss") 
 #    loss = tf.reduce_mean(bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
-    loss = tf.reduce_mean(accuracy_tf(orch_t_ph, preds), name="loss")
+#    loss = tf.reduce_mean(accuracy_tf(orch_t_ph, preds), name="loss")
 #    loss = tf.reduce_mean(accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500), name="loss")
     
-    # train_step = tf.train.AdamOptimizer(0.5).minimize(loss)
     if model.optimize():
         # Some models don't need training
-        train_step = tf.train.AdamOptimizer(learning_rate=0.1).minimize(loss)
+#        train_step = tf.train.AdamOptimizer(learning_rate=0.1).minimize(loss)
+        train_step = tf.train.AdamOptimizer().minimize(loss)
     keras_learning_phase = K.learning_phase()
     time_building_graph = time.time() - start_time_building_graph
     logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))
@@ -157,6 +158,7 @@ def train(model, piano, orch, train_index, valid_index,
     val_tab_loss = np.zeros(max(1, parameters['max_iter']))
     val_tab_true_acc = np.zeros(max(1, parameters['max_iter']))
     val_tab_f_score = np.zeros(max(1, parameters['max_iter']))
+    val_tab_Xent = np.zeros(max(1, parameters['max_iter']))
     loss_tab = np.zeros(max(1, parameters['max_iter']))
     best_val_loss = float("inf")
     best_acc = 0.
@@ -195,7 +197,7 @@ def train(model, piano, orch, train_index, valid_index,
         
         if model.optimize() == False:
             # Some baseline models don't need training step optimization
-            accuracy, precision, recall, val_loss, true_accuracy, f_score = validate(context, valid_index)
+            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, valid_index)
             mean_val_loss = np.mean(val_loss)
             mean_accuracy = 100 * np.mean(accuracy)
             mean_precision = 100 * np.mean(precision)
@@ -246,19 +248,21 @@ def train(model, piano, orch, train_index, valid_index,
             #######################################
             # Validate
             #######################################
-            accuracy, precision, recall, val_loss, true_accuracy, f_score = validate(context, valid_index)
+            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, valid_index)
             mean_val_loss = np.mean(val_loss)
             mean_accuracy = 100 * np.mean(accuracy)
             mean_precision = 100 * np.mean(precision)
             mean_recall = 100 * np.mean(recall)
             mean_true_accuracy = 100 * np.mean(true_accuracy)
             mean_f_score = 100 * np.mean(f_score)
+            mean_Xent = np.mean(Xent)
             val_tab_loss[epoch] = mean_val_loss
             val_tab_acc[epoch] = mean_accuracy
             val_tab_prec[epoch] = mean_precision
             val_tab_rec[epoch] = mean_recall
             val_tab_true_acc[epoch] = mean_true_accuracy
             val_tab_f_score[epoch] = mean_f_score
+            val_tab_Xent[epoch] = mean_Xent
 
             end_time_epoch = time.time()
             
@@ -278,10 +282,10 @@ def train(model, piano, orch, train_index, valid_index,
             # Log training
             #######################################
             logger_train.info("############################################################")
-            logger_train.info(('Epoch : {} , Training loss : {} , Validation loss : {} \n \
-                               Validation accuracy : {} %, precision : {} %, recall : {} % \n \
-                               True_accuracy : {} %, f_score : {} %'
-                              .format(epoch, mean_loss, mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score))
+            logger_train.info(('Epoch : {} , Training loss : {:.3f} , Validation loss : {:.3f} \n \
+                               Validation accuracy : {:.3f} %, precision : {:.3f} %, recall : {:.3f} % \n \
+                               True_accuracy : {:.3f} %, f_score : {:.3f} %, Xent : {:.4f}'
+                              .format(epoch, mean_loss, mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score, mean_Xent))
                               .encode('utf8'))
 
             logger_train.info(('Time : {}'
@@ -329,5 +333,6 @@ def train(model, piano, orch, train_index, valid_index,
         best_recall = val_tab_rec[best_epoch]
         best_true_accuracy = val_tab_true_acc[best_epoch]
         best_f_score = val_tab_f_score[best_epoch]
+        best_Xent = val_tab_Xent[best_epoch]
 
-    return best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_epoch
+    return best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch

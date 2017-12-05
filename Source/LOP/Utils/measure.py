@@ -21,10 +21,10 @@ def accuracy_measure(true_frame, pred_frame):
 def accuracy_measure_test(true_frame, pred_frame):
     axis = len(true_frame.shape) - 1
 
-#    C = 1.8
-#    K = 1.8 + 500*0.01 + 2*(1-0.8)
-    C = 0
-    K = 0
+    C = 1.8
+    K = 1.8 + 500*0.01 + 2*(1-0.8)
+#    C = 0
+#    K = 0
     
     true_positive = np.sum(pred_frame * true_frame, axis=axis)
     false_negative = np.sum((1 - pred_frame) * true_frame, axis=axis)
@@ -40,10 +40,10 @@ def accuracy_measure_test(true_frame, pred_frame):
 def accuracy_measure_test_2(true_frame, pred_frame):
     axis = len(true_frame.shape) - 1
 
-#    C = 1.8
-#    K = 1.8 + 500*0.01 + 2*(1-0.8)
-    C = 0
-    K = 0
+    C = 1.8
+    K = 1.8 + 500*0.01 + 2*(1-0.8)
+#    C = 0
+#    K = 0
     epsilon = 0.00001
     
     pred_frame_log = np.log(pred_frame + epsilon)
@@ -135,23 +135,30 @@ def binary_cross_entropy(true_frame, pred_frame):
 
 
 def compute_numerical_gradient(measure_fun, true_frame, pred_frame, epsilon):
-    num_dim = len(pred_frame)
+    num_batch, num_dim = pred_frame.shape
     # Cost function are one dimensional
-    numeric_grad = np.zeros((num_dim, 1))
+    numeric_grad = np.zeros((num_batch, num_dim))
     for i in range(num_dim):
-        ei = np.zeros((num_dim))
-        ei[i] = 1
+        ei = np.zeros((num_batch, num_dim))
+        ei[:, i] = 1
         f_neg = measure_fun(true_frame, pred_frame-epsilon*ei)
         f_pos = measure_fun(true_frame, pred_frame+epsilon*ei)
-        numeric_grad[i] = (f_pos - f_neg) / (2*epsilon)
+        numeric_grad[:, i] = (f_pos - f_neg) / (2*epsilon)
     return numeric_grad
 
 if __name__=='__main__':
-    true_frame = np.zeros((2, 1))
-    pred_frame = np.zeros((2, 1))
     
-    true_frame[0] = 1
-    pred_frame[0] = 0.8
-    pred_frame[1] = 0.2
+    # Create a grid
+    pred_frame = []
+    for x in range(0.1, 0.9, 0.05):
+        for y in range(0.1, 0.9, 0.05):
+            pred_frame.append((x,y))
+    pred_frame = np.asarray(pred_frame)
     
-    compute_numerical_gradient(binary_cross_entropy, true_frame, pred_frame,)
+    true_frame_0_0 = np.zeros((1, 2))
+    true_frame_0_1 = np.zeros((1, 2)); true_frame_0_0[0, 0] = 1
+    true_frame_1_1 = np.ones((1, 2))
+    
+    
+    
+    numeric_gradient = compute_numerical_gradient(accuracy_measure_test, true_frame, pred_frame, 1e-4)

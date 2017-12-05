@@ -3,8 +3,6 @@
 
 from LOP.Models.model_lop import Model_lop
 
-# Tensorflow
-import tensorflow as tf
 
 class Repeat(Model_lop):
 	def __init__(self, model_param, dimensions):
@@ -34,5 +32,6 @@ class Repeat(Model_lop):
 		space = Model_lop.get_hp_space()
 		return space
 
-	def predict(self, piano_t, orch_past):
-		return orch_past[:,-1,:]
+	def predict(self, inputs_ph):
+         _, _, _, orch_past, _ = inputs_ph
+         return orch_past[:,-1,:]

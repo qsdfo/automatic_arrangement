@@ -15,6 +15,6 @@ def get_activation_ratio(orch):
 
 def compute_static_bias_initialization(ratio_activation, epsilon=1e-5):
     ratio_activation = np.maximum(ratio_activation, epsilon)
-    # Inverse sigmoid
+    # Inverse sigmoid !
     static_bias = np.log(ratio_activation/ (1-ratio_activation))
     return static_bias

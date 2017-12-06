@@ -61,8 +61,8 @@ if __name__ == '__main__':
         shutil.rmtree(result_dir)
     os.mkdir(result_dir)
         
-    plot_measure_2D(accuracy_measure, 0.01, result_dir)
-#    plot_measure_2D(binary_cross_entropy, 0.01, result_dir)
+    # plot_measure_2D(accuracy_measure, 0.01, result_dir)
+    plot_measure_2D(binary_cross_entropy, 0.01, result_dir)
 #    plot_measure_2D(true_accuracy_measure, (0,1), 0.01, result_dir)
 #    plot_measure_2D(f_measure, (0,1), 0.01, result_dir)
 #    plot_measure_2D(binary_cross_entropy, (0,1), 0.01, result_dir)

@@ -267,9 +267,12 @@ def train(model, piano, orch, train_index, valid_index,
             end_time_epoch = time.time()
             
             #######################################
-            # Overfitting ? Based on Xentr
+            # Overfitting ? 
             if epoch >= parameters['min_number_iteration']:
-                OVERFITTING = up_criterion(val_tab_loss, epoch, parameters["number_strips"], parameters["validation_order"])
+                # Based on Xentr
+#                OVERFITTING = up_criterion(val_tab_loss, epoch, parameters["number_strips"], parameters["validation_order"])
+                # Based on accuracy
+                OVERFITTING = up_criterion(-val_tab_acc, epoch, parameters["number_strips"], parameters["validation_order"])
             #######################################
 
             #######################################
@@ -298,19 +301,21 @@ def train(model, piano, orch, train_index, valid_index,
             if mean_val_loss <= best_val_loss:
                 save_time_start = time.time()
                 saver.save(sess, config_folder + "/model_Xent/model")
-                best_epoch = epoch
+#                best_epoch = epoch
                 save_time = time.time() - save_time_start
                 logger_train.info(('Save time : {}'.format(save_time)).encode('utf8'))
                 best_val_loss = mean_val_loss
-                
-                # Analysis
+                 
                 if ANALYSIS:
 #                    accuracy_and_binary_Xent(context, valid_index, os.path.join(os.getcwd(), "debug/acc_Xent"), 20)
                     compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Xent_criterion"))
+       
             # Accuracy criterion
             if mean_accuracy >= best_acc:
                 saver.save(sess, config_folder + "/model_acc/model")
                 best_acc = mean_accuracy
+                best_epoch = epoch
+                
                 if ANALYSIS:
                     compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Acc_criterion"))
             #######################################

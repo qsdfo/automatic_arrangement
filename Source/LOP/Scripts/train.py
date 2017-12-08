@@ -299,11 +299,9 @@ def train(model, piano, orch, train_index, valid_index,
             # Best model ?
             # Xent criterion
             if mean_val_loss <= best_val_loss:
-                save_time_start = time.time()
+                logger_train.info('Save Xent')
                 saver.save(sess, config_folder + "/model_Xent/model")
 #                best_epoch = epoch
-                save_time = time.time() - save_time_start
-                logger_train.info(('Save time : {}'.format(save_time)).encode('utf8'))
                 best_val_loss = mean_val_loss
                  
                 if ANALYSIS:
@@ -312,6 +310,7 @@ def train(model, piano, orch, train_index, valid_index,
        
             # Accuracy criterion
             if mean_accuracy >= best_acc:
+                logger_train.info('Save Acc')
                 saver.save(sess, config_folder + "/model_acc/model")
                 best_acc = mean_accuracy
                 best_epoch = epoch

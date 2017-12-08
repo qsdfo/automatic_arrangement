@@ -264,14 +264,14 @@ def get_data_and_folds(database_path, parameters, model_params, logger):
 
     ## Load the folds
     if parameters["k_folds"] == 0:
-        K_folds, valid_names, test_names = build_folds(database_path, 10, model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED, logger_load=None)
+        K_folds, valid_names, test_names = build_folds(database_path, 10, model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED_FOLDS, logger_load=None)
         K_folds = [K_folds[0]]
         valid_names = [valid_names[0]]
         test_names = [test_names[0]]
     elif parameters["k_folds"] == -1:
-        K_folds, valid_names, test_names = build_folds(database_path, -1, model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED, logger_load=None)
+        K_folds, valid_names, test_names = build_folds(database_path, -1, model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED_FOLDS, logger_load=None)
     else:
-        K_folds, valid_names, test_names = build_folds(database_path, parameters["k_folds"], model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED, logger_load=None)
+        K_folds, valid_names, test_names = build_folds(database_path, parameters["k_folds"], model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED_FOLDS, logger_load=None)
     time_load = time.time() - time_load_0
 
     ## Get dimensions of batches

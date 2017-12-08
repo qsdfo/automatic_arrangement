@@ -23,7 +23,7 @@ score = []
 for folder in folders:
 	configs = os.listdir(folder)
 	score_config = []
-	for config in configs:
+	for _ in configs:
 		for fold in range(10):
 			with open(path_result_file, "rb") as f:
 				reader = csv.DictReader(f, delimiter=';')

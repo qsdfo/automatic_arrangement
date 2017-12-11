@@ -44,7 +44,7 @@ def accuracy_measure_test_2(true_frame, pred_frame):
     K = 1.8 + 500*0.01 + 2*(1-0.8)
 #    C = 0
 #    K = 0
-    epsilon = 0.00001
+    epsilon = 1e-20
     
     pred_frame_log = np.log(pred_frame + epsilon)
     non_pred_frame_log = np.log(1 - pred_frame + epsilon)
@@ -76,7 +76,7 @@ def true_accuracy_measure(true_frame, pred_frame):
 
 
 def f_measure(true_frame, pred_frame):
-    epsilon = 0.00001
+    epsilon = 1e-20
     precision = precision_measure(true_frame, pred_frame)
     recall = recall_measure(true_frame, pred_frame)
     f_measure = 2 * np.true_divide((precision * recall), (precision + recall + epsilon))
@@ -127,7 +127,7 @@ def precision_measure(true_frame, pred_frame):
 
 def binary_cross_entropy(true_frame, pred_frame):
     axis = true_frame.ndim - 1
-    epsilon = 0.00001
+    epsilon = 1e-20
     cross_entr_dot = np.multiply(true_frame, np.log(pred_frame+epsilon)) + np.multiply((1-true_frame), np.log((1-pred_frame+epsilon)))
     # Mean over feature dimension
     cross_entr = - np.mean(cross_entr_dot, axis=axis)

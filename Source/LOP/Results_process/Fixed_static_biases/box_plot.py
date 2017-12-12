@@ -49,8 +49,18 @@ if __name__ == '__main__':
         labels.append(title)
     
     # Sort by keys values
-    plt.boxplot(data_Xent, labels=labels)
-    plt.savefig("Xent.pdf")
+#    plt.boxplot(data_Xent, labels=labels)
+#    plt.ylabel('Xent')
+#    plt.xlabel('Model')
+#    plt.title('10-folds boxplots of the binary cross-entropy \n with and without pre-computed static biases')
+#    plt.tight_layout()
+#    plt.show("Xent.pdf")
+
     plt.clf()
+ 
+    plt.ylabel('accuracy (%)')
+    plt.xlabel('Model')
+    plt.title('10-folds boxplots of the accuracy measure \n with and without pre-computed static biases')
     plt.boxplot(data_acc, labels=labels)
-    plt.savefig("accuracy.pdf")
+    plt.tight_layout()
+    plt.show("accuracy.pdf")

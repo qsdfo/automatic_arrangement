@@ -64,3 +64,10 @@ def bin_Xen_weighted_0_tf(true_frame, pred_frame, activation_ratio):
     # Mean over feature dimension
     cross_entr = - tf.reduce_mean(cross_entr_dot, axis=axis)
     return cross_entr
+
+def sparsity_penalty_0(proba_activation):
+    return tf.reduce_sum(proba_activation)
+
+def sparsity_penalty_1(proba_activation):
+    squared_proba_activation = proba_activation * proba_activation
+    return tf.reduce_sum(squared_proba_activation)

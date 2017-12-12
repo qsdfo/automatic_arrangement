@@ -61,7 +61,7 @@ def unmixed_instru(instru_string):
     return instru_list
 
 
-def instru_pitch_range(instrumentation, pr, instru_mapping, instrument_list_from_dico):
+def instru_pitch_range(instrumentation, pr, instru_mapping):
     for k, v in instrumentation.iteritems():
         if k not in pr.keys():
             # BAD BAD BAD
@@ -229,7 +229,7 @@ def process_folder(folder_path, quantization, temporal_granularity, gapopen=3, g
         event_1 = None
 
     # Align tracks
-    pr0_aligned, trace_0, pr1_aligned, trace_1, trace_prod, duration = align_pianorolls(pr0, pr1, gapopen, gapextend)
+    pr0_aligned, trace_0, pr1_aligned, trace_1, trace_prod, total_time = align_pianorolls(pr0, pr1, gapopen, gapextend)
     
     # Clean events
     if (temporal_granularity == 'event_level'):
@@ -252,12 +252,12 @@ def process_folder(folder_path, quantization, temporal_granularity, gapopen=3, g
     # Find which pr is orchestra, which one is piano
     pr_piano, event_piano, duration_piano, instru_piano, name_piano,\
         pr_orch, event_orch, duration_orch, instru_orch, name_orch,\
-        duration =\
+        total_time =\
             discriminate_between_piano_and_orchestra(pr0_aligned, event0_aligned, duration0_aligned, instru0, name0,
                                                  pr1_aligned, event1_aligned, duration1_aligned, instru1, name1,
-                                                 duration)
+                                                 total_time)
 
-    return pr_piano, event_piano, duration_piano, instru_piano, name_piano, pr_orch, event_orch, duration_orch, instru_orch, name_orch, duration
+    return pr_piano, event_piano, duration_piano, instru_piano, name_piano, pr_orch, event_orch, duration_orch, instru_orch, name_orch, total_time
 
 
 if __name__ == '__main__':

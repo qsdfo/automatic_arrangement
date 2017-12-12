@@ -74,7 +74,6 @@ def get_dim_matrix(root_dir, folder_paths, meta_info_path='temp.p', quantization
         instru_mapping = build_data_aux.instru_pitch_range(instrumentation=instru_piano,
                                                            pr=pr_piano,
                                                            instru_mapping=instru_mapping,
-                                                           instrument_list_from_dico=instrument_list_from_dico,
                                                            )
         # remark : instru_mapping would be modified if it is only passed to the function,
         #                   f(a)  where a is modified inside the function
@@ -85,7 +84,6 @@ def get_dim_matrix(root_dir, folder_paths, meta_info_path='temp.p', quantization
         instru_mapping = build_data_aux.instru_pitch_range(instrumentation=instru_orch,
                                                            pr=pr_orch,
                                                            instru_mapping=instru_mapping,
-                                                           instrument_list_from_dico=instrument_list_from_dico
                                                            )
     # Build the index_min and index_max in the instru_mapping dictionary
     counter = 0
@@ -252,7 +250,7 @@ if __name__ == '__main__':
     quantization = 8
 
     DATABASE_PATH = config.database_root() + '/LOP_database_06_09_17'
-    DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
+    DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives"]
 #    DATABASE_NAMES = ["debug"]
 
     data_folder = '../../../Data_folds/Data'

@@ -10,7 +10,7 @@ import time
 import os
 
 from LOP.Utils.early_stopping import up_criterion
-from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf
+from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf, sparsity_penalty_0, sparsity_penalty_1
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure, binary_cross_entropy
 from LOP.Utils.build_batch import build_batch
 from LOP.Utils.get_statistics import count_parameters
@@ -19,7 +19,7 @@ from LOP.Utils.Analysis.compare_Xent_acc_corresponding_preds import compare_Xent
 
 DEBUG = False
 # Note : debug sans summarize, qui pollue le tableau de variables
-SUMMARIZE = True
+SUMMARIZE = False
 ANALYSIS = False
 # Device to use
 # os.environ["CUDA_VISIBLE_DEVICES"]="1"
@@ -107,17 +107,26 @@ def train(model, piano, orch, train_index, valid_index,
     orch_future_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.orch_dim), name="orch_past")
     inputs_ph = (piano_t_ph, piano_past_ph, piano_future_ph, orch_past_ph, orch_future_ph)
     # Prediction
-    preds = model.predict(inputs_ph)
+    preds, embedding_concat = model.predict(inputs_ph)
     # TODO : remplacer cette ligne par une fonction qui prends labels et preds et qui compute la loss
     # Comme ça on pourra faire des classifier chains
+    ############################################################
     
+    ############################################################
     # Loss
     loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
-#    loss = tf.reduce_mean(Xent_tf(orch_t_ph, preds), name="loss") 
-#    loss = tf.reduce_mean(bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
-#    loss = tf.reduce_mean(accuracy_tf(orch_t_ph, preds), name="loss")
-#    loss = tf.reduce_mean(accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500), name="loss")
+    # loss = tf.reduce_mean(Xent_tf(orch_t_ph, preds), name="loss") 
+    # loss = tf.reduce_mean(bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
+    # loss = tf.reduce_mean(accuracy_tf(orch_t_ph, preds), name="loss")
+    # loss = tf.reduce_mean(accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500), name="loss")
     
+    
+    # Add sparsity constraint on the output ?
+    # loss += sparsity_penalty_0(preds)
+    # loss += sparsity_penalty_1(preds)
+    ############################################################
+    
+    ############################################################
     if model.optimize():
         # Some models don't need training
 #        train_step = tf.train.AdamOptimizer(learning_rate=0.1).minimize(loss)
@@ -232,7 +241,13 @@ def train(model, piano, orch, train_index, valid_index,
                 if SUMMARIZE:
                     _, loss_batch, summary = sess.run([train_step, loss, merged], feed_dict)
                 else:
-                    _, loss_batch = sess.run([train_step, loss], feed_dict)
+                    if DEBUG:
+                        _, loss_batch, preds_batch, embedding_batch = sess.run([train_step, loss, preds, embedding_concat], feed_dict)
+                    else:
+                        _, loss_batch = sess.run([train_step, loss], feed_dict)
+
+#                if epoch > 10:
+#                    import pdb; pdb.set_trace()
 
                 # Keep track of cost
                 train_cost_epoch.append(loss_batch)
@@ -314,7 +329,7 @@ def train(model, piano, orch, train_index, valid_index,
                 saver.save(sess, config_folder + "/model_acc/model")
                 best_acc = mean_accuracy
                 best_epoch = epoch
-                
+                    
                 if ANALYSIS:
                     compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Acc_criterion"))
             #######################################
@@ -340,3 +355,7 @@ def train(model, piano, orch, train_index, valid_index,
         best_Xent = val_tab_Xent[best_epoch]
 
     return best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch
+
+
+
+# aaa=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/bias:0"][0]

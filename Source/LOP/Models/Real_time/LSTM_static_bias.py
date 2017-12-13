@@ -135,8 +135,9 @@ class LSTM_static_bias(Model_lop):
             # Now pass in the non-linearity
             orch_prediction = Activation('sigmoid')(fix_linear_pred)
         #####################
-
-        return orch_prediction
+        
+        embedding_concat = top_input
+        return orch_prediction, embedding_concat
 
 
 # 'temporal_order' : 5,

@@ -66,7 +66,7 @@ class LSTM_static_bias(Model_lop):
         return space
 
     def predict(self, inputs_ph):
-
+        
         piano_t, _, _, orch_past, _ = inputs_ph
         
         #####################
@@ -130,7 +130,8 @@ class LSTM_static_bias(Model_lop):
             biased_linear_pred = dense_layer(top_input)
             keras_layer_summary(dense_layer)
             # Add the pre-computed static biases
-            fix_linear_pred = biased_linear_pred + self.static_bias 
+            precomputed_biases = tf.constant(self.static_bias, dtype=tf.float32, name='precomputed_static_biases')
+            fix_linear_pred = biased_linear_pred +  precomputed_biases
             # Now pass in the non-linearity
             orch_prediction = Activation('sigmoid')(fix_linear_pred)
         #####################

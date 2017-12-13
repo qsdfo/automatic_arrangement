@@ -49,7 +49,7 @@ def plot_weights(model_name, path_config, path_plots):
             for dim in tp_shape:
                 num_param *= dim
             if num_param < (500*500):
-                visualize_mat(trainable_parameter_value, new_path, new_name)
+                visualize_mat(trainable_parameter_value.T, new_path, new_name)
             else:
                 if not os.path.isdir(new_path):
                     os.makedirs(new_path)

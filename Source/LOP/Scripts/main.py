@@ -21,9 +21,9 @@ from LOP.Utils.analysis_data import get_activation_ratio
 
 # MODEL
 #from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
-from LOP.Models.Real_time.LSTM_static_bias import LSTM_static_bias as Model
+from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
 
-GENERATE=True
+GENERATE=False
 SAVE=False
 DEFINED_CONFIG = True  # HYPERPARAM ?
 # For reproducibility
@@ -340,7 +340,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
     result_file_path = config_folder + '/result.csv'
     with open(result_file_path, 'wb') as f:
         f.write("loss;accuracy;precision;recall;true_accuracy;f_score;Xent\n" +\
-                "{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f}".format(best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent))
+                "{:d};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f}".format(best_epoch, best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent))
     return
 
 def generate_wrapper(config_folder, track_paths_generation, logger):

@@ -20,16 +20,21 @@ if __name__ == '__main__':
     configs = [
             ("LSTM_plugged_base/0", "standard"),
             ("LSTM_plugged_base/1", "std \n weight \n decay \n 1e-1"),
-            ("LSTM_plugged_base/2", "std \n wd \n 1e-2"),
-            ("LSTM_plugged_base/3", "std \n wd \n 1e-3"),
-            ("LSTM_static_bias/0", "fixed \n biases"),
-            ("LSTM_static_bias/1", "fb \n wd \n 1e-1"),
-            ("LSTM_static_bias/2", "fb \n wd \n 1e-2"),
-            ("LSTM_static_bias/3", "fb \n wd \n 1e-3"),
+            ("LSTM_plugged_base/2", "std \n wd \n 5e-1"),
+            ("LSTM_plugged_base/3", "std \n wd \n 1e-2"),
+            ("LSTM_plugged_base/4", "std \n wd \n 5e-2"),
+            ("LSTM_plugged_base/5", "std \n wd \n 1e-3"),
+#            ("LSTM_static_bias/0", "fixed \n biases"),
+#            ("LSTM_static_bias/1", "fb \n wd \n 1e-1"),
+#            ("LSTM_static_bias/2", "fb \n wd \n 5e-1"),
+#            ("LSTM_static_bias/3", "fb \n wd \n 1e-2"),
+#            ("LSTM_static_bias/4", "fb \n wd \n 5e-2"),
+#            ("LSTM_static_bias/5", "fb \n wd \n 1e-3"),
     ]
     
     data_Xent = []
     data_acc = []
+    epochs = []
     labels = []
     for path, title in configs:
         this_data_Xent = []
@@ -44,6 +49,12 @@ if __name__ == '__main__':
                 this_acc = float(elem["accuracy"])
                 this_data_Xent.append(this_Xent)
                 this_data_acc.append(this_acc)
+        epoch = []
+        with open(os.path.join(root, path, 'best_epoch.txt'), 'rb') as ff:
+            for line in ff:
+                epoch.append(int(line.rstrip('\n')))
+        
+        epochs.append(epoch)
         data_Xent.append(this_data_Xent)
         data_acc.append(this_data_acc)
         labels.append(title)
@@ -56,11 +67,28 @@ if __name__ == '__main__':
 #    plt.tight_layout()
 #    plt.show("Xent.pdf")
 
+#    plt.clf()
+#    plt.ylabel('accuracy (%)')
+#    plt.xlabel('Model')
+#    plt.title('10-folds boxplots of the accuracy measure \n with and without pre-computed static biases')
+#    plt.boxplot(data_acc, labels=labels)
+#    plt.tight_layout()
+#    plt.show("accuracy.pdf")
+#    
+#    plt.clf()
+#    plt.ylabel('Number of epochs')
+#    plt.xlabel('Model')
+#    plt.title('10-folds boxplots of the number of training epoch \n with and without pre-computed static biases')
+#    plt.boxplot(epochs, labels=labels)
+#    plt.tight_layout()
+#    plt.show()
+    
     plt.clf()
- 
-    plt.ylabel('accuracy (%)')
-    plt.xlabel('Model')
-    plt.title('10-folds boxplots of the accuracy measure \n with and without pre-computed static biases')
-    plt.boxplot(data_acc, labels=labels)
-    plt.tight_layout()
-    plt.show("accuracy.pdf")
+    # Scatter plot epoch/acc
+    plt.scatter(epochs, data_acc, c="b", alpha=0.5)
+    plt.xlabel("epoch")
+    plt.ylabel("accuracy")
+    plt.title("Relation between epoch and accuracy \n for pre-computed biases models")
+    plt.xlim(0, 105)
+    plt.ylim(35, 47)
+    plt.show()

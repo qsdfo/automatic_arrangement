@@ -2,11 +2,14 @@
 # -*- coding: utf8 -*-
 
 import tensorflow as tf
+import re
 
 def variable_summary(var):
     """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
     with tf.name_scope('summaries'):
-        with tf.name.scope(var.name):
+        name_var = re.split('/', var.name)[-1]
+        name_var = re.split(':', name_var)[0]
+        with tf.name_scope(name_var):
             mean = tf.reduce_mean(var)
             tf.summary.scalar('mean', mean)
             with tf.name_scope('stddev'):

@@ -19,8 +19,6 @@
 import os
 import numpy as np
 import LOP.Scripts.config as config
-
-from LOP_database.utils.build_dico import build_dico
 import build_data_aux
 import cPickle as pickle
 
@@ -50,7 +48,6 @@ def get_dim_matrix(root_dir, folder_paths, meta_info_path='temp.p', quantization
     # If the two files have different sizes, we use the shortest (to limit the use of memory,
     # we better contract files instead of expanding them).
     # Get instrument names
-    instrument_list_from_dico = build_dico().keys()
     instru_mapping = {}
     # instru_mapping = {'piano': {'pitch_min': 24, 'pitch_max':117, 'ind_min': 0, 'ind_max': 92},
     #                         'harp' ... }
@@ -250,10 +247,10 @@ if __name__ == '__main__':
     quantization = 8
 
     DATABASE_PATH = config.database_root() + '/LOP_database_06_09_17'
-    DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives"]
+    DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
 #    DATABASE_NAMES = ["debug"]
 
-    data_folder = '../../../Data_folds/Data'
+    data_folder = '../../../Data_folds/Data_IMSLP'
     data_folder += '__' + temporal_granularity + str(quantization)
 
     if not os.path.isdir(data_folder):

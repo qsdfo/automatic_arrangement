@@ -45,28 +45,48 @@ def plot_weights(model_name, path_config, path_plots):
             new_name = split_name[-1]
             trainable_parameter_value = trainable_parameter.eval()
             tp_shape = trainable_parameter_value.shape
-            num_param = 1
+            num_param = 1            
+            
             for dim in tp_shape:
                 num_param *= dim
             if num_param < (500*500):
                 visualize_mat(trainable_parameter_value.T, new_path, new_name)
-            else:
-                if not os.path.isdir(new_path):
-                    os.makedirs(new_path)
-                plt.clf()
-                plt.imshow(trainable_parameter_value, cmap='hot')
+
+            # Stats
+            paramean = trainable_parameter_value.mean()
+            paramin = trainable_parameter_value.min()
+            paramax = trainable_parameter_value.max()
+            parastd = np.std(trainable_parameter_value)
+            parasum = np.sum(trainable_parameter_value)
+                        
+            # Always plot a matplotlib, it does not cost much            
+            if not os.path.isdir(new_path):
+                os.makedirs(new_path)
+            plt.clf()
+
+            if len(tp_shape) > 1:            
+                plt.imshow(trainable_parameter_value.T, cmap='hot')
                 plt.colorbar()
-                plt.savefig(os.path.join(new_path, new_name + '.pdf'))
+                plt.xlabel('out')
+                plt.ylabel('in')
+            else:
+                plt.bar(range(tp_shape[0]), trainable_parameter_value)
+                plt.xlabel('output')
+                
+            title = "Mean : {:.4f}, Min : {:.4f}, Max : {:.4f} \n Std : {:.4f}, Sum : {:.4f}"\
+                .format(paramean, paramin, paramax, parastd, parasum)
+            plt.title(title)
+            plt.savefig(os.path.join(new_path, new_name + '.pdf'))
             
 if __name__ == '__main__':
-    # model_name = "model_acc"
-    # root = "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Fixed_static_biases/precomputed_fixed_static_biases_quali/"
-    # path_configs = [
-    #         root + "LSTM_plugged_base/0/0",
-    #         root + "LSTM_plugged_base/1/0",
-    #         root + "LSTM_static_bias/0/0",
-    #         root + "LSTM_static_bias/1/0",
-    #     ]
-    # for path_config in path_configs:
-    #     path_plots = os.path.join(path_config, "weights")
-    #     plot_weights(model_name, path_config, path_plots)
+     model_name = "model_acc"
+     root = "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Fixed_static_biases/precomputed_fixed_static_biases_quali/"
+     path_configs = [
+             root + "LSTM_plugged_base/0/0",
+             root + "LSTM_plugged_base/1/0",
+             root + "LSTM_static_bias/0/0",
+             root + "LSTM_static_bias/1/0",
+         ]
+     for path_config in path_configs:
+         path_plots = os.path.join(path_config, "weights")
+         plot_weights(model_name, path_config, path_plots)

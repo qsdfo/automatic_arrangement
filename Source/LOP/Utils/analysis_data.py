@@ -18,3 +18,8 @@ def compute_static_bias_initialization(ratio_activation, epsilon=1e-5):
     # Inverse sigmoid !
     static_bias = np.log(ratio_activation/ (1-ratio_activation))
     return static_bias
+
+def get_mean_number_units_on(orch):
+    num_note_on = np.sum(orch>0, axis=1)
+    mean_number_on = np.mean(num_note_on)
+    return mean_number_on

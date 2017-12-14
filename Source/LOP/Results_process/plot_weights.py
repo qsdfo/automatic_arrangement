@@ -65,7 +65,7 @@ def plot_weights(model_name, path_config, path_plots):
             plt.clf()
 
             if len(tp_shape) > 1:            
-                plt.imshow(trainable_parameter_value.T, cmap='hot')
+                plt.imshow(trainable_parameter_value, cmap='hot')
                 plt.colorbar()
                 plt.xlabel('out')
                 plt.ylabel('in')

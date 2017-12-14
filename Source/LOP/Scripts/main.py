@@ -17,7 +17,7 @@ import config
 from LOP.Database.load_data_k_folds import build_folds
 from LOP.Utils.normalization import get_whitening_mat, apply_pca, apply_zca
 from LOP.Utils.process_data import process_data_piano, process_data_orch
-from LOP.Utils.analysis_data import get_activation_ratio
+from LOP.Utils.analysis_data import get_activation_ratio, get_mean_number_units_on
 
 # MODEL
 #from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
@@ -211,9 +211,11 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
         
         # Compute training data's statistics for improving learning (e.g. weighted Xent)
         activation_ratio = get_activation_ratio(orch[train_indices_flat])
+        mean_number_units_on = get_mean_number_units_on(orch[train_indices_flat])
         # It's okay to add this value to the parameters now because we don't need it for persistency, 
         # this is only training regularization
         model_params['activation_ratio'] = activation_ratio
+        model_params['mean_number_units_on'] = mean_number_units_on
         
         ########################################################
         # Persistency

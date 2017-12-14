@@ -124,13 +124,19 @@ def train(model, piano, orch, train_index, valid_index,
     # Add sparsity constraint on the output ?
     # loss += sparsity_penalty_0(preds)
     # loss += sparsity_penalty_1(preds)
+    # loss += sparsity_coeff * tf.nn.relu(tf.reduce_sum(preds, axis=1))
+    # loss += sparsity_coeff * tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
     ############################################################
     
     ############################################################
     if model.optimize():
         # Some models don't need training
 #        train_step = tf.train.AdamOptimizer(learning_rate=0.1).minimize(loss)
-        train_step = tf.train.AdamOptimizer().minimize(loss)
+#        train_step = tf.train.AdamOptimizer().minimize(loss)
+#        train_step = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
+        train_step = tf.train.RMSPropOptimizer(0.01).minimize(loss)
+        
+
     keras_learning_phase = K.learning_phase()
     time_building_graph = time.time() - start_time_building_graph
     logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))
@@ -147,6 +153,8 @@ def train(model, piano, orch, train_index, valid_index,
     tf.add_to_collection('inputs_ph', orch_future_ph)
     if model.optimize():
         saver = tf.train.Saver()
+    if SUMMARIZE:
+        tf.summary.scalar('loss', loss)
     ############################################################
 
     ############################################################
@@ -241,13 +249,10 @@ def train(model, piano, orch, train_index, valid_index,
                 if SUMMARIZE:
                     _, loss_batch, summary = sess.run([train_step, loss, merged], feed_dict)
                 else:
-                    if DEBUG:
-                        _, loss_batch, preds_batch, embedding_batch = sess.run([train_step, loss, preds, embedding_concat], feed_dict)
-                    else:
-                        _, loss_batch = sess.run([train_step, loss], feed_dict)
+                    _, loss_batch, preds_batch, embedding_batch = sess.run([train_step, loss, preds, embedding_concat], feed_dict)
 
-#                if epoch > 10:
-#                    import pdb; pdb.set_trace()
+                if epoch == 20:
+                    import pdb; pdb.set_trace()
 
                 # Keep track of cost
                 train_cost_epoch.append(loss_batch)
@@ -358,4 +363,5 @@ def train(model, piano, orch, train_index, valid_index,
 
 
 
-# aaa=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/bias:0"][0]
+# bias=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/bias:0"][0]
+# kernel=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/kernel:0"][0]

@@ -114,7 +114,10 @@ class LSTM_static_bias(Model_lop):
         #####################
         # gru out and piano(t)
         with tf.name_scope("piano_embedding"):
-            dense_layer = Dense(self.n_hs[-1], activation='relu')  # fully-connected layer with 128 units and ReLU activation
+            # fully-connected layer with 128 units and ReLU activation
+            dense_layer = Dense(self.n_hs[-1], activation='relu',
+                                kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
+                                bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))
             piano_embedding = dense_layer(piano_t)
             keras_layer_summary(dense_layer)
         #####################

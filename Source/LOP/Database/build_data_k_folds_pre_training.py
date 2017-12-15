@@ -61,7 +61,7 @@ def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano
     return instru_mapping, T
 
 
-def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path='temp.p', quantization=12, temporal_granularity='frame_level', logging=None):
+def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl', quantization=12, temporal_granularity='frame_level', logging=None):
     logging.info("##########")
     logging.info("Get dimension informations")
     # Determine the temporal size of the matrices
@@ -173,7 +173,7 @@ def build_training_matrix(folder_paths, instru_mapping,
                 statistics[instrument_name]['n_note_played'] = n_note_played
     return pr_piano, pr_orchestra, duration_piano, duration_orch, statistics, tracks_start_end
 
-def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.p', quantization=12, temporal_granularity='frame_level', store_folder='../Data', pitch_translation_augmentations=[0], logging=None):
+def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl', quantization=12, temporal_granularity='frame_level', store_folder='../Data', pitch_translation_augmentations=[0], logging=None):
 
     # Get dimensions
     get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
@@ -321,7 +321,7 @@ if __name__ == '__main__':
 
     build_data(folder_paths=folder_paths,
                folder_paths_pretraining=folder_paths_pretraining,
-               meta_info_path=data_folder + '/temp.p',
+               meta_info_path=data_folder + '/temp.pkl',
                quantization=quantization,
                temporal_granularity=temporal_granularity,
                store_folder=data_folder,

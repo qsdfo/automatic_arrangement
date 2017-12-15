@@ -251,7 +251,7 @@ def train(model, piano, orch, train_index, valid_index,
                 else:
                     _, loss_batch, preds_batch, embedding_batch = sess.run([train_step, loss, preds, embedding_concat], feed_dict)
 
-                if epoch == 20:
+                if epoch == 10:
                     import pdb; pdb.set_trace()
 
                 # Keep track of cost

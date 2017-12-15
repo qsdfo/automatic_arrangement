@@ -1,17 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-
-import cPickle as pkl
 import random
-import numpy as np
 
-
-def build_folds(data_folder, k_folds=10, temporal_order=20, batch_size=100, random_seed=None, logger_load=None):
-    tracks_start_end = pkl.load(open(data_folder + "/tracks_start_end.pkl", "rb"))
+def build_folds(tracks_start_end, piano, orchestra, k_folds=10, temporal_order=20, batch_size=100, random_seed=None, logger_load=None):
     list_files = tracks_start_end.keys()
-    piano = np.load(data_folder + "/piano.npy")
-    orchestra = np.load(data_folder + "/orchestra.npy")
 
     # Folds are built on files, not directly the indices
     # By doing so, we prevent the same file being spread over train, test and validate sets

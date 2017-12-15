@@ -10,6 +10,7 @@ import shutil
 import time
 import numpy as np
 import hyperopt
+import copy
 
 from train import train
 from generate_midi import generate_midi
@@ -174,80 +175,65 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
         logger_config.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
     
     # Get data and tvt splits (=folds)
-    piano, orch, K_folds, valid_names, test_names, dimensions = get_data_and_folds(database_path, parameters, model_params, logger_config)
+    piano, orch, K_folds, valid_names, test_names, dimensions = \
+        get_data_and_folds(database_path, parameters['k_folds'], parameters, model_params, suffix="", logger=logger_config)
+    piano_pretraining, orch_pretraining, K_folds_pretraining, _, _, _ = \
+        get_data_and_folds(database_path, 0, parameters, model_params, suffix="_pretraining", logger=logger_config)
     pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
-
+    
+    # two options : pre-training then training or just concatenate everything
+    
+    ####################
+    # 1/
+    # Pre-training then training on small db
+#    config_folder_pretraining = os.path.join(config_folder, 'pretraining')
+#    if os.path.isdir(config_folder_pretraining):
+#        shutil.rmtree(config_folder_pretraining)
+#    os.makedirs(config_folder_pretraining)
+#    parameters['pretrained_model'] = None
+#    train_wrapper(parameters, model_params, dimensions, config_folder_pretraining, 
+#                  piano_pretraining, orch_pretraining, (0, K_folds_pretraining[0]),
+#                  None, None, logger_config)    
+#    for K_fold_ind, K_fold in enumerate(K_folds):
+#        parameters['pretrained_model'] = os.path.join(config_folder_pretraining, 'model_acc', 'model')
+#        train_wrapper(parameters, model_params, dimensions, config_folder, 
+#                      piano, orch, (K_fold_ind, K_fold),
+#                      valid_names, test_names, logger_config)
+    ####################
+    
+    ####################    
+    # 2/ Just concatenate the matrices and train everyting
+    # BUT, avoid using pretraining matrix in the test and validation
     for K_fold_ind, K_fold in enumerate(K_folds):
-        config_folder_fold = config_folder + '/' + str(K_fold_ind)
-        os.makedirs(config_folder_fold)
-        # Write filenames of this split
-        with open(os.path.join(config_folder_fold, "test_names.txt"), "wb") as f:
-            for filename in test_names[K_fold_ind]:
-                f.write(filename + "\n")
-        with open(os.path.join(config_folder_fold, "valid_names.txt"), "wb") as f:
-            for filename in valid_names[K_fold_ind]:
-                f.write(filename + "\n")
-        
-        ## Normalize the data
-        # Normalization must be computed only on training data, but performed over all the dataset
-        train_indices_flat = [item for sublist in K_fold['train'] for item in sublist]
-        if parameters["normalize"] is not None:
-            piano_train = piano[train_indices_flat]
-            epsilon = 0.0001
-            if parameters["normalize"] == "standard_pca":
-                mean_piano, std_piano, pca_piano, _ = get_whitening_mat(piano_train, epsilon)
-                piano = apply_pca(piano, mean_piano, std_piano, pca_piano, epsilon) 
-                # Save the transformations for later
-                standard_pca_piano = {'mean_piano': mean_piano, 'std_piano': std_piano, 'pca_piano': pca_piano, 'epsilon': epsilon}
-                pkl.dump(standard_pca_piano, open(os.path.join(config_folder_fold, "standard_pca_piano"), 'wb'))
-            elif parameters["normalize"] == "standard_zca":
-                mean_piano, std_piano, _, zca_piano = get_whitening_mat(piano_train, epsilon)
-                piano = apply_zca(piano, mean_piano, std_piano, zca_piano, epsilon)
-                # Save the transformations for later
-                standard_zca_piano = {'mean_piano': mean_piano, 'std_piano': std_piano, 'zca_piano': zca_piano, 'epsilon': epsilon}
-                pkl.dump(standard_zca_piano, open(os.path.join(config_folder_fold, "standard_zca_piano"), 'wb'))
-            else:
-                raise Exception(str(parameters["normalize"]) + " is not a possible value for normalization parameter")
-        
-        # Compute training data's statistics for improving learning (e.g. weighted Xent)
-        activation_ratio = get_activation_ratio(orch[train_indices_flat])
-        mean_number_units_on = get_mean_number_units_on(orch[train_indices_flat])
-        # It's okay to add this value to the parameters now because we don't need it for persistency, 
-        # this is only training regularization
-        model_params['activation_ratio'] = activation_ratio
-        model_params['mean_number_units_on'] = mean_number_units_on
-        
-        ########################################################
-        # Persistency
-        pkl.dump(model_params, open(config_folder + '/model_params.pkl', 'wb'))
-        pkl.dump(Model.is_keras(), open(config_folder + '/is_keras.pkl', 'wb'))
-        pkl.dump(parameters, open(config_folder + '/script_parameters.pkl', 'wb'))
-        # Training
-        train_wrapper(parameters, model_params, dimensions, config_folder_fold, piano, orch, K_fold, logger_config)
-        # Generating
-        if GENERATE:
-            generate_wrapper(config_folder_fold, track_paths_generation, logger_config)
-        if not SAVE:
-#            shutil.rmtree(config_folder_fold + '/model')
-            shutil.rmtree(config_folder_fold + '/model_Xent')
-            shutil.rmtree(config_folder_fold + '/model_acc')
-        ########################################################
+        new_K_fold = copy.deepcopy(K_fold)
+        parameters['pretrained_model'] = None
+        indices_from_pretraining = K_folds_pretraining[0]['train'] + K_folds_pretraining[0]['test'] + K_folds_pretraining[0]['valid']
+        offset = len(piano)
+        indices_from_pretraining_shifted = [[e+offset for e in l] for l in indices_from_pretraining]
+        new_K_fold['train'].extend(indices_from_pretraining_shifted)
+        piano_full = np.concatenate((piano, piano_pretraining), axis=0)
+        orch_full = np.concatenate((orch, orch_pretraining), axis=0)
+        train_wrapper(parameters, model_params, dimensions, config_folder, 
+                      piano_full, orch_full, (K_fold_ind, new_K_fold),
+                      valid_names, test_names, track_paths_generation, logger_config)
+    ####################
+
     logger_config.info("#"*60)
     logger_config.info("#"*60)
     return
 
 
-def get_data_and_folds(database_path, parameters, model_params, logger):
+def get_data_and_folds(database_path, num_k_folds, parameters, model_params, suffix=None, logger=None):
     logger.info((u'##### Data').encode('utf8'))
     
     # Load data and build K_folds
     time_load_0 = time.time()
 
     ## Load the matrices
-    piano = np.load(database_path + '/piano.npy')
-    orch = np.load(database_path + '/orchestra.npy')
+    piano = np.load(database_path + '/piano' + suffix + '.npy')
+    orch = np.load(database_path + '/orchestra' + suffix + '.npy')
     if parameters['duration_piano']:
-        duration_piano = np.load(database_path + '/duration_piano.npy')
+        duration_piano = np.load(database_path + '/duration_piano' + suffix + '.npy')
     else:
         duration_piano = None
     piano = process_data_piano(piano, duration_piano, parameters)
@@ -265,18 +251,20 @@ def get_data_and_folds(database_path, parameters, model_params, logger):
     # ####################################################
 
     ## Load the folds
-    if parameters["k_folds"] == 0:
-        K_folds, valid_names, test_names = build_folds(database_path, 10, model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED_FOLDS, logger_load=None)
+    tracks_start_end = pkl.load(open(os.path.join(database_path, 'tracks_start_end' + suffix + '.pkl'), 'rb'))
+    if num_k_folds == 0:
+        K_folds, valid_names, test_names = build_folds(tracks_start_end, piano, orch, 10, model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED_FOLDS, logger_load=None)
         K_folds = [K_folds[0]]
         valid_names = [valid_names[0]]
         test_names = [test_names[0]]
-    elif parameters["k_folds"] == -1:
-        K_folds, valid_names, test_names = build_folds(database_path, -1, model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED_FOLDS, logger_load=None)
+    elif num_k_folds == -1:
+        K_folds, valid_names, test_names = build_folds(tracks_start_end, piano, orch, -1, model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED_FOLDS, logger_load=None)
     else:
-        K_folds, valid_names, test_names = build_folds(database_path, parameters["k_folds"], model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED_FOLDS, logger_load=None)
+        K_folds, valid_names, test_names = build_folds(tracks_start_end, piano, orch, num_k_folds, model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED_FOLDS, logger_load=None)
+        
     time_load = time.time() - time_load_0
 
-    ## Get dimensions of batches
+    ## Get dimensions of batches (will be the same for pretraining)
     piano_dim = piano.shape[1]
     orch_dim = orch.shape[1]
     dimensions = {'temporal_order': model_params['temporal_order'],
@@ -285,9 +273,30 @@ def get_data_and_folds(database_path, parameters, model_params, logger):
     logger.info('TTT : Loading data took {} seconds'.format(time_load))
     return piano, orch, K_folds, valid_names, test_names, dimensions
 
-def train_wrapper(parameters, model_params, dimensions, config_folder, piano, orch, K_fold, logger):
-    ################################################################################
-    ################################################################################
+    
+def normalize_data(piano, orch, train_indices_flat, parameters):
+    ## Normalize the data
+    piano_train = piano[train_indices_flat]
+    epsilon = 0.0001
+    if parameters["normalize"] == "standard_pca":
+        mean_piano, std_piano, pca_piano, _ = get_whitening_mat(piano_train, epsilon)
+        piano = apply_pca(piano, mean_piano, std_piano, pca_piano, epsilon) 
+        # Save the transformations for later
+        standard_pca_piano = {'mean_piano': mean_piano, 'std_piano': std_piano, 'pca_piano': pca_piano, 'epsilon': epsilon}
+        return piano, orch, standard_pca_piano
+    elif parameters["normalize"] == "standard_zca":
+        mean_piano, std_piano, _, zca_piano = get_whitening_mat(piano_train, epsilon)
+        piano = apply_zca(piano, mean_piano, std_piano, zca_piano, epsilon)
+        # Save the transformations for later
+        standard_zca_piano = {'mean_piano': mean_piano, 'std_piano': std_piano, 'zca_piano': zca_piano, 'epsilon': epsilon}
+        return piano, orch, standard_zca_piano
+    else:
+        raise Exception(str(parameters["normalize"]) + " is not a possible value for normalization parameter")
+
+
+def train_wrapper(parameters, model_params, dimensions, config_folder, 
+                  piano, orch, K_fold_pair, 
+                  test_names, valid_names, track_paths_generation, logger):
     ################################################################################
     ################################################################################
     # TEST
@@ -296,9 +305,39 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
     # train_index = train_index[:last_index]
     ################################################################################
     ################################################################################
-    ################################################################################
-    ################################################################################
-
+    K_fold_ind, K_fold = K_fold_pair
+    config_folder_fold = config_folder + '/' + str(K_fold_ind)
+    os.makedirs(config_folder_fold)
+    # Write filenames of this split
+    with open(os.path.join(config_folder_fold, "test_names.txt"), "wb") as f:
+        for filename in test_names[K_fold_ind]:
+            f.write(filename + "\n")
+    with open(os.path.join(config_folder_fold, "valid_names.txt"), "wb") as f:
+        for filename in valid_names[K_fold_ind]:
+            f.write(filename + "\n")
+        
+    train_indices_flat = [item for sublist in K_fold['train'] for item in sublist]
+    if parameters["normalize"] is not None:
+        piano, orch, transform = normalize_data(piano, orch, train_indices_flat, parameters)
+        if parameters["normalize"] == "standard_zca":
+            pkl.dump(transform, open(os.path.join(config_folder_fold, "standard_pca_piano"), 'wb'))
+        else:
+            pkl.dump(transform, open(os.path.join(config_folder_fold, "standard_zca_piano"), 'wb'))
+    
+    # Compute training data's statistics for improving learning (e.g. weighted Xent)
+    activation_ratio = get_activation_ratio(orch[train_indices_flat])
+    mean_number_units_on = get_mean_number_units_on(orch[train_indices_flat])
+    # It's okay to add this value to the parameters now because we don't need it for persistency, 
+    # this is only training regularization
+    model_params['activation_ratio'] = activation_ratio
+    model_params['mean_number_units_on'] = mean_number_units_on
+    
+    ########################################################
+    # Persistency
+    pkl.dump(model_params, open(config_folder + '/model_params.pkl', 'wb'))
+    pkl.dump(Model.is_keras(), open(config_folder + '/is_keras.pkl', 'wb'))
+    pkl.dump(parameters, open(config_folder + '/script_parameters.pkl', 'wb'))
+    
     train_index = K_fold['train']
     valid_index = K_fold['valid']
 
@@ -319,15 +358,15 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
     # Instanciate model and save folder
     ############################################################
     model = Model(model_params, dimensions)
-    os.mkdir(config_folder + '/model_Xent/')
-    os.mkdir(config_folder + '/model_acc/')
+    os.mkdir(config_folder_fold + '/model_Xent/')
+    os.mkdir(config_folder_fold + '/model_acc/')
 
     ############################################################
     # Train
     ############################################################
     time_train_0 = time.time()
     best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch =\
-        train(model, piano, orch, train_index, valid_index, parameters, config_folder, time_train_0, logger)
+        train(model, piano, orch, train_index, valid_index, parameters, config_folder_fold, time_train_0, logger)
     time_train_1 = time.time()
     training_time = time_train_1-time_train_0
     logger.info('TTT : Training data took {} seconds'.format(training_time))
@@ -343,6 +382,14 @@ def train_wrapper(parameters, model_params, dimensions, config_folder, piano, or
     with open(result_file_path, 'wb') as f:
         f.write("epoch;loss;accuracy;precision;recall;true_accuracy;f_score;Xent\n" +\
                 "{:d};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f}".format(best_epoch, best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent))
+    # Generating
+    if GENERATE:
+        generate_wrapper(config_folder_fold, track_paths_generation, logger)
+    if not SAVE:
+#            shutil.rmtree(config_folder_fold + '/model')
+        shutil.rmtree(config_folder_fold + '/model_Xent')
+        shutil.rmtree(config_folder_fold + '/model_acc')
+        ########################################################
     return
 
 def generate_wrapper(config_folder, track_paths_generation, logger):

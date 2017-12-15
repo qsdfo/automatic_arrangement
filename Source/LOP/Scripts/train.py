@@ -92,67 +92,22 @@ def train(model, piano, orch, train_index, valid_index,
     # Use same validation en train set
     # piano_valid, orch_valid, valid_index = piano_train, orch_train, train_index
 
-    ############################################################
-    # Compute train step
-    # Inputs
-    logger_train.info((u'#### Graph'))
-    start_time_building_graph = time.time()
-    #
-    piano_t_ph = tf.placeholder(tf.float32, shape=(None, model.piano_dim), name="piano_t")
-    piano_past_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.piano_dim), name="piano_past")
-    piano_future_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.piano_dim), name="piano_future")
-    #
-    orch_t_ph = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="orch_t")
-    orch_past_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.orch_dim), name="orch_past")
-    orch_future_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.orch_dim), name="orch_past")
-    inputs_ph = (piano_t_ph, piano_past_ph, piano_future_ph, orch_past_ph, orch_future_ph)
-    # Prediction
-    preds, embedding_concat = model.predict(inputs_ph)
-    # TODO : remplacer cette ligne par une fonction qui prends labels et preds et qui compute la loss
-    # Comme ça on pourra faire des classifier chains
-    ############################################################
-    
-    ############################################################
-    # Loss
-    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
-    # loss = tf.reduce_mean(Xent_tf(orch_t_ph, preds), name="loss") 
-    # loss = tf.reduce_mean(bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
-    # loss = tf.reduce_mean(accuracy_tf(orch_t_ph, preds), name="loss")
-    # loss = tf.reduce_mean(accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500), name="loss")
-    
-    
-    # Add sparsity constraint on the output ?
-    # loss += sparsity_penalty_0(preds)
-    # loss += sparsity_penalty_1(preds)
-    # loss += sparsity_coeff * tf.nn.relu(tf.reduce_sum(preds, axis=1))
-    # loss += sparsity_coeff * tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
-    ############################################################
-    
-    ############################################################
-    if model.optimize():
-        # Some models don't need training
-#        train_step = tf.train.AdamOptimizer(learning_rate=0.1).minimize(loss)
-#        train_step = tf.train.AdamOptimizer().minimize(loss)
-#        train_step = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
-        train_step = tf.train.RMSPropOptimizer(0.01).minimize(loss)
-        
+    if parameters['pretrained_model'] is None:
+        logger_train.info((u'#### Graph'))
+        start_time_building_graph = time.time() 
+        inputs_ph, orch_t_ph, preds, loss, train_step, keras_learning_phase, debug, saver = build_training_nodes(model)
+        time_building_graph = time.time() - start_time_building_graph
+        logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))
+    else:
+        logger_train.info((u'#### Graph'))
+        start_time_building_graph = time.time() 
+        inputs_ph, orch_t_ph, preds, loss, train_step, keras_learning_phase, debug, saver = load_pretrained_model()
+        time_building_graph = time.time() - start_time_building_graph
+        logger_train.info("TTT : Loading pretrained model took {0:.2f}s".format(time_building_graph))
 
-    keras_learning_phase = K.learning_phase()
-    time_building_graph = time.time() - start_time_building_graph
-    logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))
-    ############################################################
+    piano_t_ph, piano_past_ph, piano_future_ph, orch_past_ph, orch_future_ph = inputs_ph
+    embedding_concat = debug[0]
 
-    ############################################################
-    # Saver
-    tf.add_to_collection('preds', preds)
-    tf.add_to_collection('keras_learning_phase', keras_learning_phase)
-    tf.add_to_collection('inputs_ph', piano_t_ph)
-    tf.add_to_collection('inputs_ph', piano_past_ph)
-    tf.add_to_collection('inputs_ph', piano_future_ph)
-    tf.add_to_collection('inputs_ph', orch_past_ph)
-    tf.add_to_collection('inputs_ph', orch_future_ph)
-    if model.optimize():
-        saver = tf.train.Saver()
     if SUMMARIZE:
         tf.summary.scalar('loss', loss)
     ############################################################
@@ -184,15 +139,19 @@ def train(model, piano, orch, train_index, valid_index,
     # with tf.Session(config=tf.ConfigProto(log_device_placement=LOGGING_DEVICE)) as sess:        
     with tf.Session() as sess:
         
-        if SUMMARIZE: 
+        if SUMMARIZE:
             merged = tf.summary.merge_all()
             train_writer = tf.summary.FileWriter(config_folder + '/summary', sess.graph)
 
         if model.is_keras():
             K.set_session(sess)
-
+        
         # Initialize weights
-        sess.run(tf.global_variables_initializer())
+        if parameters['pretrained_model']: 
+            saver.restore(parameters['pretrained_model'])
+        else:
+            sess.run(tf.global_variables_initializer())
+            
 
         if DEBUG:
             sess = tf_debug.LocalCLIDebugWrapperSession(sess)
@@ -250,9 +209,6 @@ def train(model, piano, orch, train_index, valid_index,
                     _, loss_batch, summary = sess.run([train_step, loss, merged], feed_dict)
                 else:
                     _, loss_batch, preds_batch, embedding_batch = sess.run([train_step, loss, preds, embedding_concat], feed_dict)
-
-                if epoch == 10:
-                    import pdb; pdb.set_trace()
 
                 # Keep track of cost
                 train_cost_epoch.append(loss_batch)
@@ -362,6 +318,83 @@ def train(model, piano, orch, train_index, valid_index,
     return best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch
 
 
+def build_training_nodes(model):
+    ############################################################
+    # Build nodes
+    # Inputs
+    piano_t_ph = tf.placeholder(tf.float32, shape=(None, model.piano_dim), name="piano_t")
+    piano_past_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.piano_dim), name="piano_past")
+    piano_future_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.piano_dim), name="piano_future")
+    #
+    orch_t_ph = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="orch_t")
+    orch_past_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.orch_dim), name="orch_past")
+    orch_future_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.orch_dim), name="orch_past")
+    inputs_ph = (piano_t_ph, piano_past_ph, piano_future_ph, orch_past_ph, orch_future_ph)
+    # Prediction
+    preds, embedding_concat = model.predict(inputs_ph)
+    # TODO : remplacer cette ligne par une fonction qui prends labels et preds et qui compute la loss
+    # Comme ça on pourra faire des classifier chains
+    ############################################################
+    
+    ############################################################
+    # Loss
+    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
+    # loss = tf.reduce_mean(Xent_tf(orch_t_ph, preds), name="loss") 
+    # loss = tf.reduce_mean(bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
+    # loss = tf.reduce_mean(accuracy_tf(orch_t_ph, preds), name="loss")
+    # loss = tf.reduce_mean(accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500), name="loss")
+    
+    
+    # Add sparsity constraint on the output ?
+    # loss += sparsity_penalty_0(preds)
+    # loss += sparsity_penalty_1(preds)
+    # loss += sparsity_coeff * tf.nn.relu(tf.reduce_sum(preds, axis=1))
+    # loss += sparsity_coeff * tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
+    ############################################################
+    
+    ############################################################
+    if model.optimize():
+        # Some models don't need training
+#        train_step = tf.train.AdamOptimizer(learning_rate=0.1).minimize(loss)
+#        train_step = tf.train.AdamOptimizer().minimize(loss)
+#        train_step = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
+        train_step = tf.train.RMSPropOptimizer(0.01).minimize(loss)
+        
+    keras_learning_phase = K.learning_phase()
+    
+    ############################################################
+    # Saver
+    tf.add_to_collection('preds', preds)
+    tf.add_to_collection('orch_t_ph', orch_t_ph)
+    tf.add_to_collection('loss', loss)
+    tf.add_to_collection('train_step', train_step)
+    tf.add_to_collection('keras_learning_phase', keras_learning_phase)
+    tf.add_to_collection('inputs_ph', piano_t_ph)
+    tf.add_to_collection('inputs_ph', piano_past_ph)
+    tf.add_to_collection('inputs_ph', piano_future_ph)
+    tf.add_to_collection('inputs_ph', orch_past_ph)
+    tf.add_to_collection('inputs_ph', orch_future_ph)
+#    Debug collection
+    tf.add_to_collection('debug', embedding_concat)
+    debug = (embedding_concat,)
+    if model.optimize():
+        saver = tf.train.Saver()
+    ############################################################
+    
+    return inputs_ph, orch_t_ph, preds, loss, train_step, keras_learning_phase, debug, saver
+
+def load_pretrained_model(path_to_model):
+    # Restore model and preds graph
+    saver = tf.train.import_meta_graph(path_to_model + '/model.meta')
+
+    inputs_ph = tf.get_collection('inputs_ph')
+    orch_t_ph = tf.get_collection("orch_t_ph")[0]
+    preds = tf.get_collection("preds")[0]
+    loss = tf.get_collection("loss")[0]
+    train_step = tf.get_collection('train_step')[0]
+    keras_learning_phase = tf.get_collection("keras_learning_phase")[0]
+    debug = tf.get_collection("debug")
+    return inputs_ph, orch_t_ph, preds, loss, train_step, keras_learning_phase, debug, saver
 
 # bias=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/bias:0"][0]
 # kernel=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/kernel:0"][0]

@@ -350,14 +350,14 @@ def build_training_nodes(model):
     
     
     # Add sparsity constraint on the output ?
+    # sparsity_coeff = 0.001
     # loss += sparsity_penalty_0(preds)
     # loss += sparsity_penalty_1(preds)
     # loss += sparsity_coeff * tf.nn.relu(tf.reduce_sum(preds, axis=1))
     # loss += sparsity_coeff * tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
     
-    # Weight decay
-    vars   = tf.trainable_variables() 
-    loss += tf.add_n([tf.nn.l2_loss(v) for v in vars ]) * model.weight_decay_coeff
+    # Weight decay 
+    loss += tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * model.weight_decay_coeff
     ############################################################
     
     ############################################################

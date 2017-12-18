@@ -78,9 +78,7 @@ class LSTM_plugged_base(Model_lop):
         
         with tf.name_scope("orch_rnn_0"):
             gru_layer = GRU(self.n_hs[0], return_sequences=return_sequences, input_shape=(self.temporal_order, self.orch_dim),
-                    activation='relu', dropout=self.dropout_probability,
-                    kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-                    bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))
+                    activation='relu', dropout=self.dropout_probability)
             x = gru_layer(orch_past)
             keras_layer_summary(gru_layer)
         
@@ -94,9 +92,7 @@ class LSTM_plugged_base(Model_lop):
                     return_sequences = True
                 with tf.name_scope("orch_rnn_" + str(layer_ind)):
                     gru_layer = GRU(self.n_hs[layer_ind], return_sequences=return_sequences,
-                            activation='relu', dropout=self.dropout_probability,
-                            kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-                            bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))
+                            activation='relu', dropout=self.dropout_probability)
                     x = gru_layer(x)
                     keras_layer_summary(gru_layer)
 
@@ -106,9 +102,7 @@ class LSTM_plugged_base(Model_lop):
         #####################
         # gru out and piano(t)
         with tf.name_scope("piano_embedding"):
-            dense_layer = Dense(self.n_hs[-1], activation='relu',
-                                kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-                                bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))  # fully-connected layer with 128 units and ReLU activation
+            dense_layer = Dense(self.n_hs[-1], activation='relu', dropout=self.dropout_probability)  # fully-connected layer with 128 units and ReLU activation
             piano_embedding = dense_layer(piano_t)
             keras_layer_summary(dense_layer)
         #####################
@@ -117,9 +111,7 @@ class LSTM_plugged_base(Model_lop):
         # Concatenate and predict
         with tf.name_scope("top_layer_prediction"):
             top_input = keras.layers.concatenate([lstm_out, piano_embedding], axis=1)
-            dense_layer = Dense(self.orch_dim, activation='sigmoid', name='orch_pred',
-                                    kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-                                    bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))
+            dense_layer = Dense(self.orch_dim, activation='sigmoid', name='orch_pred', dropout=self.dropout_probability)
             orch_prediction = dense_layer(top_input)
             keras_layer_summary(dense_layer)
         #####################

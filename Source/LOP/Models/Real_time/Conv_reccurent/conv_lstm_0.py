@@ -68,7 +68,7 @@ class Conv_lstm_0(Model_lop):
 		#####################
 
 		#####################
-		# GRU for modelling past orchestra
+		# GRU for modelling past orchestra
 		# First layer
 		if len(self.gru_orch) > 1:
 			return_sequences = True
@@ -77,12 +77,10 @@ class Conv_lstm_0(Model_lop):
 		
 		with tf.name_scope("orch_rnn_0"):
 			x = GRU(self.gru_orch[0], return_sequences=return_sequences, input_shape=(self.temporal_order, self.orch_dim),
-					activation='relu', dropout=self.dropout_probability,
-					kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-					bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))(orch_past)
+					activation='relu', dropout=self.dropout_probability)(orch_past)
 		
 		if len(self.gru_orch) > 1:
-			# Intermediates layers
+			# Intermediates layers
 			for layer_ind in range(1, len(self.gru_orch)):
 				# Last layer ?
 				if layer_ind == len(self.gru_orch)-1:
@@ -91,9 +89,7 @@ class Conv_lstm_0(Model_lop):
 					return_sequences = True
 				with tf.name_scope("orch_rnn_" + str(layer_ind)):
 					x = GRU(self.gru_orch[layer_ind], return_sequences=return_sequences,
-							activation='relu', dropout=self.dropout_probability,
-							kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-							bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))(x)
+							activation='relu', dropout=self.dropout_probability)(x)
 
 		orch_embedding = x
 		#####################

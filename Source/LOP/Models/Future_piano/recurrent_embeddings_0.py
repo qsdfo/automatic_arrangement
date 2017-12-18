@@ -105,15 +105,11 @@ class Recurrent_embeddings_0(MLFP):
         # Concatenate and predict
         with tf.name_scope("top_layer_prediction_0"):
             top_input = keras.layers.concatenate([orchestra_embedding, piano_embedding], axis=1)
-            dense_layer = Dense(1000, activation='relu', name='orch_pred_0',
-                                    kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-                                    bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))
+            dense_layer = Dense(1000, activation='relu', name='orch_pred_0')
             top_0 = dense_layer(top_input)
             keras_layer_summary(dense_layer)
         with tf.name_scope("top_layer_prediction_1"):
-            dense_layer = Dense(self.orch_dim, activation='sigmoid', name='orch_pred',
-                                    kernel_regularizer=keras.regularizers.l2(self.weight_decay_coeff),
-                                    bias_regularizer=keras.regularizers.l2(self.weight_decay_coeff))
+            dense_layer = Dense(self.orch_dim, activation='sigmoid', name='orch_pred')
             orch_prediction = dense_layer(top_0)
             keras_layer_summary(dense_layer)
         #####################

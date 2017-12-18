@@ -17,7 +17,7 @@ import tensorflow as tf
 # Keras
 import keras
 from keras.layers.recurrent import GRU
-from keras.layers import Dense, Activation
+from keras.layers import Dense, Activation, Dropout
 
 # Hyperopt
 from LOP.Utils import hopt_wrapper
@@ -111,8 +111,9 @@ class LSTM_static_bias(Model_lop):
         # gru out and piano(t)
         with tf.name_scope("piano_embedding"):
             # fully-connected layer with 128 units and ReLU activation
-            dense_layer = Dense(self.n_hs[-1], activation='relu', dropout=self.dropout_probability)
-            piano_embedding = dense_layer(piano_t)
+            piano_t_drop = Dropout(self.dropout_probability)(piano_t)
+            dense_layer = Dense(self.n_hs[-1], activation='relu')
+            piano_embedding = dense_layer(piano_t_drop)
             keras_layer_summary(dense_layer)
         #####################
 
@@ -120,9 +121,10 @@ class LSTM_static_bias(Model_lop):
         # Concatenate and predict
         with tf.name_scope("top_layer_prediction"):
             top_input = keras.layers.concatenate([lstm_out, piano_embedding], axis=1)
+            top_input_drop = Dropout(self.dropout_probability)(top_input)
             # First, just the linear part
             dense_layer = Dense(self.orch_dim, activation='linear', name='orch_pred')
-            biased_linear_pred = dense_layer(top_input)
+            biased_linear_pred = dense_layer(top_input_drop)
             keras_layer_summary(dense_layer)
             # Add the pre-computed static biases
             precomputed_biases = tf.constant(self.static_bias, dtype=tf.float32, name='precomputed_static_biases')

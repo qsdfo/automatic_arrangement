@@ -9,7 +9,7 @@ import tensorflow as tf
 # Keras
 import keras
 from keras.layers.recurrent import GRU
-from keras.layers import Dense
+from keras.layers import Dense, Dropout
 
 # Hyperopt
 from LOP.Utils import hopt_wrapper
@@ -102,17 +102,20 @@ class LSTM_plugged_base(Model_lop):
         #####################
         # gru out and piano(t)
         with tf.name_scope("piano_embedding"):
-            dense_layer = Dense(self.n_hs[-1], activation='relu', dropout=self.dropout_probability)  # fully-connected layer with 128 units and ReLU activation
-            piano_embedding = dense_layer(piano_t)
+            piano_t_ = Dropout(self.dropout_probability)(piano_t)
+            dense_layer = Dense(self.n_hs[-1], activation='relu')  # fully-connected layer with 128 units and ReLU activation
+            piano_embedding = dense_layer(piano_t_)
             keras_layer_summary(dense_layer)
+            
         #####################
 
         #####################
         # Concatenate and predict
         with tf.name_scope("top_layer_prediction"):
             top_input = keras.layers.concatenate([lstm_out, piano_embedding], axis=1)
-            dense_layer = Dense(self.orch_dim, activation='sigmoid', name='orch_pred', dropout=self.dropout_probability)
-            orch_prediction = dense_layer(top_input)
+            top_input_drop = Dropout(self.dropout_probability)(top_input)
+            dense_layer = Dense(self.orch_dim, activation='sigmoid', name='orch_pred')
+            orch_prediction = dense_layer(top_input_drop)
             keras_layer_summary(dense_layer)
         #####################
 

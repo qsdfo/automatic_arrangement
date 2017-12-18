@@ -305,9 +305,6 @@ def train(model, piano, orch, train_index, valid_index,
                 logger_train.info('TIME OUT !!')
 
 
-            if epoch == 10:
-                import pdb; pdb.set_trace()
-                
             #######################################
             # Epoch +1
             #######################################

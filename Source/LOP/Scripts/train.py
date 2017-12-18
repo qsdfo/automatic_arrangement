@@ -101,7 +101,7 @@ def train(model, piano, orch, train_index, valid_index,
     else:
         logger_train.info((u'#### Graph'))
         start_time_building_graph = time.time() 
-        inputs_ph, orch_t_ph, preds, loss, train_step, keras_learning_phase, debug, saver = load_pretrained_model()
+        inputs_ph, orch_t_ph, preds, loss, train_step, keras_learning_phase, debug, saver = load_pretrained_model(parameters['pretrained_model'])
         time_building_graph = time.time() - start_time_building_graph
         logger_train.info("TTT : Loading pretrained model took {0:.2f}s".format(time_building_graph))
 
@@ -148,7 +148,7 @@ def train(model, piano, orch, train_index, valid_index,
         
         # Initialize weights
         if parameters['pretrained_model']: 
-            saver.restore(parameters['pretrained_model'])
+            saver.restore(sess, parameters['pretrained_model'])
         else:
             sess.run(tf.global_variables_initializer())
             
@@ -274,6 +274,7 @@ def train(model, piano, orch, train_index, valid_index,
             #######################################
             # Best model ?
             # Xent criterion
+            start_time_saving = time.time()
             if mean_val_loss <= best_val_loss:
                 logger_train.info('Save Xent')
                 saver.save(sess, config_folder + "/model_Xent/model")
@@ -293,6 +294,8 @@ def train(model, piano, orch, train_index, valid_index,
                     
                 if ANALYSIS:
                     compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Acc_criterion"))
+            end_time_saving = time.time()
+            logger_train.info('Saving time : {:.3f}'.format(end_time_saving-start_time_saving))
             #######################################
 
             if OVERFITTING:
@@ -301,6 +304,10 @@ def train(model, piano, orch, train_index, valid_index,
             if TIME_LIMIT:
                 logger_train.info('TIME OUT !!')
 
+
+            if epoch == 10:
+                import pdb; pdb.set_trace()
+                
             #######################################
             # Epoch +1
             #######################################
@@ -350,6 +357,10 @@ def build_training_nodes(model):
     # loss += sparsity_penalty_1(preds)
     # loss += sparsity_coeff * tf.nn.relu(tf.reduce_sum(preds, axis=1))
     # loss += sparsity_coeff * tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
+    
+    # Weight decay
+    vars   = tf.trainable_variables() 
+    loss += tf.add_n([tf.nn.l2_loss(v) for v in vars ]) * model.weight_decay_coeff
     ############################################################
     
     ############################################################
@@ -385,7 +396,7 @@ def build_training_nodes(model):
 
 def load_pretrained_model(path_to_model):
     # Restore model and preds graph
-    saver = tf.train.import_meta_graph(path_to_model + '/model.meta')
+    saver = tf.train.import_meta_graph(path_to_model + '.meta')
 
     inputs_ph = tf.get_collection('inputs_ph')
     orch_t_ph = tf.get_collection("orch_t_ph")[0]

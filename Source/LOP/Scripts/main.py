@@ -127,8 +127,16 @@ def main():
                 # continue
                 user_input = raw_input(config_folder + " folder already exists. Type y to overwrite : ")
                 if user_input == 'y':
-                    shutil.rmtree(config_folder)
-                    os.mkdir(config_folder) 
+                    # Clean
+                    # Only delete the files in the top folder and folds, but not the pretrained model
+                    for thing in os.listdir(config_folder):
+                        path_thing = os.path.join(config_folder, thing)
+                        if os.path.isfile(path_thing):
+                            os.remove(path_thing)
+                        elif thing != "pretraining":
+                            shutil.rmtree(path_thing)
+                    if not os.path.isdir(config_folder):    
+                        os.mkdir(config_folder) 
                 else:
                     raise Exception("Config not overwritten")
             config_loop(config_folder, model_parameters, parameters, DATABASE_PATH, track_paths_generation)
@@ -177,7 +185,7 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
     # Get data and tvt splits (=folds)
     piano, orch, K_folds, valid_names, test_names, dimensions = \
         get_data_and_folds(database_path, parameters['k_folds'], parameters, model_params, suffix="", logger=logger_config)
-    piano_pretraining, orch_pretraining, K_folds_pretraining, _, _, _ = \
+    piano_pretraining, orch_pretraining, K_folds_pretraining, valid_names_pretraining, test_names_pretraining, _ = \
         get_data_and_folds(database_path, 0, parameters, model_params, suffix="_pretraining", logger=logger_config)
     pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
     
@@ -186,36 +194,45 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
     ####################
     # 1/
     # Pre-training then training on small db
-#    config_folder_pretraining = os.path.join(config_folder, 'pretraining')
-#    if os.path.isdir(config_folder_pretraining):
-#        shutil.rmtree(config_folder_pretraining)
-#    os.makedirs(config_folder_pretraining)
-#    parameters['pretrained_model'] = None
-#    train_wrapper(parameters, model_params, dimensions, config_folder_pretraining, 
-#                  piano_pretraining, orch_pretraining, (0, K_folds_pretraining[0]),
-#                  None, None, logger_config)    
-#    for K_fold_ind, K_fold in enumerate(K_folds):
-#        parameters['pretrained_model'] = os.path.join(config_folder_pretraining, 'model_acc', 'model')
-#        train_wrapper(parameters, model_params, dimensions, config_folder, 
-#                      piano, orch, (K_fold_ind, K_fold),
-#                      valid_names, test_names, logger_config)
+    config_folder_pretraining = os.path.join(config_folder, 'pretraining')
+    existing_pretrained_model = os.path.isdir(config_folder_pretraining)
+    answer = ''
+    if existing_pretrained_model:
+        answer = raw_input("An existing pretrained model has been found. Press y if you want to pretrain it again : ")
+        if answer=='y':
+            shutil.rmtree(config_folder_pretraining)
+    if (answer=='y') or (not existing_pretrained_model):
+        os.makedirs(config_folder_pretraining)
+        parameters['pretrained_model'] = None
+        train_wrapper(parameters, model_params, dimensions, config_folder_pretraining, 
+                      piano_pretraining, orch_pretraining, (0, K_folds_pretraining[0]),
+                      valid_names_pretraining, test_names_pretraining, None,
+                      save_model=True, logger=logger_config)    
+
+    for K_fold_ind, K_fold in enumerate(K_folds):
+        parameters['pretrained_model'] = os.path.join(config_folder_pretraining, '0', 'model_acc', 'model')
+        train_wrapper(parameters, model_params, dimensions, config_folder, 
+                      piano, orch, (K_fold_ind, K_fold),
+                      valid_names, test_names, track_paths_generation, 
+                      save_model=SAVE, logger=logger_config)
     ####################
     
     ####################    
     # 2/ Just concatenate the matrices and train everyting
     # BUT, avoid using pretraining matrix in the test and validation
-    for K_fold_ind, K_fold in enumerate(K_folds):
-        new_K_fold = copy.deepcopy(K_fold)
-        parameters['pretrained_model'] = None
-        indices_from_pretraining = K_folds_pretraining[0]['train'] + K_folds_pretraining[0]['test'] + K_folds_pretraining[0]['valid']
-        offset = len(piano)
-        indices_from_pretraining_shifted = [[e+offset for e in l] for l in indices_from_pretraining]
-        new_K_fold['train'].extend(indices_from_pretraining_shifted)
-        piano_full = np.concatenate((piano, piano_pretraining), axis=0)
-        orch_full = np.concatenate((orch, orch_pretraining), axis=0)
-        train_wrapper(parameters, model_params, dimensions, config_folder, 
-                      piano_full, orch_full, (K_fold_ind, new_K_fold),
-                      valid_names, test_names, track_paths_generation, logger_config)
+#    for K_fold_ind, K_fold in enumerate(K_folds):
+#        new_K_fold = copy.deepcopy(K_fold)
+#        parameters['pretrained_model'] = None
+#        indices_from_pretraining = K_folds_pretraining[0]['train'] + K_folds_pretraining[0]['test'] + K_folds_pretraining[0]['valid']
+#        offset = len(piano)
+#        indices_from_pretraining_shifted = [[e+offset for e in l] for l in indices_from_pretraining]
+#        new_K_fold['train'].extend(indices_from_pretraining_shifted)
+#        piano_full = np.concatenate((piano, piano_pretraining), axis=0)
+#        orch_full = np.concatenate((orch, orch_pretraining), axis=0)
+#        train_wrapper(parameters, model_params, dimensions, config_folder, 
+#                      piano_full, orch_full, (K_fold_ind, new_K_fold),
+#                      valid_names, test_names, track_paths_generation, 
+#                      save_model=SAVE, logger=logger_config)
     ####################
 
     logger_config.info("#"*60)
@@ -296,7 +313,8 @@ def normalize_data(piano, orch, train_indices_flat, parameters):
 
 def train_wrapper(parameters, model_params, dimensions, config_folder, 
                   piano, orch, K_fold_pair, 
-                  test_names, valid_names, track_paths_generation, logger):
+                  test_names, valid_names, track_paths_generation, 
+                  save_model, logger):
     ################################################################################
     ################################################################################
     # TEST
@@ -385,7 +403,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
     # Generating
     if GENERATE:
         generate_wrapper(config_folder_fold, track_paths_generation, logger)
-    if not SAVE:
+    if not save_model:
 #            shutil.rmtree(config_folder_fold + '/model')
         shutil.rmtree(config_folder_fold + '/model_Xent')
         shutil.rmtree(config_folder_fold + '/model_acc')

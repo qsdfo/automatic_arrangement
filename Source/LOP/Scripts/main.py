@@ -5,6 +5,7 @@ import cPickle as pkl
 import random
 import logging
 import glob
+import re
 import os
 import shutil
 import time
@@ -185,8 +186,10 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
     # Get data and tvt splits (=folds)
     piano, orch, K_folds, valid_names, test_names, dimensions = \
         get_data_and_folds(database_path, parameters['k_folds'], parameters, model_params, suffix="", logger=logger_config)
-    piano_pretraining, orch_pretraining, K_folds_pretraining, valid_names_pretraining, test_names_pretraining, _ = \
-        get_data_and_folds(database_path, 0, parameters, model_params, suffix="_pretraining", logger=logger_config)
+    pretraining_bool = re.search ("_pretraining", config.data_root())
+    if pretraining_bool:
+        piano_pretraining, orch_pretraining, K_folds_pretraining, valid_names_pretraining, test_names_pretraining, _ = \
+            get_data_and_folds(database_path, 0, parameters, model_params, suffix="_pretraining", logger=logger_config)
     pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
     
     # two options : pre-training then training or just concatenate everything
@@ -194,46 +197,53 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
     ####################
     # 1/
     # Pre-training then training on small db
-    config_folder_pretraining = os.path.join(config_folder, 'pretraining')
-    existing_pretrained_model = os.path.isdir(config_folder_pretraining)
-    answer = ''
-    if existing_pretrained_model:
-        answer = raw_input("An existing pretrained model has been found. Press y if you want to pretrain it again : ")
-        if answer=='y':
-            shutil.rmtree(config_folder_pretraining)
-    if (answer=='y') or (not existing_pretrained_model):
-        os.makedirs(config_folder_pretraining)
-        parameters['pretrained_model'] = None
-        train_wrapper(parameters, model_params, dimensions, config_folder_pretraining, 
-                      piano_pretraining, orch_pretraining, (0, K_folds_pretraining[0]),
-                      valid_names_pretraining, test_names_pretraining, None,
-                      save_model=True, logger=logger_config)    
-
-    for K_fold_ind, K_fold in enumerate(K_folds):
-        parameters['pretrained_model'] = os.path.join(config_folder_pretraining, '0', 'model_acc', 'model')
-        train_wrapper(parameters, model_params, dimensions, config_folder, 
-                      piano, orch, (K_fold_ind, K_fold),
-                      valid_names, test_names, track_paths_generation, 
-                      save_model=SAVE, logger=logger_config)
+#    config_folder_pretraining = os.path.join(config_folder, 'pretraining')
+#    existing_pretrained_model = os.path.isdir(config_folder_pretraining)
+#    answer = ''
+#    if existing_pretrained_model:
+#        answer = raw_input("An existing pretrained model has been found. Press y if you want to pretrain it again : ")
+#        if answer=='y':
+#            shutil.rmtree(config_folder_pretraining)
+#    if (answer=='y') or (not existing_pretrained_model):
+#        os.makedirs(config_folder_pretraining)
+#        parameters['pretrained_model'] = None
+#        train_wrapper(parameters, model_params, dimensions, config_folder_pretraining, 
+#                      piano_pretraining, orch_pretraining, (0, K_folds_pretraining[0]),
+#                      valid_names_pretraining, test_names_pretraining, None,
+#                      save_model=True, logger=logger_config)    
+#
+#    for K_fold_ind, K_fold in enumerate(K_folds):
+#        parameters['pretrained_model'] = os.path.join(config_folder_pretraining, '0', 'model_acc', 'model')
+#        train_wrapper(parameters, model_params, dimensions, config_folder, 
+#                      piano, orch, (K_fold_ind, K_fold),
+#                      valid_names, test_names, track_paths_generation, 
+#                      save_model=SAVE, logger=logger_config)
     ####################
     
     ####################    
     # 2/ Just concatenate the matrices and train everyting
     # BUT, avoid using pretraining matrix in the test and validation
-#    for K_fold_ind, K_fold in enumerate(K_folds):
-#        new_K_fold = copy.deepcopy(K_fold)
-#        parameters['pretrained_model'] = None
-#        indices_from_pretraining = K_folds_pretraining[0]['train'] + K_folds_pretraining[0]['test'] + K_folds_pretraining[0]['valid']
-#        offset = len(piano)
-#        indices_from_pretraining_shifted = [[e+offset for e in l] for l in indices_from_pretraining]
-#        new_K_fold['train'].extend(indices_from_pretraining_shifted)
-#        piano_full = np.concatenate((piano, piano_pretraining), axis=0)
-#        orch_full = np.concatenate((orch, orch_pretraining), axis=0)
-#        train_wrapper(parameters, model_params, dimensions, config_folder, 
-#                      piano_full, orch_full, (K_fold_ind, new_K_fold),
-#                      valid_names, test_names, track_paths_generation, 
-#                      save_model=SAVE, logger=logger_config)
+    for K_fold_ind, K_fold in enumerate(K_folds):
+        parameters['pretrained_model'] = None
+        if pretraining_bool:
+            new_K_fold = copy.deepcopy(K_fold)
+            indices_from_pretraining = K_folds_pretraining[0]['train'] + K_folds_pretraining[0]['test'] + K_folds_pretraining[0]['valid']
+            offset = len(piano)
+            indices_from_pretraining_shifted = [[e+offset for e in l] for l in indices_from_pretraining]
+            new_K_fold['train'].extend(indices_from_pretraining_shifted)
+            piano_full = np.concatenate((piano, piano_pretraining), axis=0)
+            orch_full = np.concatenate((orch, orch_pretraining), axis=0)
+        else:
+            new_K_fold = K_fold
+            piano_full = piano
+            orch_full = orch
+        train_wrapper(parameters, model_params, dimensions, config_folder, 
+                      piano_full, orch_full, (K_fold_ind, new_K_fold),
+                      valid_names, test_names, track_paths_generation, 
+                      save_model=SAVE, logger=logger_config)
     ####################
+    
+    
 
     logger_config.info("#"*60)
     logger_config.info("#"*60)

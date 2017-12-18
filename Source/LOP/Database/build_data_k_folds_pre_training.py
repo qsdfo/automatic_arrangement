@@ -289,6 +289,7 @@ if __name__ == '__main__':
     # because train is data augmented but not test and validate
     temporal_granularity = 'event_level'
     quantization = 8
+    pretraining_bool = True
 
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = os.path.join(config.database_root(), 'LOP_database_06_09_17')
@@ -296,8 +297,10 @@ if __name__ == '__main__':
     DATABASE_PATH_PRETRAINING = os.path.join(config.database_pretraining_root(), 'SOD')
     DATABASE_NAMES_PRETRAINING = ["debug"]
 
-    data_folder = '../../../Data_folds_pretraining/Data'
-    data_folder += '__' + temporal_granularity + str(quantization)
+    data_folder = '../../../Data/Data'
+    if pretraining_bool:
+        data_folder += '_pretraining'
+    data_folder += '_tempGran' + str(quantization)
 
     if not os.path.isdir(data_folder):
         os.makedirs(data_folder)
@@ -316,8 +319,11 @@ if __name__ == '__main__':
     folder_paths = build_filepaths_list(DATABASE_PATH, DATABASE_NAMES)
     folder_paths = [os.path.join(DATABASE_PATH, e) for e in folder_paths]
     
-    folder_paths_pretraining = build_filepaths_list(DATABASE_PATH_PRETRAINING, DATABASE_NAMES_PRETRAINING)
-    folder_paths_pretraining = [os.path.join(DATABASE_PATH_PRETRAINING, e) for e in folder_paths_pretraining]
+    if pretraining_bool:
+        folder_paths_pretraining = build_filepaths_list(DATABASE_PATH_PRETRAINING, DATABASE_NAMES_PRETRAINING)
+        folder_paths_pretraining = [os.path.join(DATABASE_PATH_PRETRAINING, e) for e in folder_paths_pretraining]
+    else:
+        folder_paths_pretraining = []
 
     build_data(folder_paths=folder_paths,
                folder_paths_pretraining=folder_paths_pretraining,

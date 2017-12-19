@@ -406,7 +406,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
     ############################################################
     # Write result in a txt file
     ############################################################
-    result_file_path = config_folder + '/result.csv'
+    result_file_path = config_folder_fold + '/result.csv'
     with open(result_file_path, 'wb') as f:
         f.write("epoch;loss;accuracy;precision;recall;true_accuracy;f_score;Xent\n" +\
                 "{:d};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f}".format(best_epoch, best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent))
@@ -423,7 +423,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
 def generate_wrapper(config_folder, track_paths_generation, logger):
     for score_source in track_paths_generation:
             generate_midi(config_folder, score_source, number_of_version=3, duration_gen=100, rhythmic_reconstruction=False, logger_generate=logger)
-    
+    return
 
 if __name__ == '__main__':
     main()

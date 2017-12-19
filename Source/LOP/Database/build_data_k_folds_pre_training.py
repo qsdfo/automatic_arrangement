@@ -23,6 +23,7 @@ import build_data_aux
 import build_data_aux_no_piano
 import cPickle as pickle
 
+DEBUG = True
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano):
     logging.info(folder_path)
@@ -108,14 +109,24 @@ def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path='temp.
     return
 
 
-def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, duration, instru_mapping, pr_orchestra, pr_piano, logging=None):
+def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, duration, instru_mapping, 
+            pr_orchestra, pr_piano, mask_orch, logging=None):
     pr_orchestra = build_data_aux.cast_small_pr_into_big_pr(new_pr_orchestra, new_instru_orchestra, start_time, duration, instru_mapping, pr_orchestra)
     pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, start_time, duration, instru_mapping, pr_piano)
-
+    
+    list_instru = new_instru_orchestra.values()
+    for instru in list_instru:
+        if instru == 'Remove':
+            continue
+        ind_bot = instru_mapping[instru]['index_min']
+        ind_top = instru_mapping[instru]['index_max']
+        mask_orch[start_time:start_time+duration, ind_bot:ind_top] = 1
+    return
 
 def build_training_matrix(folder_paths, instru_mapping, 
                           pr_piano, pr_orchestra,
                           duration_piano, duration_orch,
+                          mask_orch,
                           statistics,
                           is_piano): 
     # Write the prs in the matrix
@@ -143,10 +154,10 @@ def build_training_matrix(folder_paths, instru_mapping,
             with(open('log_build_db.txt', 'a')) as f:
                 f.write(folder_path + '\n')
             continue
-
+        
         # and cast them in the appropriate bigger structure
         cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, time,
-                duration, instru_mapping, pr_orchestra, pr_piano, logging)
+                duration, instru_mapping, pr_orchestra, pr_piano, mask_orch, logging)
 
         duration_piano[time:time+duration] = new_duration_piano
         duration_orch[time:time+duration] = new_duration_orch
@@ -196,17 +207,20 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
     pr_piano = np.zeros((T, N_piano), dtype=np.float32)
     duration_piano = np.zeros((T), dtype=np.int)
     duration_orch = np.zeros((T), dtype=np.int)
+    mask_orch = np.zeros((T, N_orchestra), dtype=np.int)
     
     pr_orchestra_pretraining = np.zeros((T_pretraining, N_orchestra), dtype=np.float32)
     pr_piano_pretraining = np.zeros((T_pretraining, N_piano), dtype=np.float32)
     duration_piano_pretraining = np.zeros((T_pretraining), dtype=np.int)
     duration_orch_pretraining = np.zeros((T_pretraining), dtype=np.int)
+    mask_orch_pretraining = np.zeros((T, N_orchestra), dtype=np.int)
     
     pr_piano, pr_orchestra, duration_piano, duration_orch, \
     statistics, tracks_start_end = \
         build_training_matrix(folder_paths, instru_mapping, 
                           pr_piano, pr_orchestra,
                           duration_piano, duration_orch,
+                          mask_orch,
                           statistics,
                           is_piano=True)
         
@@ -215,6 +229,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
         build_training_matrix(folder_paths_pretraining, instru_mapping, 
                           pr_piano_pretraining, pr_orchestra_pretraining,
                           duration_piano_pretraining, duration_orch_pretraining,
+                          mask_orch_pretraining,
                           statistics_pretraining,
                           is_piano=False)
 
@@ -226,6 +241,8 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
         np.save(outfile, duration_orch)
     with open(store_folder + '/duration_piano.npy', 'wb') as outfile:
         np.save(outfile, duration_piano)
+    with open(store_folder + '/mask_orch.npy', 'wb') as outfile:
+        np.save(outfile, mask_orch)
     pickle.dump(tracks_start_end, open(store_folder + '/tracks_start_end.pkl', 'wb'))
     
     with open(store_folder + '/orchestra_pretraining.npy', 'wb') as outfile:
@@ -236,6 +253,8 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
         np.save(outfile, duration_orch_pretraining)
     with open(store_folder + '/duration_piano_pretraining.npy', 'wb') as outfile:
         np.save(outfile, duration_piano_pretraining)
+    with open(store_folder + '/mask_orch_pretraining.npy', 'wb') as outfile:
+        np.save(outfile, mask_orch_pretraining)
     pickle.dump(tracks_start_end_pretraining, open(store_folder + '/tracks_start_end_pretraining.pkl', 'wb'))
 
     # Save pr_orchestra, pr_piano, instru_mapping
@@ -293,13 +312,19 @@ if __name__ == '__main__':
 
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = os.path.join(config.database_root(), 'LOP_database_06_09_17')
-    # DATABASE_NAMES = ["debug"] #, "imslp"]
-    DATABASE_NAMES = ["imslp", "bouliane", "hand_picked_Spotify", "liszt_classical_archives"]
+    if DEBUG:
+        DATABASE_NAMES = ["debug"] #, "imslp"]
+    else:
+        DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives"] # , "imslp"]
     DATABASE_PATH_PRETRAINING = os.path.join(config.database_pretraining_root(), 'SOD')
-    # DATABASE_NAMES_PRETRAINING = ["debug"]
-    DATABASE_NAMES_PRETRAINING = ["Kunstderfuge", "Musicalion", "Mutopia", "OpenMusicScores"]
+    if DEBUG:
+        DATABASE_NAMES_PRETRAINING = ["debug"]
+    else:
+        DATABASE_NAMES_PRETRAINING = ["Kunstderfuge", "Musicalion", "Mutopia", "OpenMusicScores"]
 
     data_folder = '../../../Data/Data'
+    if DEBUG:
+        data_folder += '_DEBUG'
     if pretraining_bool:
         data_folder += '_pretraining'
     data_folder += '_tempGran' + str(quantization)

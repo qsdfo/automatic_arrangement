@@ -118,9 +118,11 @@ def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, du
     for instru in list_instru:
         if instru == 'Remove':
             continue
-        ind_bot = instru_mapping[instru]['index_min']
-        ind_top = instru_mapping[instru]['index_max']
-        mask_orch[start_time:start_time+duration, ind_bot:ind_top] = 1
+        instru_names = build_data_aux.unmixed_instru(instru)        
+        for instru_name in instru_names:
+            ind_bot = instru_mapping[instru]['index_min']
+            ind_top = instru_mapping[instru]['index_max']
+            mask_orch[start_time:start_time+duration, ind_bot:ind_top] = 1
     return
 
 def build_training_matrix(folder_paths, instru_mapping, 

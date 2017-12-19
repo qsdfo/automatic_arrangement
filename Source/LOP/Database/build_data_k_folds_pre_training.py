@@ -297,7 +297,7 @@ if __name__ == '__main__':
     DATABASE_NAMES = ["imslp", "bouliane", "hand_picked_Spotify", "liszt_classical_archives"]
     DATABASE_PATH_PRETRAINING = os.path.join(config.database_pretraining_root(), 'SOD')
     # DATABASE_NAMES_PRETRAINING = ["debug"]
-    DATABASE_PATH_PRETRAINING = ["Kunstderfuge", "Musicalion", "Mutopia", "OpenMusicScores"]
+    DATABASE_NAMES_PRETRAINING = ["Kunstderfuge", "Musicalion", "Mutopia", "OpenMusicScores"]
 
     data_folder = '../../../Data/Data'
     if pretraining_bool:

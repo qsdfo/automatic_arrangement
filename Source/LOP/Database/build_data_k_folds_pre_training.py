@@ -289,13 +289,15 @@ if __name__ == '__main__':
     # because train is data augmented but not test and validate
     temporal_granularity = 'event_level'
     quantization = 8
-    pretraining_bool = True
+    pretraining_bool = False
 
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = os.path.join(config.database_root(), 'LOP_database_06_09_17')
-    DATABASE_NAMES = ["debug"] #, "imslp"]
+    # DATABASE_NAMES = ["debug"] #, "imslp"]
+    DATABASE_NAMES = ["imslp", "bouliane", "hand_picked_Spotify", "liszt_classical_archives"]
     DATABASE_PATH_PRETRAINING = os.path.join(config.database_pretraining_root(), 'SOD')
-    DATABASE_NAMES_PRETRAINING = ["debug"]
+    # DATABASE_NAMES_PRETRAINING = ["debug"]
+    DATABASE_PATH_PRETRAINING = ["Kunstderfuge", "Musicalion", "Mutopia", "OpenMusicScores"]
 
     data_folder = '../../../Data/Data'
     if pretraining_bool:

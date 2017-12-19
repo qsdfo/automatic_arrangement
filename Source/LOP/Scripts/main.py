@@ -23,7 +23,7 @@ from LOP.Utils.analysis_data import get_activation_ratio, get_mean_number_units_
 
 # MODEL
 #from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
-from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
+from LOP.Models.Real_time.Baseline.random import Random as Model
 
 GENERATE=False
 SAVE=False

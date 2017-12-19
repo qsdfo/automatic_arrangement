@@ -19,7 +19,7 @@ from LOP.Utils.Analysis.compare_Xent_acc_corresponding_preds import compare_Xent
 
 DEBUG = False
 # Note : debug sans summarize, qui pollue le tableau de variables
-SUMMARIZE = False
+SUMMARIZE = True
 ANALYSIS = False
 # Device to use
 # os.environ["CUDA_VISIBLE_DEVICES"]="1"

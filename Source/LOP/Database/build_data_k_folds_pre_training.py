@@ -27,7 +27,7 @@ import cPickle as pickle
 def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano):
     logging.info(folder_path)
     if not os.path.isdir(folder_path):
-        return instru_mapping
+        return instru_mapping, T
     
     # Read pr
     if is_piano:
@@ -39,7 +39,7 @@ def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano
     
     if duration is None:
         # Files that could not be aligned
-        return instru_mapping
+        return instru_mapping, T
     
     T += duration
     

@@ -184,11 +184,11 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
         logger_config.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
     
     # Get data and tvt splits (=folds)
-    piano, orch, K_folds, valid_names, test_names, dimensions = \
+    piano, orch, duration_piano, mask_orch, K_folds, valid_names, test_names, dimensions = \
         get_data_and_folds(database_path, parameters['k_folds'], parameters, model_params, suffix="", logger=logger_config)
     pretraining_bool = re.search ("_pretraining", config.data_root())
     if pretraining_bool:
-        piano_pretraining, orch_pretraining, K_folds_pretraining, valid_names_pretraining, test_names_pretraining, _ = \
+        piano_pretraining, orch_pretraining, duration_piano_pretraining, mask_orch_pretraining, K_folds_pretraining, valid_names_pretraining, test_names_pretraining, _ = \
             get_data_and_folds(database_path, 0, parameters, model_params, suffix="_pretraining", logger=logger_config)
     pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
     
@@ -208,14 +208,18 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 #        os.makedirs(config_folder_pretraining)
 #        parameters['pretrained_model'] = None
 #        train_wrapper(parameters, model_params, dimensions, config_folder_pretraining, 
-#                      piano_pretraining, orch_pretraining, (0, K_folds_pretraining[0]),
+#                      piano_pretraining, orch_pretraining, 
+#                      mask_orch_pretraining,
+#                      (0, K_folds_pretraining[0]),
 #                      valid_names_pretraining, test_names_pretraining, None,
 #                      save_model=True, logger=logger_config)    
 #
 #    for K_fold_ind, K_fold in enumerate(K_folds):
 #        parameters['pretrained_model'] = os.path.join(config_folder_pretraining, '0', 'model_acc', 'model')
 #        train_wrapper(parameters, model_params, dimensions, config_folder, 
-#                      piano, orch, (K_fold_ind, K_fold),
+#                      piano, orch, 
+#                      mask_orch,
+#                      (K_fold_ind, K_fold),
 #                      valid_names, test_names, track_paths_generation, 
 #                      save_model=SAVE, logger=logger_config)
     ####################
@@ -233,12 +237,16 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
             new_K_fold['train'].extend(indices_from_pretraining_shifted)
             piano_full = np.concatenate((piano, piano_pretraining), axis=0)
             orch_full = np.concatenate((orch, orch_pretraining), axis=0)
+            mask_orch_full = np.concatenate((mask_orch, mask_orch_pretraining), axis=0)
         else:
             new_K_fold = K_fold
             piano_full = piano
             orch_full = orch
-        train_wrapper(parameters, model_params, dimensions, config_folder, 
-                      piano_full, orch_full, (K_fold_ind, new_K_fold),
+            mask_orch_full = mask_orch
+        train_wrapper(parameters, model_params, dimensions, config_folder,
+                      piano_full, orch_full, 
+                      mask_orch_full,
+                      (K_fold_ind, new_K_fold),
                       valid_names, test_names, track_paths_generation, 
                       save_model=SAVE, logger=logger_config)
     ####################
@@ -263,6 +271,12 @@ def get_data_and_folds(database_path, num_k_folds, parameters, model_params, suf
         duration_piano = np.load(database_path + '/duration_piano' + suffix + '.npy')
     else:
         duration_piano = None
+        
+    if parameters['mask_orch']:
+        mask_orch = np.load(database_path + '/mask_orch' + suffix + '.npy')
+    else:
+        mask_orch = np.ones(orch.shape)
+        
     piano = process_data_piano(piano, duration_piano, parameters)
     orch = process_data_orch(orch, parameters)
     
@@ -298,7 +312,7 @@ def get_data_and_folds(database_path, num_k_folds, parameters, model_params, suf
                   'piano_dim': piano_dim,
                   'orch_dim': orch_dim}
     logger.info('TTT : Loading data took {} seconds'.format(time_load))
-    return piano, orch, K_folds, valid_names, test_names, dimensions
+    return piano, orch, duration_piano, mask_orch, K_folds, valid_names, test_names, dimensions
 
     
 def normalize_data(piano, orch, train_indices_flat, parameters):
@@ -322,7 +336,9 @@ def normalize_data(piano, orch, train_indices_flat, parameters):
 
 
 def train_wrapper(parameters, model_params, dimensions, config_folder, 
-                  piano, orch, K_fold_pair, 
+                  piano, orch, 
+                  mask_orch,
+                  K_fold_pair, 
                   test_names, valid_names, track_paths_generation, 
                   save_model, logger):
     ################################################################################
@@ -394,7 +410,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
     ############################################################
     time_train_0 = time.time()
     best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch =\
-        train(model, piano, orch, train_index, valid_index, parameters, config_folder_fold, time_train_0, logger)
+        train(model, piano, orch, mask_orch, train_index, valid_index, parameters, config_folder_fold, time_train_0, logger)
     time_train_1 = time.time()
     training_time = time_train_1-time_train_0
     logger.info('TTT : Training data took {} seconds'.format(training_time))
@@ -406,7 +422,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
     ############################################################
     # Write result in a txt file
     ############################################################
-    result_file_path = config_folder + '/result.csv'
+    result_file_path = config_folder_fold + '/result.csv'
     with open(result_file_path, 'wb') as f:
         f.write("epoch;loss;accuracy;precision;recall;true_accuracy;f_score;Xent\n" +\
                 "{:d};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f}".format(best_epoch, best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent))
@@ -423,7 +439,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
 def generate_wrapper(config_folder, track_paths_generation, logger):
     for score_source in track_paths_generation:
             generate_midi(config_folder, score_source, number_of_version=3, duration_gen=100, rhythmic_reconstruction=False, logger_generate=logger)
-    
+    return
 
 if __name__ == '__main__':
     main()

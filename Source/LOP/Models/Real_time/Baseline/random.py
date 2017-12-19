@@ -37,6 +37,6 @@ class Random(Model_lop):
     def predict(self, inputs_ph):
         piano_t_ph, _, _, _, _= inputs_ph
         means = tf.constant(0.5)
-        shape = [None, self.orch_dim]
-        sample = tf.where(tf.random_uniform(shape) < means, tf.ones(shape), tf.zeros(shape))
+        dims = [tf.shape(piano_t_ph)[0], self.orch_dim]
+        sample = tf.where(tf.random_uniform(dims) < means, tf.ones(dims), tf.zeros(dims))
         return sample, None

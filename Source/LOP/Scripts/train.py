@@ -19,7 +19,7 @@ from LOP.Utils.Analysis.compare_Xent_acc_corresponding_preds import compare_Xent
 
 DEBUG = False
 # Note : debug sans summarize, qui pollue le tableau de variables
-SUMMARIZE = True
+SUMMARIZE = False
 ANALYSIS = False
 # Device to use
 # os.environ["CUDA_VISIBLE_DEVICES"]="1"
@@ -32,6 +32,8 @@ def validate(context, valid_index):
     temporal_order = context['temporal_order']
     piano = context['piano']
     orch = context['orch']
+    mask_orch_ph = context['mask_orch_ph']
+    mask_orch = context['mask_orch']
     inputs_ph = context['inputs_ph']
     orch_t_ph = context['orch_t_ph']
     preds = context['preds']
@@ -51,7 +53,7 @@ def validate(context, valid_index):
     Xent = []
     for batch_index in valid_index:
         # Build batch
-        piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch, len(batch_index), temporal_order)
+        piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t = build_batch(batch_index, piano, orch, mask_orch, len(batch_index), temporal_order)
         # Input nodes
         feed_dict = {piano_t_ph: piano_t,
                     piano_past_ph: piano_past,
@@ -59,6 +61,7 @@ def validate(context, valid_index):
                     orch_past_ph: orch_past,
                     orch_future_ph: orch_future,
                     orch_t_ph: orch_t,
+                    mask_orch_ph: mask_orch_t,
                     keras_learning_phase: 0}
         # Compute validation loss
         preds_batch, loss_batch = sess.run([preds, loss], feed_dict)
@@ -79,7 +82,7 @@ def validate(context, valid_index):
                 
     return np.asarray(accuracy), np.asarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score), np.asarray(Xent)
 
-def train(model, piano, orch, train_index, valid_index,
+def train(model, piano, orch, mask_orch, train_index, valid_index,
           parameters, config_folder, start_time_train, logger_train):
    
     # Time information used
@@ -95,13 +98,13 @@ def train(model, piano, orch, train_index, valid_index,
     if parameters['pretrained_model'] is None:
         logger_train.info((u'#### Graph'))
         start_time_building_graph = time.time() 
-        inputs_ph, orch_t_ph, preds, loss, train_step, keras_learning_phase, debug, saver = build_training_nodes(model)
+        inputs_ph, orch_t_ph, preds, loss, mask_orch_ph, train_step, keras_learning_phase, debug, saver = build_training_nodes(model)
         time_building_graph = time.time() - start_time_building_graph
         logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))
     else:
         logger_train.info((u'#### Graph'))
         start_time_building_graph = time.time() 
-        inputs_ph, orch_t_ph, preds, loss, train_step, keras_learning_phase, debug, saver = load_pretrained_model(parameters['pretrained_model'])
+        inputs_ph, orch_t_ph, preds, loss, mask_orch_ph, train_step, keras_learning_phase, debug, saver = load_pretrained_model(parameters['pretrained_model'])
         time_building_graph = time.time() - start_time_building_graph
         logger_train.info("TTT : Loading pretrained model took {0:.2f}s".format(time_building_graph))
 
@@ -166,6 +169,8 @@ def train(model, piano, orch, train_index, valid_index,
         context['orch'] = orch
         context['inputs_ph'] = inputs_ph
         context['orch_t_ph'] = orch_t_ph
+        context['mask_orch'] = mask_orch
+        context['mask_orch_ph'] = mask_orch_ph
         context['preds'] = preds
         context['loss'] = loss
         context['keras_learning_phase'] = keras_learning_phase
@@ -180,7 +185,8 @@ def train(model, piano, orch, train_index, valid_index,
             mean_recall = 100 * np.mean(recall)
             mean_true_accuracy = 100 * np.mean(true_accuracy)
             mean_f_score = 100 * np.mean(f_score)
-            return mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score, 0
+            mean_Xent = np.mean(Xent)
+            return mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score, mean_Xent, 0
         
         # Training iteration
         while (not OVERFITTING and not TIME_LIMIT
@@ -194,7 +200,7 @@ def train(model, piano, orch, train_index, valid_index,
             train_cost_epoch = []           
             for batch_index in train_index:
                 # Build batch
-                piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch, len(batch_index), model.temporal_order)
+                piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t = build_batch(batch_index, piano, orch, mask_orch, len(batch_index), model.temporal_order)
                 
                 # Train step
                 feed_dict = {piano_t_ph: piano_t,
@@ -203,6 +209,7 @@ def train(model, piano, orch, train_index, valid_index,
                             orch_past_ph: orch_past,
                             orch_future_ph: orch_future,
                             orch_t_ph: orch_t,
+                            mask_orch_ph: mask_orch_t,
                             keras_learning_phase: 1}
 
                 if SUMMARIZE:
@@ -334,6 +341,8 @@ def build_training_nodes(model):
     orch_past_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.orch_dim), name="orch_past")
     orch_future_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.orch_dim), name="orch_past")
     inputs_ph = (piano_t_ph, piano_past_ph, piano_future_ph, orch_past_ph, orch_future_ph)
+    # Orchestral mask
+    mask_orch_ph = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="mask_orch")
     # Prediction
     preds, embedding_concat = model.predict(inputs_ph)
     # TODO : remplacer cette ligne par une fonction qui prends labels et preds et qui compute la loss
@@ -342,12 +351,14 @@ def build_training_nodes(model):
     
     ############################################################
     # Loss
-    loss = tf.reduce_mean(keras.losses.binary_crossentropy(orch_t_ph, preds), name="loss")
-    # loss = tf.reduce_mean(Xent_tf(orch_t_ph, preds), name="loss") 
-    # loss = tf.reduce_mean(bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio']), name="loss")
-    # loss = tf.reduce_mean(accuracy_tf(orch_t_ph, preds), name="loss")
-    # loss = tf.reduce_mean(accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500), name="loss")
-    
+    with tf.name_scope('loss'):
+        distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
+        # distance = Xent_tf(orch_t_ph, preds)
+        # distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
+        # distance = accuracy_tf(orch_t_ph, preds)
+        # distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500)
+        loss_masked_ = tf.where(mask_orch_ph==1, distance, tf.zeros_like(distance))
+        loss = tf.reduce_mean(loss_masked_, name="loss")
     
     # Add sparsity constraint on the output ?
     # sparsity_coeff = 0.001
@@ -357,16 +368,19 @@ def build_training_nodes(model):
     # loss += sparsity_coeff * tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
     
     # Weight decay 
-    loss += tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * model.weight_decay_coeff
+    if model.weight_decay_coeff != 0:
+        loss += tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * model.weight_decay_coeff
     ############################################################
     
     ############################################################
     if model.optimize():
         # Some models don't need training
 #        train_step = tf.train.AdamOptimizer(learning_rate=0.1).minimize(loss)
-#        train_step = tf.train.AdamOptimizer().minimize(loss)
+        train_step = tf.train.AdamOptimizer().minimize(loss)
 #        train_step = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
-        train_step = tf.train.RMSPropOptimizer(0.01).minimize(loss)
+#        train_step = tf.train.RMSPropOptimizer(0.01).minimize(loss)
+    else:
+        train_step = None
         
     keras_learning_phase = K.learning_phase()
     
@@ -375,6 +389,7 @@ def build_training_nodes(model):
     tf.add_to_collection('preds', preds)
     tf.add_to_collection('orch_t_ph', orch_t_ph)
     tf.add_to_collection('loss', loss)
+    tf.add_to_collection('mask_orch_ph', mask_orch_ph)
     tf.add_to_collection('train_step', train_step)
     tf.add_to_collection('keras_learning_phase', keras_learning_phase)
     tf.add_to_collection('inputs_ph', piano_t_ph)
@@ -387,9 +402,11 @@ def build_training_nodes(model):
     debug = (embedding_concat,)
     if model.optimize():
         saver = tf.train.Saver()
+    else:
+        saver = None
     ############################################################
     
-    return inputs_ph, orch_t_ph, preds, loss, train_step, keras_learning_phase, debug, saver
+    return inputs_ph, orch_t_ph, preds, loss, mask_orch_ph, train_step, keras_learning_phase, debug, saver
 
 def load_pretrained_model(path_to_model):
     # Restore model and preds graph
@@ -399,10 +416,11 @@ def load_pretrained_model(path_to_model):
     orch_t_ph = tf.get_collection("orch_t_ph")[0]
     preds = tf.get_collection("preds")[0]
     loss = tf.get_collection("loss")[0]
+    mask_orch_ph = tf.get_collection("mask_orch_ph")[0]
     train_step = tf.get_collection('train_step')[0]
     keras_learning_phase = tf.get_collection("keras_learning_phase")[0]
     debug = tf.get_collection("debug")
-    return inputs_ph, orch_t_ph, preds, loss, train_step, keras_learning_phase, debug, saver
+    return inputs_ph, orch_t_ph, preds, loss, mask_orch_ph, train_step, keras_learning_phase, debug, saver
 
 # bias=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/bias:0"][0]
 # kernel=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/kernel:0"][0]

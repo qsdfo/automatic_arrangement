@@ -294,7 +294,7 @@ if __name__ == '__main__':
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = os.path.join(config.database_root(), 'LOP_database_06_09_17')
     # DATABASE_NAMES = ["debug"] #, "imslp"]
-    DATABASE_NAMES = ["imslp", "bouliane", "hand_picked_Spotify", "liszt_classical_archives"]
+    DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives"] #, "imslp"]
     DATABASE_PATH_PRETRAINING = os.path.join(config.database_pretraining_root(), 'SOD')
     # DATABASE_NAMES_PRETRAINING = ["debug"]
     DATABASE_NAMES_PRETRAINING = ["Kunstderfuge", "Musicalion", "Mutopia", "OpenMusicScores"]

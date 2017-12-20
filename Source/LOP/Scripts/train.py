@@ -321,7 +321,7 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
 
 
         # Selection criterion
-        best_epoch = np.argmax(val_tab_loss)
+        best_epoch = np.argmin(val_tab_loss[:epoch])
 
         # Return best accuracy
         best_accuracy = val_tab_acc[best_epoch]
@@ -358,11 +358,11 @@ def build_training_nodes(model, parameters):
     ############################################################
     # Loss
     with tf.name_scope('loss'):
-        # distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
+        distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
         # distance = Xent_tf(orch_t_ph, preds)
         # distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
         # distance = accuracy_tf(orch_t_ph, preds)
-        distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500)
+        # distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500)
         if parameters['mask_orch']:
             loss_masked_ = tf.where(mask_orch_ph==1, distance, tf.zeros_like(distance))
             loss = tf.reduce_mean(loss_masked_, name="loss")

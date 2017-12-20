@@ -136,7 +136,7 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
     val_tab_f_score = np.zeros(max(1, parameters['max_iter']))
     val_tab_Xent = np.zeros(max(1, parameters['max_iter']))
     loss_tab = np.zeros(max(1, parameters['max_iter']))
-    best_val_loss = float("inf")
+    best_Xent = float("inf")
     best_acc = 0.
     best_epoch = None
 
@@ -254,9 +254,9 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
             # Overfitting ? 
             if epoch >= parameters['min_number_iteration']:
                 # Based on Xentr
-#                OVERFITTING = up_criterion(val_tab_loss, epoch, parameters["number_strips"], parameters["validation_order"])
+               OVERFITTING = up_criterion(val_tab_Xent, epoch, parameters["number_strips"], parameters["validation_order"])
                 # Based on accuracy
-                OVERFITTING = up_criterion(-val_tab_acc, epoch, parameters["number_strips"], parameters["validation_order"])
+                # OVERFITTING = up_criterion(-val_tab_acc, epoch, parameters["number_strips"], parameters["validation_order"])
             #######################################
 
             #######################################
@@ -283,11 +283,11 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
             # Best model ?
             # Xent criterion
             start_time_saving = time.time()
-            if mean_val_loss <= best_val_loss:
+            if mean_Xent <= best_Xent:
                 logger_train.info('Save Xent')
                 saver.save(sess, config_folder + "/model_Xent/model")
 #                best_epoch = epoch
-                best_val_loss = mean_val_loss
+                best_Xent = mean_Xent
                  
                 if ANALYSIS:
 #                    accuracy_and_binary_Xent(context, valid_index, os.path.join(os.getcwd(), "debug/acc_Xent"), 20)

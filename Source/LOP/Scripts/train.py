@@ -9,6 +9,7 @@ import keras
 import time
 import os
 
+import config
 from LOP.Utils.early_stopping import up_criterion
 from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf, sparsity_penalty_0, sparsity_penalty_1
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure, binary_cross_entropy
@@ -375,10 +376,7 @@ def build_training_nodes(model):
     ############################################################
     if model.optimize():
         # Some models don't need training
-#        train_step = tf.train.AdamOptimizer(learning_rate=0.1).minimize(loss)
-        train_step = tf.train.AdamOptimizer().minimize(loss)
-#        train_step = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
-#        train_step = tf.train.RMSPropOptimizer(0.01).minimize(loss)
+        train_step = config.optimizer().minimize(loss)
     else:
         train_step = None
         

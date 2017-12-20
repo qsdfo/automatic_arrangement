@@ -23,6 +23,11 @@ def build_batch(batch_index_list, piano, orch, mask_orch, batch_size, temporal_o
         orch_past = build_sequence_from_3D_matrix(orch, batch_index-1, temporal_order-1)
         orch_future = build_sequence_from_3D_matrix(orch, batch_index+temporal_order-1, temporal_order-1)
         orch_t = np.stack([orch[batch_ind, t] for batch_ind, t in enumerate(batch_index)])
+        if mask_orch is None:
+            # Useless... mask_orch_ph is not an input nod of the graph in this case, but I don't know ho to deal with that in a different way
+            mask_orch_t = np.ones(orch_t.shape)
+        else:
+            mask_orch_t = np.stack([mask_orch[batch_ind, t] for batch_ind, t in enumerate(batch_index)])
     return piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t
 
 def build_sequence(pr, index, batch_size, seq_length):

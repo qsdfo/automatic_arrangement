@@ -32,7 +32,7 @@ def generate(piano, silence_ind, path_to_config, model_name='model', orch_init=N
 
     if orch_init is not None:
         init_length = orch_init.shape[0]
-        assert (init_length < total_length), "Orchestration initialization is longer than the piano score"
+        assert (init_length < total_length), "Orchestration initialization is longer than the piano score"[0]
         assert (init_length + 1 >= temporal_order), "Orchestration initialization must be longer than the temporal order of the model"
     else:
         init_length = temporal_order - 1
@@ -47,6 +47,7 @@ def generate(piano, silence_ind, path_to_config, model_name='model', orch_init=N
     saver = tf.train.import_meta_graph(path_to_model + '/model.meta')
     preds = tf.get_collection("preds")[0]
     inputs_ph = tf.get_collection('inputs_ph')
+    mask_orch_ph = tf.get_collection('mask_orch_ph')[0]
     piano_t_ph, piano_past_ph, piano_future_ph, orch_past_ph, orch_future_ph = inputs_ph
     keras_learning_phase = tf.get_collection("keras_learning_phase")[0]
 
@@ -64,7 +65,7 @@ def generate(piano, silence_ind, path_to_config, model_name='model', orch_init=N
                 # Just duplicate the temporal index to create batch generation
                 batch_index = np.tile(t, batch_size)
                     
-                piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch_gen, batch_size, temporal_order)
+                piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t = build_batch(batch_index, piano, orch_gen, None, batch_size, temporal_order)
     
                 # Feed dict
                 feed_dict = {piano_t_ph: piano_t,
@@ -72,6 +73,7 @@ def generate(piano, silence_ind, path_to_config, model_name='model', orch_init=N
                             piano_future_ph: piano_future,
                             orch_past_ph: orch_past,
                             orch_future_ph: orch_future,
+                            mask_orch_ph: mask_orch_t,
                             keras_learning_phase: 0}
     
                 # Get prediction

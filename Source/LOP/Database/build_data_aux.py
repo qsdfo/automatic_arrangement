@@ -187,11 +187,8 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
 
             # Insert the small pr in the big one :)
             # Insertion is max between already written notes and new ones
-            try:
-                pr_big[t_min:t_max, index_min:index_max] = np.maximum(pr_big[t_min:t_max, index_min:index_max], pr_instru[:, pitch_min:pitch_max])
-            except:
-                import pdb; pdb.set_trace()
-
+            pr_big[t_min:t_max, index_min:index_max] = np.maximum(pr_big[t_min:t_max, index_min:index_max], pr_instru[:, pitch_min:pitch_max])
+            
     return pr_big
 
 def simplify_instrumentation(instru_name_complex):

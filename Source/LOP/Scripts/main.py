@@ -377,6 +377,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
     # It's okay to add this value to the parameters now because we don't need it for persistency, 
     # this is only training regularization
     model_params['activation_ratio'] = activation_ratio
+    parameters['activation_ratio'] = activation_ratio
     model_params['mean_number_units_on'] = mean_number_units_on
     
     ########################################################

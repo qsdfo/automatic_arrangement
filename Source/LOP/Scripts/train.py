@@ -330,7 +330,7 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
     return best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch
 
 
-def build_training_nodes(model, mask_orch_bool, activation_ratio):
+def build_training_nodes(model, parameters):
     ############################################################
     # Build nodes
     # Inputs
@@ -355,10 +355,10 @@ def build_training_nodes(model, mask_orch_bool, activation_ratio):
     with tf.name_scope('loss'):
         # distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
         # distance = Xent_tf(orch_t_ph, preds)
-        distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, activation_ratio)
+        distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
         # distance = accuracy_tf(orch_t_ph, preds)
         # distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500)
-        if mask_orch_bool:
+        if parameters['mask_orch']:
             loss_masked_ = tf.where(mask_orch_ph==1, distance, tf.zeros_like(distance))
             loss = tf.reduce_mean(loss_masked_, name="loss")
         else:

@@ -237,7 +237,10 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
             new_K_fold['train'].extend(indices_from_pretraining_shifted)
             piano_full = np.concatenate((piano, piano_pretraining), axis=0)
             orch_full = np.concatenate((orch, orch_pretraining), axis=0)
-            mask_orch_full = np.concatenate((mask_orch, mask_orch_pretraining), axis=0)
+            if parameters['mask_orch']:
+                mask_orch_full = np.concatenate((mask_orch, mask_orch_pretraining), axis=0)
+            else:
+                mask_orch_full = None
         else:
             new_K_fold = K_fold
             piano_full = piano
@@ -275,7 +278,7 @@ def get_data_and_folds(database_path, num_k_folds, parameters, model_params, suf
     if parameters['mask_orch']:
         mask_orch = np.load(database_path + '/mask_orch' + suffix + '.npy')
     else:
-        mask_orch = np.ones(orch.shape)
+        mask_orch = None
         
     piano = process_data_piano(piano, duration_piano, parameters)
     orch = process_data_orch(orch, parameters)

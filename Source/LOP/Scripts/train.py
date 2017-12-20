@@ -99,7 +99,7 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
     if parameters['pretrained_model'] is None:
         logger_train.info((u'#### Graph'))
         start_time_building_graph = time.time() 
-        inputs_ph, orch_t_ph, preds, loss, mask_orch_ph, train_step, keras_learning_phase, debug, saver = build_training_nodes(model)
+        inputs_ph, orch_t_ph, preds, loss, mask_orch_ph, train_step, keras_learning_phase, debug, saver = build_training_nodes(model, parameters['mask_orch'])
         time_building_graph = time.time() - start_time_building_graph
         logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))
     else:
@@ -330,7 +330,7 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
     return best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch
 
 
-def build_training_nodes(model):
+def build_training_nodes(model, mask_orch_bool):
     ############################################################
     # Build nodes
     # Inputs
@@ -358,8 +358,11 @@ def build_training_nodes(model):
         # distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
         # distance = accuracy_tf(orch_t_ph, preds)
         # distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500)
-        loss_masked_ = tf.where(mask_orch_ph==1, distance, tf.zeros_like(distance))
-        loss = tf.reduce_mean(loss_masked_, name="loss")
+        if mask_orch_bool:
+            loss_masked_ = tf.where(mask_orch_ph==1, distance, tf.zeros_like(distance))
+            loss = tf.reduce_mean(loss_masked_, name="loss")
+        else:
+            loss = tf.reduce_mean(distance, name="loss")
     
     # Add sparsity constraint on the output ?
     # sparsity_coeff = 0.001

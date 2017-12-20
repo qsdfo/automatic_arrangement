@@ -298,7 +298,6 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
                 logger_train.info('Save Acc')
                 saver.save(sess, config_folder + "/model_acc/model")
                 best_acc = mean_accuracy
-                best_epoch = epoch
                     
                 if ANALYSIS:
                     compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Acc_criterion"))
@@ -317,6 +316,9 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
             # Epoch +1
             #######################################
             epoch += 1
+
+
+        best_epoch = np.argmax(val_tab_Xent)
 
         # Return best accuracy
         best_accuracy = val_tab_acc[best_epoch]

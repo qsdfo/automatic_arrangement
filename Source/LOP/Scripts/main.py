@@ -189,72 +189,87 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
     pretraining_bool = re.search ("_pretraining", config.data_root())
     if pretraining_bool:
         piano_pretraining, orch_pretraining, duration_piano_pretraining, mask_orch_pretraining, K_folds_pretraining, valid_names_pretraining, test_names_pretraining, _ = \
-            get_data_and_folds(database_path, 0, parameters, model_params, suffix="_pretraining", logger=logger_config)
+            get_data_and_folds(database_path, parameters['k_folds'], parameters, model_params, suffix="_pretraining", logger=logger_config)
     pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
     
-    # two options : pre-training then training or just concatenate everything
+    # Three options : pre-training then training or just concatenate everything
     
-    ####################
-    # 1/
-    # Pre-training then training on small db
-#    config_folder_pretraining = os.path.join(config_folder, 'pretraining')
-#    existing_pretrained_model = os.path.isdir(config_folder_pretraining)
-#    answer = ''
-#    if existing_pretrained_model:
-#        answer = raw_input("An existing pretrained model has been found. Press y if you want to pretrain it again : ")
-#        if answer=='y':
-#            shutil.rmtree(config_folder_pretraining)
-#    if (answer=='y') or (not existing_pretrained_model):
-#        os.makedirs(config_folder_pretraining)
-#        parameters['pretrained_model'] = None
-#        train_wrapper(parameters, model_params, dimensions, config_folder_pretraining, 
-#                      piano_pretraining, orch_pretraining, 
-#                      mask_orch_pretraining,
-#                      (0, K_folds_pretraining[0]),
-#                      valid_names_pretraining, test_names_pretraining, None,
-#                      save_model=True, logger=logger_config)    
-#
-#    for K_fold_ind, K_fold in enumerate(K_folds):
-#        parameters['pretrained_model'] = os.path.join(config_folder_pretraining, '0', 'model_acc', 'model')
-#        train_wrapper(parameters, model_params, dimensions, config_folder, 
-#                      piano, orch, 
-#                      mask_orch,
-#                      (K_fold_ind, K_fold),
-#                      valid_names, test_names, track_paths_generation, 
-#                      save_model=SAVE, logger=logger_config)
-    ####################
-    
-    ####################    
-    # 2/ Just concatenate the matrices and train everyting
-    # BUT, avoid using pretraining matrix in the test and validation
-    for K_fold_ind, K_fold in enumerate(K_folds):
-        parameters['pretrained_model'] = None
-        if pretraining_bool:
-            new_K_fold = copy.deepcopy(K_fold)
-            indices_from_pretraining = K_folds_pretraining[0]['train'] + K_folds_pretraining[0]['test'] + K_folds_pretraining[0]['valid']
-            offset = len(piano)
-            indices_from_pretraining_shifted = [[e+offset for e in l] for l in indices_from_pretraining]
-            new_K_fold['train'].extend(indices_from_pretraining_shifted)
-            piano_full = np.concatenate((piano, piano_pretraining), axis=0)
-            orch_full = np.concatenate((orch, orch_pretraining), axis=0)
-            if parameters['mask_orch']:
-                mask_orch_full = np.concatenate((mask_orch, mask_orch_pretraining), axis=0)
+    if parameters['training_mode'] == 0:
+        ####################
+        # 1/
+        # Pre-training then training on small db
+        config_folder_pretraining = os.path.join(config_folder, 'pretraining')
+        existing_pretrained_model = os.path.isdir(config_folder_pretraining)
+        answer = ''
+        if existing_pretrained_model:
+           answer = raw_input("An existing pretrained model has been found. Press y if you want to pretrain it again : ")
+           if answer=='y':
+               shutil.rmtree(config_folder_pretraining)
+        if (answer=='y') or (not existing_pretrained_model):
+           os.makedirs(config_folder_pretraining)
+           parameters['pretrained_model'] = None
+           train_wrapper(parameters, model_params, dimensions, config_folder_pretraining, 
+                         piano_pretraining, orch_pretraining, 
+                         mask_orch_pretraining,
+                         (0, K_folds_pretraining[0]),
+                         valid_names_pretraining, test_names_pretraining, None,
+                         save_model=True, logger=logger_config)    
+
+        for K_fold_ind, K_fold in enumerate(K_folds):
+           parameters['pretrained_model'] = os.path.join(config_folder, '0', 'model_acc', 'model')
+           train_wrapper(parameters, model_params, dimensions, config_folder, 
+                         piano, orch, 
+                         mask_orch,
+                         (K_fold_ind, K_fold),
+                         valid_names, test_names, track_paths_generation, 
+                         save_model=SAVE, logger=logger_config)
+        ####################
+
+    elif parameters['training_mode'] == 1:
+        ####################    
+        # 2/ Just concatenate the matrices and train everyting
+        # BUT, avoid using pretraining matrix in the test and validation
+        for K_fold_ind, K_fold in enumerate(K_folds):
+            parameters['pretrained_model'] = None
+            if pretraining_bool:
+                new_K_fold = copy.deepcopy(K_fold)
+                indices_from_pretraining = K_folds_pretraining[0]['train'] + K_folds_pretraining[0]['test'] + K_folds_pretraining[0]['valid']
+                offset = len(piano)
+                indices_from_pretraining_shifted = [[e+offset for e in l] for l in indices_from_pretraining]
+                new_K_fold['train'].extend(indices_from_pretraining_shifted)
+                piano_full = np.concatenate((piano, piano_pretraining), axis=0)
+                orch_full = np.concatenate((orch, orch_pretraining), axis=0)
+                if parameters['mask_orch']:
+                    mask_orch_full = np.concatenate((mask_orch, mask_orch_pretraining), axis=0)
+                else:
+                    mask_orch_full = None
             else:
-                mask_orch_full = None
-        else:
-            new_K_fold = K_fold
-            piano_full = piano
-            orch_full = orch
-            mask_orch_full = mask_orch
-        train_wrapper(parameters, model_params, dimensions, config_folder,
-                      piano_full, orch_full, 
-                      mask_orch_full,
-                      (K_fold_ind, new_K_fold),
-                      valid_names, test_names, track_paths_generation, 
-                      save_model=SAVE, logger=logger_config)
-    ####################
-    
-    
+                new_K_fold = K_fold
+                piano_full = piano
+                orch_full = orch
+                mask_orch_full = mask_orch
+            train_wrapper(parameters, model_params, dimensions, config_folder,
+                          piano_full, orch_full, 
+                          mask_orch_full,
+                          (K_fold_ind, new_K_fold),
+                          valid_names, test_names, track_paths_generation, 
+                          save_model=SAVE, logger=logger_config)
+        ####################
+    elif parameters['training_mode'] == 2:
+        ####################
+        # 3/
+        # Full training only on the pretraining db
+        parameters['pretrained_model'] = None
+        for K_fold_ind, K_fold in enumerate(K_folds_pretraining):
+            train_wrapper(parameters, model_params, dimensions, config_folder, 
+                        piano_pretraining, orch_pretraining, 
+                        mask_orch_pretraining,
+                        (K_fold_ind, K_fold),
+                        valid_names_pretraining, test_names_pretraining, track_paths_generation, 
+                        save_model=SAVE, logger=logger_config)
+        ####################
+    else:
+        raise Exception("Not a training mode")
 
     logger_config.info("#"*60)
     logger_config.info("#"*60)

@@ -164,6 +164,7 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     time_generate_0 = time.time()
     generated_sequences_Xent = generate(pr_piano_gen_norm, silence_piano, config_folder, 'model_Xent', pr_orchestra_gen, batch_size=number_of_version)
     generated_sequences_acc = generate(pr_piano_gen_norm, silence_piano, config_folder, 'model_acc', pr_orchestra_gen, batch_size=number_of_version)
+    generated_sequences_acc = generate(pr_piano_gen_norm, silence_piano, config_folder, 'model_loss', pr_orchestra_gen, batch_size=number_of_version)
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 

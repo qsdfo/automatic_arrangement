@@ -98,7 +98,7 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
 
     if parameters['pretrained_model'] is None:
         logger_train.info((u'#### Graph'))
-        start_time_building_graph = time.time() 
+        start_time_building_graph = time.time()
         inputs_ph, orch_t_ph, preds, loss, mask_orch_ph, train_step, keras_learning_phase, debug, saver = build_training_nodes(model, parameters)
         time_building_graph = time.time() - start_time_building_graph
         logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))
@@ -300,11 +300,17 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
                 logger_train.info('Save Acc')
                 saver.save(sess, config_folder + "/model_acc/model")
                 best_acc = mean_accuracy
-                    
+
                 if ANALYSIS:
                     compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Acc_criterion"))
             end_time_saving = time.time()
             logger_train.info('Saving time : {:.3f}'.format(end_time_saving-start_time_saving))
+
+            # Loss criterion
+            if mean_loss <= best_loss:
+                logger_train.info('Save val loss')
+                saver.save(sess, config_folder + "/model_loss/model")
+                best_loss = mean_loss
             #######################################
 
             if OVERFITTING:
@@ -358,11 +364,11 @@ def build_training_nodes(model, parameters):
     ############################################################
     # Loss
     with tf.name_scope('loss'):
-        distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
+        # distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
         # distance = Xent_tf(orch_t_ph, preds)
         # distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
         # distance = accuracy_tf(orch_t_ph, preds)
-        # distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=1./500)
+        distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=parameters['tn_weight'])
         if parameters['mask_orch']:
             loss_masked_ = tf.where(mask_orch_ph==1, distance, tf.zeros_like(distance))
             loss = tf.reduce_mean(loss_masked_, name="loss")

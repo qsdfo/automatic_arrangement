@@ -65,6 +65,18 @@ def bin_Xen_weighted_0_tf(true_frame, pred_frame, activation_ratio):
     cross_entr = - tf.reduce_mean(cross_entr_dot, axis=axis)
     return cross_entr
 
+
+def bin_Xen_weighted_1_tf(true_frame, pred_frame, weight_neg):
+    """Binary cross-entropy. Should be exactly the same as keras.losses.binary_crossentropy
+    
+    """
+    axis = len(true_frame.shape)-1
+    epsilon = 0.00001
+    cross_entr_dot = (true_frame * tf.log(pred_frame+epsilon)) + weight_neg * (1-true_frame) * tf.log((1-pred_frame+epsilon))
+    # Mean over feature dimension
+    cross_entr = - tf.reduce_mean(cross_entr_dot, axis=axis)
+    return cross_entr
+
 def sparsity_penalty_0(proba_activation):
     return tf.reduce_sum(proba_activation)
 

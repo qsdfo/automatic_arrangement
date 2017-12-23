@@ -140,8 +140,10 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
     best_acc = 0.
     best_epoch = None
 
-    # with tf.Session(config=tf.ConfigProto(log_device_placement=LOGGING_DEVICE)) as sess:        
-    with tf.Session() as sess:
+    configSession = tf.ConfigProto()
+    configSession.gpu_options.per_process_gpu_memory_fraction = parameters['memory_gpu']
+    # with tf.Session(config=tf.ConfigProto(log_device_placement=LOGGING_DEVICE)) as sess:
+    with tf.Session(config=configSession) as sess:
         
         if SUMMARIZE:
             merged = tf.summary.merge_all()

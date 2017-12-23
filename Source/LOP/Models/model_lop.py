@@ -19,6 +19,11 @@ class Model_lop(object):
 		self.dropout_probability = model_param['dropout_probability']
 		self.weight_decay_coeff = model_param['weight_decay_coeff']
 
+		########################
+		# EXPERIMENTATIONS 
+		self.tn_weight = model_param['tn_weight']
+		########################
+
 		self.params = []
 		return
 

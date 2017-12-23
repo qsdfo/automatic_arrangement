@@ -305,14 +305,15 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
 
                 if ANALYSIS:
                     compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Acc_criterion"))
-            end_time_saving = time.time()
-            logger_train.info('Saving time : {:.3f}'.format(end_time_saving-start_time_saving))
 
             # Loss criterion
             if mean_loss <= best_loss:
                 logger_train.info('Save val loss')
                 saver.save(sess, config_folder + "/model_loss/model")
                 best_loss = mean_loss
+
+            end_time_saving = time.time()
+            logger_train.info('Saving time : {:.3f}'.format(end_time_saving-start_time_saving))
             #######################################
 
             if OVERFITTING:
@@ -370,14 +371,14 @@ def build_training_nodes(model, parameters):
         # distance = Xent_tf(orch_t_ph, preds)
         # distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
         # distance = accuracy_tf(orch_t_ph, preds)
-        distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=parameters['tn_weight'])
+        distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=model.tn_weight)
         if parameters['mask_orch']:
             loss_masked_ = tf.where(mask_orch_ph==1, distance, tf.zeros_like(distance))
-            loss = tf.reduce_mean(loss_masked_, name="loss")
+            loss_val = tf.reduce_mean(loss_masked_, name="loss")
         else:
-            loss = tf.reduce_mean(distance, name="loss")
+            loss_val = tf.reduce_mean(distance, name="loss")
     
-    # Add sparsity constraint on the output ?
+    # Add sparsity constraint on the output ? Is it still loss_val or just loss :/ ???
     # sparsity_coeff = 0.001
     # loss += sparsity_penalty_0(preds)
     # loss += sparsity_penalty_1(preds)
@@ -386,7 +387,9 @@ def build_training_nodes(model, parameters):
     
     # Weight decay 
     if model.weight_decay_coeff != 0:
-        loss += tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * model.weight_decay_coeff
+        loss = loss_val + tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * model.weight_decay_coeff
+    else:
+        loss = loss_val
     ############################################################
     
     ############################################################
@@ -420,7 +423,7 @@ def build_training_nodes(model, parameters):
         saver = None
     ############################################################
     
-    return inputs_ph, orch_t_ph, preds, loss, mask_orch_ph, train_step, keras_learning_phase, debug, saver
+    return inputs_ph, orch_t_ph, preds, loss, loss_val, mask_orch_ph, train_step, keras_learning_phase, debug, saver
 
 def load_pretrained_model(path_to_model):
     # Restore model and preds graph

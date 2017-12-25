@@ -22,9 +22,9 @@ DEBUG = False
 # Note : debug sans summarize, qui pollue le tableau de variables
 SUMMARIZE = False
 ANALYSIS = False
-# Device to use
+# Device to use (flag direct)
 # os.environ["CUDA_VISIBLE_DEVICES"]="1"
-# Logging deive use ?
+# Logging device use ?
 LOGGING_DEVICE = False
 
 def validate(context, valid_index):
@@ -37,8 +37,8 @@ def validate(context, valid_index):
     mask_orch = context['mask_orch']
     inputs_ph = context['inputs_ph']
     orch_t_ph = context['orch_t_ph']
-    preds = context['preds']
-    loss = context['loss']
+    preds_node = context['preds_node']
+    loss_val_node = context['loss_val_node']
     keras_learning_phase = context['keras_learning_phase']
     
     #######################################
@@ -65,7 +65,7 @@ def validate(context, valid_index):
                     mask_orch_ph: mask_orch_t,
                     keras_learning_phase: 0}
         # Compute validation loss
-        preds_batch, loss_batch = sess.run([preds, loss], feed_dict)
+        preds_batch, loss_batch = sess.run([preds_node, loss_val_node], feed_dict)
         val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
         Xent_batch = binary_cross_entropy(orch_t, preds_batch)
         accuracy_batch = accuracy_measure(orch_t, preds_batch)
@@ -99,13 +99,13 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
     if parameters['pretrained_model'] is None:
         logger_train.info((u'#### Graph'))
         start_time_building_graph = time.time()
-        inputs_ph, orch_t_ph, preds, loss, mask_orch_ph, train_step, keras_learning_phase, debug, saver = build_training_nodes(model, parameters)
+        inputs_ph, orch_t_ph, preds_node, loss_node, loss_val_node, mask_orch_ph, train_step_node, keras_learning_phase, debug, saver = build_training_nodes(model, parameters)
         time_building_graph = time.time() - start_time_building_graph
         logger_train.info("TTT : Building the graph took {0:.2f}s".format(time_building_graph))
     else:
         logger_train.info((u'#### Graph'))
         start_time_building_graph = time.time() 
-        inputs_ph, orch_t_ph, preds, loss, mask_orch_ph, train_step, keras_learning_phase, debug, saver = load_pretrained_model(parameters['pretrained_model'])
+        inputs_ph, orch_t_ph, preds_node, loss_node, loss_val_node, mask_orch_ph, train_step_node, keras_learning_phase, debug, saver = load_pretrained_model(parameters['pretrained_model'])
         time_building_graph = time.time() - start_time_building_graph
         logger_train.info("TTT : Loading pretrained model took {0:.2f}s".format(time_building_graph))
 
@@ -138,15 +138,19 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
     loss_tab = np.zeros(max(1, parameters['max_iter']))
     best_Xent = float("inf")
     best_acc = 0.
+    best_loss = float("inf")
     best_epoch = None
 
-    configSession = tf.ConfigProto()
-    configSession.gpu_options.per_process_gpu_memory_fraction = parameters['memory_gpu']
+    if parameters['memory_gpu']:
+        configSession = tf.ConfigProto()
+        configSession.gpu_options.per_process_gpu_memory_fraction = parameters['memory_gpu']
+    else:
+        configSession = None
     # with tf.Session(config=tf.ConfigProto(log_device_placement=LOGGING_DEVICE)) as sess:
     with tf.Session(config=configSession) as sess:
         
         if SUMMARIZE:
-            merged = tf.summary.merge_all()
+            merged_node = tf.summary.merge_all()
             train_writer = tf.summary.FileWriter(config_folder + '/summary', sess.graph)
 
         if model.is_keras():
@@ -174,8 +178,9 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
         context['orch_t_ph'] = orch_t_ph
         context['mask_orch'] = mask_orch
         context['mask_orch_ph'] = mask_orch_ph
-        context['preds'] = preds
-        context['loss'] = loss
+        context['preds_node'] = preds_node
+        context['loss_node'] = loss_node
+        context['loss_val_node'] = loss_val_node
         context['keras_learning_phase'] = keras_learning_phase
         ############################################################
         
@@ -216,9 +221,9 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
                             keras_learning_phase: 1}
 
                 if SUMMARIZE:
-                    _, loss_batch, summary = sess.run([train_step, loss, merged], feed_dict)
+                    _, loss_batch, summary = sess.run([train_step_node, loss_node, merged_node], feed_dict)
                 else:
-                    _, loss_batch, preds_batch, embedding_batch = sess.run([train_step, loss, preds, embedding_concat], feed_dict)
+                    _, loss_batch, preds_batch, embedding_batch = sess.run([train_step_node, loss_node, preds_node, embedding_concat], feed_dict)
 
                 # Keep track of cost
                 train_cost_epoch.append(loss_batch)
@@ -369,9 +374,9 @@ def build_training_nodes(model, parameters):
     with tf.name_scope('loss'):
         # distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
         # distance = Xent_tf(orch_t_ph, preds)
-        # distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
+        distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
         # distance = accuracy_tf(orch_t_ph, preds)
-        distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=model.tn_weight)
+        # distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=model.tn_weight)
         if parameters['mask_orch']:
             loss_masked_ = tf.where(mask_orch_ph==1, distance, tf.zeros_like(distance))
             loss_val = tf.reduce_mean(loss_masked_, name="loss")
@@ -406,6 +411,7 @@ def build_training_nodes(model, parameters):
     tf.add_to_collection('preds', preds)
     tf.add_to_collection('orch_t_ph', orch_t_ph)
     tf.add_to_collection('loss', loss)
+    tf.add_to_collection('loss_val', loss_val)
     tf.add_to_collection('mask_orch_ph', mask_orch_ph)
     tf.add_to_collection('train_step', train_step)
     tf.add_to_collection('keras_learning_phase', keras_learning_phase)
@@ -433,11 +439,12 @@ def load_pretrained_model(path_to_model):
     orch_t_ph = tf.get_collection("orch_t_ph")[0]
     preds = tf.get_collection("preds")[0]
     loss = tf.get_collection("loss")[0]
+    loss_val = tf.get_collection("loss_val")[0]
     mask_orch_ph = tf.get_collection("mask_orch_ph")[0]
     train_step = tf.get_collection('train_step')[0]
     keras_learning_phase = tf.get_collection("keras_learning_phase")[0]
     debug = tf.get_collection("debug")
-    return inputs_ph, orch_t_ph, preds, loss, mask_orch_ph, train_step, keras_learning_phase, debug, saver
+    return inputs_ph, orch_t_ph, preds, loss, loss_val, mask_orch_ph, train_step, keras_learning_phase, debug, saver
 
 # bias=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/bias:0"][0]
 # kernel=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/kernel:0"][0]

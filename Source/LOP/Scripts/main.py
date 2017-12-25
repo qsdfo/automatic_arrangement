@@ -452,6 +452,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
 #            shutil.rmtree(config_folder_fold + '/model')
         shutil.rmtree(config_folder_fold + '/model_Xent')
         shutil.rmtree(config_folder_fold + '/model_acc')
+        shutil.rmtree(config_folder_fold + '/model_loss')
         ########################################################
     return
 

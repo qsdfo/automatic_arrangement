@@ -62,7 +62,7 @@ def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano
     return instru_mapping, T
 
 
-def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl', quantization=12, temporal_granularity='frame_level', logging=None):
+def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl', quantization=12, temporal_granularity='frame_level', T_limit=1e10, logging=None):
     logging.info("##########")
     logging.info("Get dimension informations")
     # Determine the temporal size of the matrices
@@ -72,16 +72,35 @@ def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path='temp.
     instru_mapping = {}
     # instru_mapping = {'piano': {'pitch_min': 24, 'pitch_max':117, 'ind_min': 0, 'ind_max': 92},
     #                         'harp' ... }
+    T_splits = []
+    T_pretraining_splits = []
+    folder_paths_splits = []
+    T_pretraining_splits = []
+    folder_paths_pretraining_splits = []
+
     T = 0
+    folder_paths_split = []
     T_pretraining = 0
+    folder_paths_pretraining_split = []
     for folder_path in folder_paths:
+        if T>T_limit:
+            T_splits.append(T)
+            folder_paths_splits.append(folder_paths_split)
+            T = 0
+            folder_paths_split = []
         folder_path = folder_path.rstrip()
         instru_mapping, T = update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano=True)
+        folder_paths_split.append(folder_path)
         
     for folder_path_pre in folder_paths_pretraining:
+        if T_pretraining>T_limit:
+            T_pretraining_splits.append(T_pretraining)
+            folder_paths_pretraining_splits.append(folder_paths_pretraining_split)
+            T_pretraining = 0
+            folder_paths_pretraining_split = []
         folder_path_pre = folder_path_pre.rstrip()
         instru_mapping, T_pretraining = update_instru_mapping(folder_path_pre, instru_mapping, T_pretraining, quantization, is_piano=False)
-        
+        folder_paths_pretraining_split.append(folder_path_pre)
         
     # Build the index_min and index_max in the instru_mapping dictionary
     counter = 0
@@ -102,8 +121,10 @@ def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path='temp.
     temp = {}
     temp['instru_mapping'] = instru_mapping
     temp['quantization'] = quantization
-    temp['T'] = T
-    temp['T_pretraining'] = T_pretraining
+    temp['T_splits'] = T_splits
+    temp['folder_paths_splits'] = folder_paths_splits
+    temp['T_pretraining_splits'] = T_pretraining_splits
+    temp['folder_paths_pretraining_splits'] = folder_paths_pretraining_splits
     temp['N_orchestra'] = counter
     pickle.dump(temp, open(meta_info_path, 'wb'))
     return
@@ -200,64 +221,68 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
     temp = pickle.load(open(meta_info_path, 'rb'))
     instru_mapping = temp['instru_mapping']
     quantization = temp['quantization']
-    T = temp['T']
-    T_pretraining = temp['T_pretraining']
+    T_splits = temp['T_splits']
+    folder_paths_splits = temp['folder_paths_splits']
+    T_pretraining_splits = temp['T_pretraining_splits']
+    folder_paths_pretraining_splits = temp['folder_paths_pretraining_splits']
     N_orchestra = temp['N_orchestra']
     N_piano = instru_mapping['Piano']['index_max']
+    
+    for counter_split, (T_split, folder_paths_split) in enumerate(zip(T_splits, folder_paths_splits)):
+        pr_orchestra = np.zeros((T_split, N_orchestra), dtype=np.float32)
+        pr_piano = np.zeros((T_split, N_piano), dtype=np.float32)
+        duration_piano = np.zeros((T_split), dtype=np.int)
+        duration_orch = np.zeros((T_split), dtype=np.int)
+        mask_orch = np.zeros((T_split, N_orchestra), dtype=np.int)
 
-    pr_orchestra = np.zeros((T, N_orchestra), dtype=np.float32)
-    pr_piano = np.zeros((T, N_piano), dtype=np.float32)
-    duration_piano = np.zeros((T), dtype=np.int)
-    duration_orch = np.zeros((T), dtype=np.int)
-    mask_orch = np.zeros((T, N_orchestra), dtype=np.int)
-    
-    pr_orchestra_pretraining = np.zeros((T_pretraining, N_orchestra), dtype=np.float32)
-    pr_piano_pretraining = np.zeros((T_pretraining, N_piano), dtype=np.float32)
-    duration_piano_pretraining = np.zeros((T_pretraining), dtype=np.int)
-    duration_orch_pretraining = np.zeros((T_pretraining), dtype=np.int)
-    mask_orch_pretraining = np.zeros((T, N_orchestra), dtype=np.int)
-    
-    pr_piano, pr_orchestra, duration_piano, duration_orch, \
-    statistics, tracks_start_end = \
-        build_training_matrix(folder_paths, instru_mapping, 
-                          pr_piano, pr_orchestra,
-                          duration_piano, duration_orch,
-                          mask_orch,
-                          statistics,
-                          is_piano=True)
+        pr_piano, pr_orchestra, duration_piano, duration_orch, \
+        statistics, tracks_start_end = \
+            build_training_matrix(folder_paths_split, instru_mapping, 
+                              pr_piano, pr_orchestra,
+                              duration_piano, duration_orch,
+                              mask_orch,
+                              statistics,
+                              is_piano=True)
+
+        with open(store_folder + '/orchestra_' + str(counter_split) + '.npy', 'wb') as outfile:
+            np.save(outfile, pr_orchestra)
+        with open(store_folder + '/piano_' + str(counter_split) + '.npy', 'wb') as outfile:
+            np.save(outfile, pr_piano)
+        with open(store_folder + '/duration_orchestra_' + str(counter_split) + '.npy', 'wb') as outfile:
+            np.save(outfile, duration_orch)
+        with open(store_folder + '/duration_piano_' + str(counter_split) + '.npy', 'wb') as outfile:
+            np.save(outfile, duration_piano)
+        with open(store_folder + '/mask_orch_' + str(counter_split) + '.npy', 'wb') as outfile:
+            np.save(outfile, mask_orch)
+        pickle.dump(tracks_start_end, open(store_folder + '/tracks_start_end_' + str(counter_split) + '.pkl', 'wb'))
+
+    for counter_split, (T_pretraining_split, folder_paths_pretraining_split) in enumerate(zip(T_pretraining_splits, folder_paths_pretraining_splits)):
+        pr_orchestra_pretraining = np.zeros((T_pretraining_split, N_orchestra), dtype=np.float32)
+        pr_piano_pretraining = np.zeros((T_pretraining_split, N_piano), dtype=np.float32)
+        duration_piano_pretraining = np.zeros((T_pretraining_split), dtype=np.int)
+        duration_orch_pretraining = np.zeros((T_pretraining_split), dtype=np.int)
+        mask_orch_pretraining = np.zeros((T_pretraining_split, N_orchestra), dtype=np.int)
         
-    pr_piano_pretraining, pr_orchestra_pretraining, duration_piano_pretraining, duration_orch_pretraining, \
-    statistics_pretraining, tracks_start_end_pretraining = \
-        build_training_matrix(folder_paths_pretraining, instru_mapping, 
-                          pr_piano_pretraining, pr_orchestra_pretraining,
-                          duration_piano_pretraining, duration_orch_pretraining,
-                          mask_orch_pretraining,
-                          statistics_pretraining,
-                          is_piano=False)
-
-    with open(store_folder + '/orchestra.npy', 'wb') as outfile:
-        np.save(outfile, pr_orchestra)
-    with open(store_folder + '/piano.npy', 'wb') as outfile:
-        np.save(outfile, pr_piano)
-    with open(store_folder + '/duration_orchestra.npy', 'wb') as outfile:
-        np.save(outfile, duration_orch)
-    with open(store_folder + '/duration_piano.npy', 'wb') as outfile:
-        np.save(outfile, duration_piano)
-    with open(store_folder + '/mask_orch.npy', 'wb') as outfile:
-        np.save(outfile, mask_orch)
-    pickle.dump(tracks_start_end, open(store_folder + '/tracks_start_end.pkl', 'wb'))
+        pr_piano_pretraining, pr_orchestra_pretraining, duration_piano_pretraining, duration_orch_pretraining, \
+        statistics_pretraining, tracks_start_end_pretraining = \
+            build_training_matrix(folder_paths_pretraining_split, instru_mapping, 
+                              pr_piano_pretraining, pr_orchestra_pretraining,
+                              duration_piano_pretraining, duration_orch_pretraining,
+                              mask_orch_pretraining,
+                              statistics_pretraining,
+                              is_piano=False)
     
-    with open(store_folder + '/orchestra_pretraining.npy', 'wb') as outfile:
-        np.save(outfile, pr_orchestra_pretraining)
-    with open(store_folder + '/piano_pretraining.npy', 'wb') as outfile:
-        np.save(outfile, pr_piano_pretraining)
-    with open(store_folder + '/duration_orchestra_pretraining.npy', 'wb') as outfile:
-        np.save(outfile, duration_orch_pretraining)
-    with open(store_folder + '/duration_piano_pretraining.npy', 'wb') as outfile:
-        np.save(outfile, duration_piano_pretraining)
-    with open(store_folder + '/mask_orch_pretraining.npy', 'wb') as outfile:
-        np.save(outfile, mask_orch_pretraining)
-    pickle.dump(tracks_start_end_pretraining, open(store_folder + '/tracks_start_end_pretraining.pkl', 'wb'))
+        with open(store_folder + '/orchestra_pretraining_' + str(counter_split) + '.npy', 'wb') as outfile:
+            np.save(outfile, pr_orchestra_pretraining)
+        with open(store_folder + '/piano_pretraining_' + str(counter_split) + '.npy', 'wb') as outfile:
+            np.save(outfile, pr_piano_pretraining)
+        with open(store_folder + '/duration_orchestra_pretraining_' + str(counter_split) + '.npy', 'wb') as outfile:
+            np.save(outfile, duration_orch_pretraining)
+        with open(store_folder + '/duration_piano_pretraining_' + str(counter_split) + '.npy', 'wb') as outfile:
+            np.save(outfile, duration_piano_pretraining)
+        with open(store_folder + '/mask_orch_pretraining_' + str(counter_split) + '.npy', 'wb') as outfile:
+            np.save(outfile, mask_orch_pretraining)
+        pickle.dump(tracks_start_end_pretraining, open(store_folder + '/tracks_start_end_pretraining_' + str(counter_split) + '.pkl', 'wb'))
 
     # Save pr_orchestra, pr_piano, instru_mapping
     metadata = {}

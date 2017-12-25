@@ -32,7 +32,7 @@ def accuracy_tf(true_frame, pred_frame):
     
     """
     axis = len(true_frame.shape)-1
-    epsilon = 0.00001
+    epsilon = 1e-20
     true_positive = tf.reduce_sum(pred_frame * true_frame, axis)
     false_negative = tf.reduce_sum(tf.multiply((1 - pred_frame), true_frame), axis)
     false_positive = tf.reduce_sum(tf.multiply(pred_frame, (1 - true_frame)), axis)
@@ -48,7 +48,7 @@ def bin_Xent_tf(true_frame, pred_frame):
     
     """
     axis = len(true_frame.shape)-1
-    epsilon = 0.00001
+    epsilon = 1e-20
     cross_entr_dot = tf.multiply(true_frame, tf.log(pred_frame+epsilon)) + tf.multiply((1-true_frame), tf.log((1-pred_frame+epsilon)))
     # Mean over feature dimension
     cross_entr = - tf.reduce_mean(cross_entr_dot, axis=axis)
@@ -59,7 +59,7 @@ def bin_Xen_weighted_0_tf(true_frame, pred_frame, activation_ratio):
     
     """
     axis = len(true_frame.shape)-1
-    epsilon = 0.00001
+    epsilon = 1e-20
     cross_entr_dot = (1-activation_ratio) * (true_frame * tf.log(pred_frame+epsilon)) + activation_ratio * (1-true_frame) * tf.log((1-pred_frame+epsilon))
     # Mean over feature dimension
     cross_entr = - tf.reduce_mean(cross_entr_dot, axis=axis)
@@ -71,7 +71,7 @@ def bin_Xen_weighted_1_tf(true_frame, pred_frame, weight_neg):
     
     """
     axis = len(true_frame.shape)-1
-    epsilon = 0.00001
+    epsilon = 1e-20
     cross_entr_dot = (true_frame * tf.log(pred_frame+epsilon)) + weight_neg * (1-true_frame) * tf.log((1-pred_frame+epsilon))
     # Mean over feature dimension
     cross_entr = - tf.reduce_mean(cross_entr_dot, axis=axis)

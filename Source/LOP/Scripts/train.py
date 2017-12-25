@@ -11,7 +11,7 @@ import os
 
 import config
 from LOP.Utils.early_stopping import up_criterion
-from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf, sparsity_penalty_0, sparsity_penalty_1
+from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf, sparsity_penalty_0, sparsity_penalty_1, bin_Xen_weighted_1_tf
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure, binary_cross_entropy
 from LOP.Utils.build_batch import build_batch
 from LOP.Utils.get_statistics import count_parameters
@@ -312,10 +312,10 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
                     compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Acc_criterion"))
 
             # Loss criterion
-            if mean_loss <= best_loss:
+            if mean_val_loss <= best_loss:
                 logger_train.info('Save val loss')
                 saver.save(sess, config_folder + "/model_loss/model")
-                best_loss = mean_loss
+                best_loss = mean_val_loss
 
             end_time_saving = time.time()
             logger_train.info('Saving time : {:.3f}'.format(end_time_saving-start_time_saving))
@@ -374,9 +374,10 @@ def build_training_nodes(model, parameters):
     with tf.name_scope('loss'):
         # distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
         # distance = Xent_tf(orch_t_ph, preds)
-        distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
+        # distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
+        # distance = bin_Xen_weighted_1_tf(orch_t_ph, preds, model.tn_weight)
         # distance = accuracy_tf(orch_t_ph, preds)
-        # distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=model.tn_weight)
+        distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=model.tn_weight)
         if parameters['mask_orch']:
             loss_masked_ = tf.where(mask_orch_ph==1, distance, tf.zeros_like(distance))
             loss_val = tf.reduce_mean(loss_masked_, name="loss")

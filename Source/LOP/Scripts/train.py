@@ -278,10 +278,10 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
             # Log training
             #######################################
             logger_train.info("############################################################")
-            logger_train.info(('Epoch : {} , Training loss : {:.3f} , Validation loss : {:.3f} \n \
+            logger_train.info(('Epoch : {} , Training loss : {} , Validation loss : {} \n \
                                Validation accuracy : {:.3f} %, precision : {:.3f} %, recall : {:.3f} % \n \
-                               True_accuracy : {:.3f} %, f_score : {:.3f} %, Xent : {:.4f}'
-                              .format(epoch, mean_loss, mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score, mean_Xent))
+                               True_accuracy : {:.3f} %, f_score : {:.3f} %, Xent_100 : {:.3f}'
+                              .format(epoch, mean_loss, mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score, 100*mean_Xent))
                               .encode('utf8'))
 
             logger_train.info(('Time : {}'

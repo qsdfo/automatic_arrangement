@@ -17,6 +17,7 @@
 
 
 import os
+import shutil
 import numpy as np
 import LOP.Scripts.config as config
 import build_data_aux
@@ -210,8 +211,12 @@ def build_training_matrix(folder_paths, instru_mapping,
 def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl', quantization=12, temporal_granularity='frame_level', store_folder='../Data', pitch_translation_augmentations=[0], logging=None):
 
     # Get dimensions
-    get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
-    
+    if DEBUG:
+        T_limit = 5000
+    else:
+        T_limit = 1e10
+    get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
+
     logging.info("##########")
     logging.info("Build data")
 
@@ -355,9 +360,10 @@ if __name__ == '__main__':
     if pretraining_bool:
         data_folder += '_pretraining'
     data_folder += '_tempGran' + str(quantization)
-
-    if not os.path.isdir(data_folder):
-        os.makedirs(data_folder)
+    
+    if os.path.isdir(data_folder):
+        shutil.rmtree(data_folder)    
+    os.makedirs(data_folder)
 
     # Create a list of paths
     def build_filepaths_list(db_path=DATABASE_PATH, db_names=DATABASE_NAMES):

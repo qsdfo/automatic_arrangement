@@ -13,7 +13,6 @@ from generate import generate
 
 import LOP.Database.build_data_aux as build_data_aux
 from LOP.Utils.process_data import process_data_piano, process_data_orch
-from LOP.Utils.normalization import apply_pca, apply_zca
 
 from LOP_database.midi.read_midi import Read_midi
 from LOP_database.midi.write_midi import write_midi
@@ -135,18 +134,8 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     
     ########################
     # Inputs' normalization
-    if parameters["normalize"] is not None:
-        if parameters["normalize"] == "standard_pca":
-            # load whitening params
-            standard_pca_piano = np.load(os.path.join(config_folder, "standard_pca_piano"))
-            pr_piano_gen_norm = apply_pca(pr_piano_gen, standard_pca_piano['mean_piano'], standard_pca_piano['std_piano'], standard_pca_piano['pca_piano'], standard_pca_piano['epsilon']) 
-        elif parameters["normalize"] == "standard_zca":
-            standard_zca_piano = np.load(os.path.join(config_folder, "standard_zca_piano"))
-            pr_piano_gen_norm = apply_zca(pr_piano_gen, standard_zca_piano['mean_piano'], standard_zca_piano['std_piano'], standard_zca_piano['zca_piano'], standard_zca_piano['epsilon'])
-        else:
-            raise Exception(str(parameters["normalize"]) + " is not a possible value for normalization parameter")        
-    else:
-        pr_piano_gen_norm = pr_piano_gen
+    normalizer = pkl.load(open(os.path.join(config_folder, 'normalizer.pkl'), 'rb'))
+    pr_piano_gen_norm = normalizer.transform(pr_piano_gen)
     ########################
     
     ########################

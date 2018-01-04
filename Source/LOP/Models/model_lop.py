@@ -13,6 +13,7 @@ class Model_lop(object):
 		# Dimensions
 		self.temporal_order = dimensions['temporal_order']
 		self.piano_dim = dimensions['piano_dim']
+		self.piano_transformed_dim = dimensions['piano_transformed_dim']
 		self.orch_dim = dimensions['orch_dim']
 
 		# Regularization paramters

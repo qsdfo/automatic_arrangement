@@ -212,7 +212,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
 
     # Get dimensions
     if DEBUG:
-        T_limit = 5000
+        T_limit = 10000
     else:
         T_limit = 1e10
     get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
@@ -340,7 +340,7 @@ if __name__ == '__main__':
     # because train is data augmented but not test and validate
     temporal_granularity = 'event_level'
     quantization = 8
-    pretraining_bool = True
+    pretraining_bool = False
 
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = os.path.join(config.database_root(), 'LOP_database_06_09_17')

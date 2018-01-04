@@ -23,7 +23,7 @@ from keras.layers import Dense, Activation, Dropout
 from LOP.Utils import hopt_wrapper
 from math import log
 from hyperopt import hp
-from LOP.Utils.analysis_data import compute_static_bias_initialization
+from LOP.Utils.data_statistics import compute_static_bias_initialization
 
 from LOP.Models.Utils.weight_summary import keras_layer_summary
 

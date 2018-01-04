@@ -14,9 +14,10 @@ from LOP.Utils.early_stopping import up_criterion
 from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf, sparsity_penalty_0, sparsity_penalty_1
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure, binary_cross_entropy
 from LOP.Utils.build_batch import build_batch
-from LOP.Utils.get_statistics import count_parameters
+from LOP.Utils.model_statistics import count_parameters
 from LOP.Utils.Analysis.accuracy_and_binary_Xent import accuracy_and_binary_Xent
 from LOP.Utils.Analysis.compare_Xent_acc_corresponding_preds import compare_Xent_acc_corresponding_preds
+from load_matrices import load_matrices
 
 DEBUG = False
 # Note : debug sans summarize, qui pollue le tableau de variables
@@ -27,14 +28,11 @@ ANALYSIS = False
 # Logging device use ?
 LOGGING_DEVICE = False
 
-def validate(context, valid_index):
+def validate(context, valid_splits_batches, normalizer, parameters):
     
     sess = context['sess']
     temporal_order = context['temporal_order']
-    piano = context['piano']
-    orch = context['orch']
     mask_orch_ph = context['mask_orch_ph']
-    mask_orch = context['mask_orch']
     inputs_ph = context['inputs_ph']
     orch_t_ph = context['orch_t_ph']
     preds_node = context['preds_node']
@@ -52,38 +50,52 @@ def validate(context, valid_index):
     true_accuracy = []
     f_score = []
     Xent = []
-    for batch_index in valid_index:
-        # Build batch
-        piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t = build_batch(batch_index, piano, orch, mask_orch, len(batch_index), temporal_order)
-        # Input nodes
-        feed_dict = {piano_t_ph: piano_t,
-                    piano_past_ph: piano_past,
-                    piano_future_ph: piano_future,
-                    orch_past_ph: orch_past,
-                    orch_future_ph: orch_future,
-                    orch_t_ph: orch_t,
-                    mask_orch_ph: mask_orch_t,
-                    keras_learning_phase: 0}
-        # Compute validation loss
-        preds_batch, loss_batch = sess.run([preds_node, loss_val_node], feed_dict)
-        val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
-        Xent_batch = binary_cross_entropy(orch_t, preds_batch)
-        accuracy_batch = accuracy_measure(orch_t, preds_batch)
-        precision_batch = precision_measure(orch_t, preds_batch)
-        recall_batch = recall_measure(orch_t, preds_batch)
-        true_accuracy_batch = true_accuracy_measure(orch_t, preds_batch)
-        f_score_batch = f_measure(orch_t, preds_batch)
+
+    for path_piano_matrix, valid_index in valid_splits_batches.iteritems():
+        #######################################
+        # Load matrix
+        #######################################
+        piano, orch, duration_piano, mask_orch, _ = load_matrices(path_piano_matrix, parameters)
+
+        #######################################
+        # Normalization
+        #######################################            
+        piano_transformed = normalizer.transform(piano)
+    
+        for batch_index in valid_index:
+            # Build batch
+            piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t = build_batch(batch_index, piano_transformed, orch, mask_orch, len(batch_index), temporal_order)
+            # Input nodes
+            feed_dict = {piano_t_ph: piano_t,
+                        piano_past_ph: piano_past,
+                        piano_future_ph: piano_future,
+                        orch_past_ph: orch_past,
+                        orch_future_ph: orch_future,
+                        orch_t_ph: orch_t,
+                        mask_orch_ph: mask_orch_t,
+                        keras_learning_phase: 0}
+
+            # Compute validation loss
+            preds_batch, loss_batch = sess.run([preds_node, loss_val_node], feed_dict)
+            
+            val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
+            Xent_batch = binary_cross_entropy(orch_t, preds_batch)
+            accuracy_batch = accuracy_measure(orch_t, preds_batch)
+            precision_batch = precision_measure(orch_t, preds_batch)
+            recall_batch = recall_measure(orch_t, preds_batch)
+            true_accuracy_batch = true_accuracy_measure(orch_t, preds_batch)
+            f_score_batch = f_measure(orch_t, preds_batch)
         
-        accuracy.extend(accuracy_batch)
-        precision.extend(precision_batch)
-        recall.extend(recall_batch)
-        true_accuracy.extend(true_accuracy_batch)
-        f_score.extend(f_score_batch)
-        Xent.extend(Xent_batch)
-                
+            accuracy.extend(accuracy_batch)
+            precision.extend(precision_batch)
+            recall.extend(recall_batch)
+            true_accuracy.extend(true_accuracy_batch)
+            f_score.extend(f_score_batch)
+            Xent.extend(Xent_batch)
+
     return np.asarray(accuracy), np.asarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score), np.asarray(Xent)
 
-def train(model, piano, orch, mask_orch, train_index, valid_index,
+def train(model, train_splits_batches, valid_splits_batches, normalizer,
           parameters, config_folder, start_time_train, logger_train):
    
     # Time information used
@@ -172,11 +184,8 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
         context = {}
         context['sess'] = sess
         context['temporal_order'] = model.temporal_order
-        context['piano'] = piano
-        context['orch'] = orch
         context['inputs_ph'] = inputs_ph
         context['orch_t_ph'] = orch_t_ph
-        context['mask_orch'] = mask_orch
         context['mask_orch_ph'] = mask_orch_ph
         context['preds_node'] = preds_node
         context['loss_node'] = loss_node
@@ -186,7 +195,7 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
         
         if model.optimize() == False:
             # Some baseline models don't need training step optimization
-            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, valid_index)
+            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, valid_splits_batches, normalizer, parameters)
             mean_val_loss = np.mean(val_loss)
             mean_accuracy = 100 * np.mean(accuracy)
             mean_precision = 100 * np.mean(precision)
@@ -199,39 +208,54 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
         # Training iteration
         while (not OVERFITTING and not TIME_LIMIT
                and epoch != parameters['max_iter']):
-
+        
             start_time_epoch = time.time()
 
-            #######################################
-            # Train
-            #######################################
-            train_cost_epoch = []           
-            for batch_index in train_index:
-                # Build batch
-                piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t = build_batch(batch_index, piano, orch, mask_orch, len(batch_index), model.temporal_order)
-                
-                # Train step
-                feed_dict = {piano_t_ph: piano_t,
-                            piano_past_ph: piano_past,
-                            piano_future_ph: piano_future,
-                            orch_past_ph: orch_past,
-                            orch_future_ph: orch_future,
-                            orch_t_ph: orch_t,
-                            mask_orch_ph: mask_orch_t,
-                            keras_learning_phase: 1}
+            train_cost_epoch = []
 
-                if SUMMARIZE:
-                    _, loss_batch, summary = sess.run([train_step_node, loss_node, merged_node], feed_dict)
-                else:
-                    _, loss_batch, preds_batch, embedding_batch = sess.run([train_step_node, loss_node, preds_node, embedding_concat], feed_dict)
+            for path_piano_matrix, train_index in train_splits_batches.iteritems():
+                load_data_start = time.time()
+                #######################################
+                # Load matrix (Make it asynchronous ??)
+                #######################################
+                piano, orch, duration_piano, mask_orch, _ = load_matrices(path_piano_matrix, parameters)
 
-                # Keep track of cost
-                train_cost_epoch.append(loss_batch)
+                #######################################
+                # Normalization
+                #######################################            
+                piano_transformed = normalizer.transform(piano)
+                load_data_time = time.time() - load_data_start
+                logger_train.info("Load matrix time : " + str(load_data_time))
+
+                #######################################
+                # Train
+                #######################################
+                for batch_index in train_index:
+                    # Build batch
+                    piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t = build_batch(batch_index, piano_transformed, orch, mask_orch, len(batch_index), model.temporal_order)
+                    
+                    # Train step
+                    feed_dict = {piano_t_ph: piano_t,
+                                piano_past_ph: piano_past,
+                                piano_future_ph: piano_future,
+                                orch_past_ph: orch_past,
+                                orch_future_ph: orch_future,
+                                orch_t_ph: orch_t,
+                                mask_orch_ph: mask_orch_t,
+                                keras_learning_phase: 1}
+
+                    if SUMMARIZE:
+                        _, loss_batch, summary = sess.run([train_step_node, loss_node, merged_node], feed_dict)
+                    else:
+                        _, loss_batch, preds_batch, embedding_batch = sess.run([train_step_node, loss_node, preds_node, embedding_concat], feed_dict)
+
+                    # Keep track of cost
+                    train_cost_epoch.append(loss_batch)
 
             if SUMMARIZE:
                 if (epoch<5) or (epoch%10==0):
                     train_writer.add_summary(summary, epoch)
- 
+     
             mean_loss = np.mean(train_cost_epoch)
             loss_tab[epoch] = mean_loss
 
@@ -239,7 +263,7 @@ def train(model, piano, orch, mask_orch, train_index, valid_index,
             #######################################
             # Validate
             #######################################
-            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, valid_index)
+            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, valid_splits_batches, normalizer, parameters)
             mean_val_loss = np.mean(val_loss)
             mean_accuracy = 100 * np.mean(accuracy)
             mean_precision = 100 * np.mean(precision)
@@ -353,9 +377,9 @@ def build_training_nodes(model, parameters):
     ############################################################
     # Build nodes
     # Inputs
-    piano_t_ph = tf.placeholder(tf.float32, shape=(None, model.piano_dim), name="piano_t")
-    piano_past_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.piano_dim), name="piano_past")
-    piano_future_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.piano_dim), name="piano_future")
+    piano_t_ph = tf.placeholder(tf.float32, shape=(None, model.piano_transformed_dim), name="piano_t")
+    piano_past_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.piano_transformed_dim), name="piano_past")
+    piano_future_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.piano_transformed_dim), name="piano_future")
     #
     orch_t_ph = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="orch_t")
     orch_past_ph = tf.placeholder(tf.float32, shape=(None, model.temporal_order-1, model.orch_dim), name="orch_past")

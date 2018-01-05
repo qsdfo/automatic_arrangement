@@ -24,7 +24,7 @@ import build_data_aux
 import build_data_aux_no_piano
 import cPickle as pickle
 
-DEBUG = True
+DEBUG = False
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano):
     logging.info(folder_path)
@@ -92,6 +92,9 @@ def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path='temp.
         folder_path = folder_path.rstrip()
         instru_mapping, T = update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano=True)
         folder_paths_split.append(folder_path)
+    # Don't forget the last one !
+    T_splits.append(T)
+    folder_paths_splits.append(folder_paths_split)
         
     for folder_path_pre in folder_paths_pretraining:
         if T_pretraining>T_limit:
@@ -102,6 +105,9 @@ def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path='temp.
         folder_path_pre = folder_path_pre.rstrip()
         instru_mapping, T_pretraining = update_instru_mapping(folder_path_pre, instru_mapping, T_pretraining, quantization, is_piano=False)
         folder_paths_pretraining_split.append(folder_path_pre)
+    # Don't forget the last one !
+    T_pretraining_splits.append(T_pretraining)
+    folder_paths_pretraining_splits.append(folder_paths_pretraining_split)
         
     # Build the index_min and index_max in the instru_mapping dictionary
     counter = 0
@@ -340,7 +346,7 @@ if __name__ == '__main__':
     # because train is data augmented but not test and validate
     temporal_granularity = 'event_level'
     quantization = 8
-    pretraining_bool = False
+    pretraining_bool = True
 
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = os.path.join(config.database_root(), 'LOP_database_06_09_17')

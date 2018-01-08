@@ -23,6 +23,7 @@ class Model_lop(object):
 		########################
 		# EXPERIMENTATIONS 
 		self.tn_weight = model_param['tn_weight']
+		self.sparsity_coeff = model_param['sparsity_coeff']
 		########################
 
 		self.params = []

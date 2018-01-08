@@ -11,7 +11,7 @@ import os
 
 import config
 from LOP.Utils.early_stopping import up_criterion
-from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf, sparsity_penalty_0, sparsity_penalty_1, bin_Xen_weighted_1_tf
+from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf, sparsity_penalty_l1, sparsity_penalty_l2, bin_Xen_weighted_1_tf
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure, binary_cross_entropy
 from LOP.Utils.build_batch import build_batch
 from LOP.Utils.model_statistics import count_parameters
@@ -409,10 +409,10 @@ def build_training_nodes(model, parameters):
             loss_val = tf.reduce_mean(distance, name="loss")
     
     # Add sparsity constraint on the output ? Is it still loss_val or just loss :/ ???
-    # sparsity_coeff = 0.001
-    # loss += sparsity_penalty_0(preds)
-    # loss += sparsity_penalty_1(preds)
-    # loss += sparsity_coeff * tf.nn.relu(tf.reduce_sum(preds, axis=1))
+    sparsity_coeff = model.sparsity_coeff
+    loss += sparsity_penalty_l1(preds)
+    # loss += sparsity_penalty_l2(preds)
+    loss += sparsity_coeff * tf.nn.relu(tf.reduce_sum(preds, axis=1))
     # loss += sparsity_coeff * tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
     
     # Weight decay 

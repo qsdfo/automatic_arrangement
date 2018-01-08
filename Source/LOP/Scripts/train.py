@@ -410,10 +410,10 @@ def build_training_nodes(model, parameters):
     
     # Add sparsity constraint on the output ? Is it still loss_val or just loss :/ ???
     sparsity_coeff = model.sparsity_coeff
-    loss += sparsity_penalty_l1(preds)
-    # loss += sparsity_penalty_l2(preds)
-    loss += sparsity_coeff * tf.nn.relu(tf.reduce_sum(preds, axis=1))
-    # loss += sparsity_coeff * tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
+    loss_val += sparsity_penalty_l1(preds)
+    # loss_val += sparsity_penalty_l2(preds)
+    loss_val += sparsity_coeff * tf.nn.relu(tf.reduce_sum(preds, axis=1))
+    # loss_val += sparsity_coeff * tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
     
     # Weight decay 
     if model.weight_decay_coeff != 0:

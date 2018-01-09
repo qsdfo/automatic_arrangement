@@ -11,7 +11,7 @@ import os
 
 import config
 from LOP.Utils.early_stopping import up_criterion
-from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf, sparsity_penalty_0, sparsity_penalty_1, bin_Xen_weighted_1_tf
+from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf, sparsity_penalty_l1, sparsity_penalty_l2, bin_Xen_weighted_1_tf
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure, binary_cross_entropy
 from LOP.Utils.build_batch import build_batch
 from LOP.Utils.model_statistics import count_parameters
@@ -402,18 +402,21 @@ def build_training_nodes(model, parameters):
         # distance = bin_Xen_weighted_1_tf(orch_t_ph, preds, model.tn_weight)
         # distance = accuracy_tf(orch_t_ph, preds)
         distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=model.tn_weight)
+
+        # Add sparsity constraint on the output ? Is it still loss_val or just loss :/ ???
+        sparsity_coeff = model.sparsity_coeff
+        sparse_loss = sparsity_penalty_l1(preds)
+        # sparse_loss = sparsity_penalty_l2(preds)
+        sparse_loss = tf.nn.relu(tf.reduce_sum(preds, axis=1))
+        # sparse_loss = tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
+
+        loss_val_ = distance + sparsity_coeff * sparse_loss
+
         if parameters['mask_orch']:
-            loss_masked_ = tf.where(mask_orch_ph==1, distance, tf.zeros_like(distance))
-            loss_val = tf.reduce_mean(loss_masked_, name="loss")
+            loss_masked = tf.where(mask_orch_ph==1, loss_val_, tf.zeros_like(loss_val_))
+            loss_val = tf.reduce_mean(loss_masked, name="loss")
         else:
-            loss_val = tf.reduce_mean(distance, name="loss")
-    
-    # Add sparsity constraint on the output ? Is it still loss_val or just loss :/ ???
-    # sparsity_coeff = 0.001
-    # loss += sparsity_penalty_0(preds)
-    # loss += sparsity_penalty_1(preds)
-    # loss += sparsity_coeff * tf.nn.relu(tf.reduce_sum(preds, axis=1))
-    # loss += sparsity_coeff * tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
+            loss_val = tf.reduce_mean(loss_val_, name="loss")
     
     # Weight decay 
     if model.weight_decay_coeff != 0:

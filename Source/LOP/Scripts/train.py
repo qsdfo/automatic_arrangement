@@ -113,7 +113,7 @@ def validate(context, init_matrices_validation, valid_splits_batches, normalizer
 
 def train(model, train_splits_batches, valid_splits_batches, normalizer,
           parameters, config_folder, start_time_train, logger_train):
-   
+
     # Time information used
     time_limit = parameters['walltime'] * 3600 - 30*60  # walltime - 30 minutes in seconds
 
@@ -228,14 +228,14 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
         path_piano_matrices_valid = valid_splits_batches.keys()
         N_matrix_files = len(path_piano_matrices_train)
 
+        
         global_time_start = time.time()
         
         load_data_start = time.time()
-        pool = ThreadPool(processes=2)
+        pool = ThreadPool(processes=1)
         async_train = pool.apply_async(async_load_mat, (normalizer, path_piano_matrices_train[0], parameters))
-        async_valid = pool.apply_async(async_load_mat, (normalizer, path_piano_matrices_valid[0], parameters))
         matrices_from_thread = async_train.get()
-        init_matrices_validation = async_valid.get()
+        init_matrices_validation = matrices_from_thread
         load_data_time = time.time() - load_data_start
         logger_train.info("Load the first matrix time : " + str(load_data_time))
 

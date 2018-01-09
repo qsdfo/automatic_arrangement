@@ -420,7 +420,6 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
 	if GENERATE:
 		generate_wrapper(config_folder_fold, track_paths_generation, logger)
 	if not save_model:
-#            shutil.rmtree(config_folder_fold + '/model')
 		shutil.rmtree(config_folder_fold + '/model_Xent')
 		shutil.rmtree(config_folder_fold + '/model_acc')
 		shutil.rmtree(config_folder_fold + '/model_loss')

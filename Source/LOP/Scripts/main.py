@@ -265,7 +265,7 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 
 def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None, logger=None):
 	# Sadly, with the split of the database, shuffling the files can only be performed inside a same split
-	logger.info((u'##### Data').encode('utf8'))
+	logger.info((u'##### Building folds').encode('utf8'))
 	
 	# Load data and build K_folds
 	time_load_0 = time.time()
@@ -318,7 +318,7 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 	dimensions = {'temporal_order': model_params['temporal_order'],
 				  'piano_dim': piano_dim,
 				  'orch_dim': orch_dim}
-	logger.info('TTT : Loading data took {} seconds'.format(time_load))
+	logger.info('TTT : Building folds took {} seconds'.format(time_load))
 	return K_folds, valid_names, test_names, dimensions
 
 
@@ -381,7 +381,6 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
 	n_train_batches = count_number_batch(train_folds)
 	n_val_batches = count_number_batch(valid_folds)
 
-	logger.info((u'##### Data').encode('utf8'))
 	logger.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
 	logger.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
 
@@ -421,7 +420,6 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
 	if GENERATE:
 		generate_wrapper(config_folder_fold, track_paths_generation, logger)
 	if not save_model:
-#            shutil.rmtree(config_folder_fold + '/model')
 		shutil.rmtree(config_folder_fold + '/model_Xent')
 		shutil.rmtree(config_folder_fold + '/model_acc')
 		shutil.rmtree(config_folder_fold + '/model_loss')

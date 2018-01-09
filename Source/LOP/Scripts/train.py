@@ -8,6 +8,7 @@ import numpy as np
 import keras
 import time
 import os
+from multiprocessing.pool import ThreadPool
 
 import config
 from LOP.Utils.early_stopping import up_criterion
@@ -17,7 +18,8 @@ from LOP.Utils.build_batch import build_batch
 from LOP.Utils.model_statistics import count_parameters
 from LOP.Utils.Analysis.accuracy_and_binary_Xent import accuracy_and_binary_Xent
 from LOP.Utils.Analysis.compare_Xent_acc_corresponding_preds import compare_Xent_acc_corresponding_preds
-from load_matrices import load_matrices
+
+from asynchronous_load_mat import async_load_mat
 
 DEBUG = False
 # Note : debug sans summarize, qui pollue le tableau de variables
@@ -28,7 +30,7 @@ ANALYSIS = False
 # Logging device use ?
 LOGGING_DEVICE = False
 
-def validate(context, valid_splits_batches, normalizer, parameters):
+def validate(context, init_matrices_validation, valid_splits_batches, normalizer, parameters):
     
     sess = context['sess']
     temporal_order = context['temporal_order']
@@ -51,16 +53,28 @@ def validate(context, valid_splits_batches, normalizer, parameters):
     f_score = []
     Xent = []
 
-    for path_piano_matrix, valid_index in valid_splits_batches.iteritems():
-        #######################################
-        # Load matrix
-        #######################################
-        piano, orch, duration_piano, mask_orch, _ = load_matrices(path_piano_matrix, parameters)
+    path_piano_matrices_valid = valid_splits_batches.keys()
+    N_matrix_files = len(path_piano_matrices_valid)
+    pool = ThreadPool(processes=1)
+    matrices_from_thread = init_matrices_validation
 
+    for file_ind_CURRENT in range(N_matrix_files):
         #######################################
-        # Normalization
-        #######################################            
-        piano_transformed = normalizer.transform(piano)
+        # Get indices and matrices to load
+        #######################################
+        # We train on the current matrix
+        path_piano_matrix_CURRENT = path_piano_matrices_valid[file_ind_CURRENT]
+        valid_index = valid_splits_batches[path_piano_matrix_CURRENT]
+        # But load the next one : Useless if only one matrix, but I don't care, plenty of CPUs on lagavulin
+        file_ind_NEXT = (file_ind_CURRENT+1) % N_matrix_files
+        path_piano_matrix_NEXT = path_piano_matrices_valid[file_ind_NEXT]
+        
+        #######################################
+        # Load matrix thread
+        #######################################
+        async_valid = pool.apply_async(async_load_mat, (normalizer, path_piano_matrix_NEXT, parameters))
+
+        piano_transformed, orch, duration_piano, mask_orch = matrices_from_thread
     
         for batch_index in valid_index:
             # Build batch
@@ -93,11 +107,13 @@ def validate(context, valid_splits_batches, normalizer, parameters):
             f_score.extend(f_score_batch)
             Xent.extend(Xent_batch)
 
+        matrices_from_thread = async_valid.get()
+
     return np.asarray(accuracy), np.asarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score), np.asarray(Xent)
 
 def train(model, train_splits_batches, valid_splits_batches, normalizer,
           parameters, config_folder, start_time_train, logger_train):
-   
+
     # Time information used
     time_limit = parameters['walltime'] * 3600 - 30*60  # walltime - 30 minutes in seconds
 
@@ -193,9 +209,25 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
         context['keras_learning_phase'] = keras_learning_phase
         ############################################################
         
+        #######################################
+        # Load first matrix
+        #######################################
+        path_piano_matrices_train = train_splits_batches.keys()
+        N_matrix_files = len(path_piano_matrices_train)
+
+        global_time_start = time.time()
+        
+        load_data_start = time.time()
+        pool = ThreadPool(processes=1)
+        async_train = pool.apply_async(async_load_mat, (normalizer, path_piano_matrices_train[0], parameters))
+        matrices_from_thread = async_train.get()
+        init_matrices_validation = matrices_from_thread
+        load_data_time = time.time() - load_data_start
+        logger_train.info("Load the first matrix time : " + str(load_data_time))
+
         if model.optimize() == False:
             # Some baseline models don't need training step optimization
-            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, valid_splits_batches, normalizer, parameters)
+            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, init_matrices_validation, valid_splits_batches, normalizer, parameters)
             mean_val_loss = np.mean(val_loss)
             mean_accuracy = 100 * np.mean(accuracy)
             mean_precision = 100 * np.mean(precision)
@@ -204,8 +236,7 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
             mean_f_score = 100 * np.mean(f_score)
             mean_Xent = np.mean(Xent)
             return mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score, mean_Xent, 0
-        
-        global_time_start = time.time()
+
         # Training iteration
         while (not OVERFITTING and not TIME_LIMIT
                and epoch != parameters['max_iter']):
@@ -214,19 +245,24 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
 
             train_cost_epoch = []
 
-            for path_piano_matrix, train_index in train_splits_batches.iteritems():
-                load_data_start = time.time()
-                #######################################
-                # Load matrix (Make it asynchronous ??)
-                #######################################
-                piano, orch, duration_piano, mask_orch, _ = load_matrices(path_piano_matrix, parameters)
+            for file_ind_CURRENT in range(N_matrix_files):
 
                 #######################################
-                # Normalization
-                #######################################            
-                piano_transformed = normalizer.transform(piano)
-                load_data_time = time.time() - load_data_start
-                logger_train.info("Load matrix time : " + str(load_data_time))
+                # Get indices and matrices to load
+                #######################################
+                # We train on the current matrix
+                path_piano_matrix_CURRENT = path_piano_matrices_train[file_ind_CURRENT]
+                train_index = train_splits_batches[path_piano_matrix_CURRENT]
+                # But load the one next one
+                file_ind_NEXT = (file_ind_CURRENT+1) % N_matrix_files
+                path_piano_matrix_NEXT = path_piano_matrices_train[file_ind_NEXT]
+                
+                #######################################
+                # Load matrix thread
+                #######################################
+                async_train = pool.apply_async(async_load_mat, (normalizer, path_piano_matrix_NEXT, parameters))
+
+                piano_transformed, orch, duration_piano, mask_orch = matrices_from_thread
 
                 #######################################
                 # Train
@@ -252,20 +288,25 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
 
                     # Keep track of cost
                     train_cost_epoch.append(loss_batch)
-                time.sleep(15)
+
+                #######################################
+                # New matrices from thread
+                #######################################
+                matrices_from_thread = async_train.get()
 
             if SUMMARIZE:
                 if (epoch<5) or (epoch%10==0):
+                    # Note that summarize here only look at the variables after the last batch of the epoch
+                    # If you want to look at all the batches, include it in 
                     train_writer.add_summary(summary, epoch)
      
             mean_loss = np.mean(train_cost_epoch)
             loss_tab[epoch] = mean_loss
 
-
             #######################################
             # Validate
             #######################################
-            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, valid_splits_batches, normalizer, parameters)
+            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, init_matrices_validation, valid_splits_batches, normalizer, parameters)
             mean_val_loss = np.mean(val_loss)
             mean_accuracy = 100 * np.mean(accuracy)
             mean_precision = 100 * np.mean(precision)
@@ -371,10 +412,6 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
         best_true_accuracy = val_tab_true_acc[best_epoch]
         best_f_score = val_tab_f_score[best_epoch]
         best_Xent = val_tab_Xent[best_epoch]
-
-        global_time_end = time.time()
-        logger_train.info("TIDFIJSDOFI : " + str(global_time_end - global_time_start))
-        import pdb; pdb.set_trace()
 
     return best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch
 

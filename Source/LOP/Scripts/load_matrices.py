@@ -8,7 +8,6 @@ import cPickle as pkl
 from LOP.Utils.process_data import process_data_piano, process_data_orch
 
 def load_matrices(piano_file, parameters):
-    print("YAYAYA")
     orch_file = re.sub('piano', 'orchestra', piano_file)
     piano = np.load(piano_file)
     orch = np.load(orch_file)
@@ -40,7 +39,6 @@ def load_matrices(piano_file, parameters):
     tracks_start_end_file = re.sub(r'piano(.*)\.npy$', r'tracks_start_end\1.pkl', piano_file)
     tracks_start_end = pkl.load(open(tracks_start_end_file))
 
-    time.sleep(20)
-    print("YOYOYO")
+    time.sleep(10)
 
     return piano, orch, duration_piano, mask_orch, tracks_start_end

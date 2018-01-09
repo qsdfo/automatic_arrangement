@@ -107,6 +107,7 @@ def validate(context, init_matrices_validation, valid_splits_batches, normalizer
             f_score.extend(f_score_batch)
             Xent.extend(Xent_batch)
 
+        del(matrices_from_thread)
         matrices_from_thread = async_valid.get()
 
     return np.asarray(accuracy), np.asarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score), np.asarray(Xent)
@@ -292,6 +293,7 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
                 #######################################
                 # New matrices from thread
                 #######################################
+                del(matrices_from_thread)
                 matrices_from_thread = async_train.get()
 
             if SUMMARIZE:

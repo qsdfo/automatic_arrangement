@@ -220,7 +220,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
     if DEBUG:
         T_limit = 10000
     else:
-        T_limit = 1e10
+        T_limit = 1e9
     get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
 
     logging.info("##########")

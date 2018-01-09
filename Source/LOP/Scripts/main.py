@@ -29,7 +29,7 @@ from LOP.Utils.Normalization.no_normalization import no_normalization as Normali
 
 GENERATE=True
 SAVE=True
-DEFINED_CONFIG = True  # HYPERPARAM ?
+DEFINED_CONFIG=True  # HYPERPARAM ?
 # For reproducibility
 RANDOM_SEED_FOLDS=1234 # This is useful to use always the same fold split
 RANDOM_SEED=None

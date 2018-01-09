@@ -180,6 +180,7 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
         return
     reconstruct_write_aux(generated_sequences_Xent, 'Xent')
     reconstruct_write_aux(generated_sequences_acc, 'acc')
+    reconstruct_write_aux(generated_sequences_loss, 'loss')
     
     ############################################################
     ############################################################

@@ -252,6 +252,7 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
 
                     # Keep track of cost
                     train_cost_epoch.append(loss_batch)
+                time.sleep(15)
 
             if SUMMARIZE:
                 if (epoch<5) or (epoch%10==0):

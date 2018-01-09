@@ -28,7 +28,7 @@ from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
 from LOP.Utils.Normalization.no_normalization import no_normalization as Normalizer
 
 GENERATE=True
-SAVE=True
+SAVE=False
 DEFINED_CONFIG=True  # HYPERPARAM ?
 # For reproducibility
 RANDOM_SEED_FOLDS=1234 # This is useful to use always the same fold split
@@ -96,19 +96,19 @@ def main():
 		# Bouliane test
 		config.database_root() + '/LOP_database_06_09_17/bouliane/17',
 		# Bouliane valid
-		# config.database_root() + '/LOP_database_06_09_17/bouliane/16',
-		# # Spotify train
-		# config.database_root() + '/LOP_database_06_09_17/hand_picked_Spotify/0',
-		# # Spotify test
-		# config.database_root() + '/LOP_database_06_09_17/hand_picked_Spotify/21',
-		# # Spotify valid
-		# config.database_root() + '/LOP_database_06_09_17/hand_picked_Spotify/20',
-		# # Liszt train
-		# config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/0',
-		# # Liszt test
-		# config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/17',
-		# # Liszt valid
-		# config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/16'
+		config.database_root() + '/LOP_database_06_09_17/bouliane/16',
+		# Spotify train
+		config.database_root() + '/LOP_database_06_09_17/hand_picked_Spotify/0',
+		# Spotify test
+		config.database_root() + '/LOP_database_06_09_17/hand_picked_Spotify/21',
+		# Spotify valid
+		config.database_root() + '/LOP_database_06_09_17/hand_picked_Spotify/20',
+		# Liszt train
+		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/0',
+		# Liszt test
+		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/17',
+		# Liszt valid
+		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/16'
 	]
 
 	############################################################

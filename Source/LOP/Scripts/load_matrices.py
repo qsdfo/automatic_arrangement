@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-<<<<<<< HEAD
-import time
-=======
->>>>>>> Threading
 import numpy as np
 import re
 import cPickle as pkl

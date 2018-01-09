@@ -205,6 +205,7 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
             mean_Xent = np.mean(Xent)
             return mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score, mean_Xent, 0
         
+        global_time_start = time.time()
         # Training iteration
         while (not OVERFITTING and not TIME_LIMIT
                and epoch != parameters['max_iter']):
@@ -369,6 +370,10 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
         best_true_accuracy = val_tab_true_acc[best_epoch]
         best_f_score = val_tab_f_score[best_epoch]
         best_Xent = val_tab_Xent[best_epoch]
+
+        global_time_end = time.time()
+        logger_train.info("TIDFIJSDOFI : " + str(global_time_end - global_time_start))
+        import pdb; pdb.set_trace()
 
     return best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch
 

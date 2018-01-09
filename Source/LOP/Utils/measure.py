@@ -23,8 +23,8 @@ def accuracy_measure_test(true_frame, pred_frame):
 
     C = 1.8
     K = 1.8 + 500*0.01 + 2*(1-0.8)
-#    C = 0
-#    K = 0
+    # C = 0
+    # K = 0
     
     true_positive = np.sum(pred_frame * true_frame, axis=axis)
     false_negative = np.sum((1 - pred_frame) * true_frame, axis=axis)
@@ -42,8 +42,8 @@ def accuracy_measure_test_2(true_frame, pred_frame):
 
     C = 1.8
     K = 1.8 + 500*0.01 + 2*(1-0.8)
-#    C = 0
-#    K = 0
+    # C = 0
+    # K = 0
     epsilon = 1e-20
     
     pred_frame_log = np.log(pred_frame + epsilon)
@@ -89,7 +89,6 @@ def accuracy_measure_continuous(true_frame, pred_frame):
     diff_thresh = np.where(diff_abs < threshold, 1, 0)
     binary_truth = np.where(pred_frame > 0, 1, 0)
     tp = np.sum(diff_thresh * binary_truth, axis=-1)
-    import pdb; pdb.set_trace()
     false = np.sum((1 - diff_thresh), axis=-1)
 
     quotient = tp + false
@@ -146,6 +145,20 @@ def compute_numerical_gradient(measure_fun, true_frame, pred_frame, epsilon):
         numeric_grad[:, i] = (f_pos - f_neg) / (2*epsilon)
     return numeric_grad
 
+def weighted_accuracy_test(true_frame, pred_frame, lamb=1):
+    axis = len(true_frame.shape) - 1
+
+    true_positive = np.sum(pred_frame * true_frame, axis=axis)
+    true_negative = np.sum((1-pred_frame) * (1-true_frame), axis=axis)
+    false_negative = np.sum((1 - pred_frame) * true_frame, axis=axis)
+    false_positive = np.sum(pred_frame * (1 - true_frame), axis=axis)
+
+    dividend = true_positive + lamb * true_negative
+    divisor = true_positive + false_negative + false_positive + lamb*true_negative
+
+    accuracy_measure = np.true_divide(dividend, divisor)
+
+    return accuracy_measure
 if __name__=='__main__':
     
     # Create a grid
@@ -158,7 +171,5 @@ if __name__=='__main__':
     true_frame_0_0 = np.zeros((1, 2))
     true_frame_0_1 = np.zeros((1, 2)); true_frame_0_0[0, 0] = 1
     true_frame_1_1 = np.ones((1, 2))
-    
-    
     
     numeric_gradient = compute_numerical_gradient(accuracy_measure_test, true_frame, pred_frame, 1e-4)

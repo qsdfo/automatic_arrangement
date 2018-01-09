@@ -15,7 +15,7 @@ from matplotlib import cm
 import numpy as np
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
-from LOP.Utils.measure import accuracy_measure, accuracy_measure_test, true_accuracy_measure, f_measure, binary_cross_entropy, accuracy_measure_test_2
+from LOP.Utils.measure import accuracy_measure, accuracy_measure_test, true_accuracy_measure, f_measure, binary_cross_entropy, accuracy_measure_test_2, weighted_accuracy_test
 
 def plot_measure_2D(measure_fun, step_size, result_folder):
 
@@ -51,7 +51,7 @@ def plot_measure_2D(measure_fun, step_size, result_folder):
         # Add a color bar which maps values to colors.
         fig.colorbar(surf, shrink=0.5, aspect=5)
         
-    plt.savefig(result_folder + '/' + measure_fun.__name__ + '__' + str(true_frame) + '.pdf')
+    plt.savefig(result_folder + '/' + measure_fun.__name__ + '.pdf')
     plt.show()
 
 
@@ -62,10 +62,11 @@ if __name__ == '__main__':
     os.mkdir(result_dir)
         
     # plot_measure_2D(accuracy_measure, 0.01, result_dir)
-    plot_measure_2D(binary_cross_entropy, 0.01, result_dir)
-#    plot_measure_2D(true_accuracy_measure, (0,1), 0.01, result_dir)
-#    plot_measure_2D(f_measure, (0,1), 0.01, result_dir)
-#    plot_measure_2D(binary_cross_entropy, (0,1), 0.01, result_dir)
+    # plot_measure_2D(binary_cross_entropy, 0.01, result_dir)
+    # plot_measure_2D(true_accuracy_measure, (0,1), 0.01, result_dir)
+    # plot_measure_2D(f_measure, (0,1), 0.01, result_dir)
+    # plot_measure_2D(binary_cross_entropy, (0,1), 0.01, result_dir)
+    plot_measure_2D(weighted_accuracy_test, 0.01, result_dir)
     
-#    plot_measure_2D(accuracy_measure_test, 0.01, result_dir)
-#    plot_measure_2D(accuracy_measure_test_2, 0.01, result_dir)
+    # plot_measure_2D(accuracy_measure_test, 0.01, result_dir)
+    # plot_measure_2D(accuracy_measure_test_2, 0.01, result_dir)

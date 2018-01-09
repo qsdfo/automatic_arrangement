@@ -402,18 +402,21 @@ def build_training_nodes(model, parameters):
         # distance = bin_Xen_weighted_1_tf(orch_t_ph, preds, model.tn_weight)
         # distance = accuracy_tf(orch_t_ph, preds)
         distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=model.tn_weight)
+
+        # Add sparsity constraint on the output ? Is it still loss_val or just loss :/ ???
+        sparsity_coeff = model.sparsity_coeff
+        sparse_loss = sparsity_penalty_l1(preds)
+        # sparse_loss = sparsity_penalty_l2(preds)
+        sparse_loss = tf.nn.relu(tf.reduce_sum(preds, axis=1))
+        # sparse_loss = tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
+
+        loss_val_ = distance + sparsity_coeff * sparse_loss
+
         if parameters['mask_orch']:
-            loss_masked_ = tf.where(mask_orch_ph==1, distance, tf.zeros_like(distance))
-            loss_val = tf.reduce_mean(loss_masked_, name="loss")
+            loss_masked = tf.where(mask_orch_ph==1, loss_val_, tf.zeros_like(loss_val_))
+            loss_val = tf.reduce_mean(loss_masked, name="loss")
         else:
-            loss_val = tf.reduce_mean(distance, name="loss")
-    
-    # Add sparsity constraint on the output ? Is it still loss_val or just loss :/ ???
-    sparsity_coeff = model.sparsity_coeff
-    loss_val += sparsity_penalty_l1(preds)
-    # loss_val += sparsity_penalty_l2(preds)
-    loss_val += sparsity_coeff * tf.nn.relu(tf.reduce_sum(preds, axis=1))
-    # loss_val += sparsity_coeff * tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
+            loss_val = tf.reduce_mean(loss_val_, name="loss")
     
     # Weight decay 
     if model.weight_decay_coeff != 0:

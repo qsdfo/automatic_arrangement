@@ -78,8 +78,10 @@ def bin_Xen_weighted_1_tf(true_frame, pred_frame, weight_neg):
     return cross_entr
 
 def sparsity_penalty_l1(proba_activation):
-    return tf.reduce_sum(proba_activation)
+    axis = len(proba_activation.shape)-1
+    return tf.reduce_sum(proba_activation, axis=axis)
 
 def sparsity_penalty_l2(proba_activation):
+    axis = len(proba_activation.shape)-1
     squared_proba_activation = proba_activation * proba_activation
-    return tf.reduce_sum(squared_proba_activation)
+    return tf.reduce_sum(squared_proba_activation, axis=axis)

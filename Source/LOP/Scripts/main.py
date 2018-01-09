@@ -25,7 +25,7 @@ from load_matrices import load_matrices
 from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
 
 # NORMALIZER
-from LOP.Utils.Normalization.PCA import PCA as Normalizer
+from LOP.Utils.Normalization.no_normalization import no_normalization as Normalizer
 
 GENERATE=True
 SAVE=True
@@ -349,7 +349,9 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
 			f.write(filename + "\n")
 	
 	# Instanciate a normalizer for the input
-	normalizer = Normalizer(train_folds, n_components=20, whiten=True, parameters=parameters)
+	# normalizer = Normalizer(train_folds, n_components=20, whiten=True, parameters=parameters)
+	# normalizer = Normalizer(train_folds, parameters)
+	normalizer = Normalizer(dimensions)
 	pkl.dump(normalizer, open(os.path.join(config_folder_fold, 'normalizer.pkl'), 'wb'))
 	dimensions['piano_transformed_dim'] = normalizer.transformed_dim
 

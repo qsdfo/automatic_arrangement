@@ -225,10 +225,8 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
         # Load first matrix
         #######################################
         path_piano_matrices_train = train_splits_batches.keys()
-        path_piano_matrices_valid = valid_splits_batches.keys()
         N_matrix_files = len(path_piano_matrices_train)
 
-        
         global_time_start = time.time()
         
         load_data_start = time.time()
@@ -258,7 +256,6 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
                 # But load the one next one
                 file_ind_NEXT = (file_ind_CURRENT+1) % N_matrix_files
                 path_piano_matrix_NEXT = path_piano_matrices_train[file_ind_NEXT]
-                
                 
                 #######################################
                 # Load matrix thread
@@ -291,6 +288,7 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
 
                     # Keep track of cost
                     train_cost_epoch.append(loss_batch)
+                time.sleep(15)
 
                 #######################################
                 # New matrices from thread

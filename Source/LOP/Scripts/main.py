@@ -21,15 +21,15 @@ from LOP.Utils.data_statistics import get_activation_ratio, get_mean_number_unit
 from load_matrices import load_matrices
 
 # MODEL
-#from LOP.Models.Future_piano.recurrent_embeddings_0 import Recurrent_embeddings_0 as Model
-from LOP.Models.Future_piano.Conv_recurrent.conv_recurrent_embedding_0 import Conv_recurrent_embedding_0 as Model
+# from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
+from LOP.Models.Future_past_piano.recurrent_embeddings import Recurrent_embeddings as Model
 
 # NORMALIZER
 from LOP.Utils.Normalization.no_normalization import no_normalization as Normalizer
 
 GENERATE=True
 SAVE=False
-DEFINED_CONFIG=False  # HYPERPARAM ?
+DEFINED_CONFIG=True  # HYPERPARAM ?
 # For reproducibility
 RANDOM_SEED_FOLDS=1234 # This is useful to use always the same fold split
 RANDOM_SEED=None

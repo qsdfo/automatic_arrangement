@@ -8,7 +8,7 @@ import tensorflow as tf
 
 # Keras
 import keras
-from keras.layers import Dense, Conv2D
+from keras.layers import Dense, Conv1D, TimeDistributed
 
 # Hyperopt
 from math import log
@@ -16,7 +16,7 @@ from math import log
 from LOP.Models.Utils.weight_summary import keras_layer_summary
 from LOP.Models.Utils.stacked_rnn import stacked_rnn
 from LOP.Utils.hopt_utils import list_log_hopt
-from LOP.Utils.hopt_wrapper import qloguniform_int
+from LOP.Utils.hopt_wrapper import qloguniform_int, quniform_int
 
 class Conv_recurrent_embedding_0(MLFP):
     """Recurrent embeddings for both the piano and orchestral scores
@@ -65,7 +65,6 @@ class Conv_recurrent_embedding_0(MLFP):
         space = {
             'kernel_size_piano': quniform_int('kernel_size_piano', 4, 24, 1),
             'kernel_size_orch': quniform_int('kernel_size_orch', 4, 24, 1),
-            'hs_orch': list_log_hopt(500, 2000, 10, 0, 2, 'hs_orch'),
             'hs_piano': list_log_hopt(500, 2000, 10, 0, 2, 'hs_piano'),
             'hs_orch': list_log_hopt(500, 2000, 10, 0, 2, 'hs_orch'),
             'embeddings_size': qloguniform_int('hs_orch', log(500), log(1000), 10),
@@ -75,7 +74,6 @@ class Conv_recurrent_embedding_0(MLFP):
         return space
 
     def piano_embedding(self, piano_t, piano_future):
-        import pdb; pdb.set_trace()
         with tf.name_scope("build_piano_input"):
             # Add a time axis to piano_t
             piano_t_time = tf.reshape(piano_t, [-1, 1, self.piano_dim])
@@ -93,7 +91,7 @@ class Conv_recurrent_embedding_0(MLFP):
             keras_layer_summary(conv_layer)
 
         # Remove the last useless dimension
-        cropped_piano_dim = self.piano_dim-self.kernel_size_piano
+        cropped_piano_dim = self.piano_dim-self.kernel_size_piano+1
         p0 = tf.reshape(p0, [-1, self.temporal_order, cropped_piano_dim])
 
         with tf.name_scope("gru"):
@@ -106,10 +104,9 @@ class Conv_recurrent_embedding_0(MLFP):
         return piano_embedding
 
     def orchestra_embedding(self, orch_past):
-        import pdb; pdb.set_trace()
         with tf.name_scope("build_orch_input"):
             # Format as a 4D
-            input_seq = tf.reshape(orch_past, [-1, self.temporal_order-1, self.piano_dim, 1])
+            input_seq = tf.reshape(orch_past, [-1, self.temporal_order-1, self.orch_dim, 1])
 
         with tf.name_scope("conv_orch"):
             conv_layer = Conv1D(1, self.kernel_size_orch, activation='relu')
@@ -118,7 +115,7 @@ class Conv_recurrent_embedding_0(MLFP):
             keras_layer_summary(conv_layer)
 
         # Remove the last useless dimension
-        cropped_piano_dim = self.orch_dim-self.kernel_size_orch
+        cropped_orch_dim = self.orch_dim-self.kernel_size_orch+1
         o0 = tf.reshape(o0, [-1, self.temporal_order-1, cropped_orch_dim])
         
         with tf.name_scope("gru"):
@@ -153,7 +150,7 @@ class Conv_recurrent_embedding_0(MLFP):
             keras_layer_summary(dense_layer)
         #####################
 
-        return orch_prediction
+        return orch_prediction, top_input
 
 
 # 'temporal_order' : 5,

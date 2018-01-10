@@ -19,6 +19,11 @@ from LOP.Utils.hopt_utils import list_log_hopt
 from LOP.Utils.hopt_wrapper import qloguniform_int
 
 class Recurrent_embeddings_0(MLFP):
+    """Recurrent embeddings for both the piano and orchestral scores
+    Piano embedding : p(t), ..., p(t+N) through stacked RNN. Last time index of last layer is taken as embedding.
+    Orchestra embedding : o(t-N), ..., p(t) Same architecture than piano embedding.
+    Then, the concatenation of both embeddings is passed through a MLP
+    """
     def __init__(self, model_param, dimensions):
 
         MLFP.__init__(self, model_param, dimensions)

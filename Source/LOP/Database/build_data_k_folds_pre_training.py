@@ -23,6 +23,13 @@ import LOP.Scripts.config as config
 import build_data_aux
 import build_data_aux_no_piano
 import cPickle as pickle
+from avoid_tracks import avoid_tracks
+
+# memory issues
+import gc
+# gc.collect()
+# from guppy import hpy; hp = hpy()
+# import sys
 
 DEBUG = False
 
@@ -212,15 +219,17 @@ def build_training_matrix(folder_paths, instru_mapping,
                 statistics[instrument_name] = {}
                 statistics[instrument_name]['n_track_present'] = 1
                 statistics[instrument_name]['n_note_played'] = n_note_played
+
     return pr_piano, pr_orchestra, duration_piano, duration_orch, statistics, tracks_start_end
 
 def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl', quantization=12, temporal_granularity='frame_level', store_folder='../Data', pitch_translation_augmentations=[0], logging=None):
 
     # Get dimensions
     if DEBUG:
-        T_limit = 10000
+        T_limit = 5000
     else:
-        T_limit = 1e9
+        T_limit = 1e6
+    
     get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
 
     logging.info("##########")
@@ -229,6 +238,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
     statistics = {}
     statistics_pretraining = {}
 
+    hp.setrelheap()
     temp = pickle.load(open(meta_info_path, 'rb'))
     instru_mapping = temp['instru_mapping']
     quantization = temp['quantization']
@@ -238,7 +248,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
     folder_paths_pretraining_splits = temp['folder_paths_pretraining_splits']
     N_orchestra = temp['N_orchestra']
     N_piano = instru_mapping['Piano']['index_max']
-    
+
     for counter_split, (T_split, folder_paths_split) in enumerate(zip(T_splits, folder_paths_splits)):
         pr_orchestra = np.zeros((T_split, N_orchestra), dtype=np.float32)
         pr_piano = np.zeros((T_split, N_piano), dtype=np.float32)
@@ -267,6 +277,14 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
             np.save(outfile, mask_orch)
         pickle.dump(tracks_start_end, open(store_folder + '/tracks_start_end_' + str(counter_split) + '.pkl', 'wb'))
 
+        # Explicitely free memory
+        del(pr_orchestra)
+        del(pr_piano)
+        del(duration_orch)
+        del(duration_piano)
+        del(mask_orch)
+        gc.collect()
+
     for counter_split, (T_pretraining_split, folder_paths_pretraining_split) in enumerate(zip(T_pretraining_splits, folder_paths_pretraining_splits)):
         pr_orchestra_pretraining = np.zeros((T_pretraining_split, N_orchestra), dtype=np.float32)
         pr_piano_pretraining = np.zeros((T_pretraining_split, N_piano), dtype=np.float32)
@@ -294,6 +312,14 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
         with open(store_folder + '/mask_orch_pretraining_' + str(counter_split) + '.npy', 'wb') as outfile:
             np.save(outfile, mask_orch_pretraining)
         pickle.dump(tracks_start_end_pretraining, open(store_folder + '/tracks_start_end_pretraining_' + str(counter_split) + '.pkl', 'wb'))
+
+        # Explicitely free memory
+        del(pr_orchestra_pretraining)
+        del(pr_piano_pretraining)
+        del(duration_orch_pretraining)
+        del(duration_piano_pretraining)
+        del(mask_orch_pretraining)
+        gc.collect()
 
     # Save pr_orchestra, pr_piano, instru_mapping
     metadata = {}
@@ -390,6 +416,11 @@ if __name__ == '__main__':
         folder_paths_pretraining = [os.path.join(DATABASE_PATH_PRETRAINING, e) for e in folder_paths_pretraining]
     else:
         folder_paths_pretraining = []
+
+    # Remove garbage tracks
+    avoid_tracks_list = avoid_tracks()
+    folder_paths = [e for e in folder_paths if e not in avoid_tracks_list]
+    folder_paths_pretraining = [e for e in folder_paths_pretraining if e not in avoid_tracks_list]
 
     build_data(folder_paths=folder_paths,
                folder_paths_pretraining=folder_paths_pretraining,

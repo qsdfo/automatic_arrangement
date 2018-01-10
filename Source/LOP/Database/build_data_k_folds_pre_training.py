@@ -238,7 +238,6 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
     statistics = {}
     statistics_pretraining = {}
 
-    hp.setrelheap()
     temp = pickle.load(open(meta_info_path, 'rb'))
     instru_mapping = temp['instru_mapping']
     quantization = temp['quantization']

@@ -455,7 +455,10 @@ def build_training_nodes(model, parameters):
         sparse_loss = tf.nn.relu(tf.reduce_sum(preds, axis=1))
         # sparse_loss = tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
 
-        loss_val_ = distance + sparsity_coeff * sparse_loss
+        if sparsity_coeff != 0:
+            loss_val_ = distance + sparsity_coeff * sparse_loss
+        else:
+            loss_val_ = distance
 
         if parameters['mask_orch']:
             loss_masked = tf.where(mask_orch_ph==1, loss_val_, tf.zeros_like(loss_val_))

@@ -31,7 +31,7 @@ import gc
 # from guppy import hpy; hp = hpy()
 # import sys
 
-DEBUG = False
+DEBUG = True
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano):
     logging.info(folder_path)
@@ -371,7 +371,7 @@ if __name__ == '__main__':
     # because train is data augmented but not test and validate
     temporal_granularity = 'event_level'
     quantization = 8
-    pretraining_bool = True
+    pretraining_bool = False
 
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = os.path.join(config.database_root(), 'LOP_database_06_09_17')

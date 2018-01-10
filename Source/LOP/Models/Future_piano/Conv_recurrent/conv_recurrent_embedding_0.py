@@ -8,7 +8,7 @@ import tensorflow as tf
 
 # Keras
 import keras
-from keras.layers import Dense
+from keras.layers import Dense, Conv2D
 
 # Hyperopt
 from math import log
@@ -18,9 +18,9 @@ from LOP.Models.Utils.stacked_rnn import stacked_rnn
 from LOP.Utils.hopt_utils import list_log_hopt
 from LOP.Utils.hopt_wrapper import qloguniform_int
 
-class Recurrent_embeddings_0(MLFP):
+class Conv_recurrent_embedding_0(MLFP):
     """Recurrent embeddings for both the piano and orchestral scores
-    Piano embedding : p(t), ..., p(t+N) through stacked RNN. Last time index of last layer is taken as embedding.
+    Piano embedding : p(t), ..., p(t+N) through a convulotional layer and a stacked RNN. Last time index of last layer is taken as embedding.
     Orchestra embedding : o(t-N), ..., p(t) Same architecture than piano embedding.
     Then, the concatenation of both embeddings is passed through a MLP
     """
@@ -28,12 +28,15 @@ class Recurrent_embeddings_0(MLFP):
 
         MLFP.__init__(self, model_param, dimensions)
 
-        # Gru piano
+        # Piano embedding
+        self.kernel_size_piano = model_param["kernel_size_piano"] # only pitch_dim, add 1 for temporal conv 
         embeddings_size = model_param['embeddings_size']
         temp = model_param['hs_piano']
         self.hs_piano = list(temp)
         self.hs_piano.append(embeddings_size)
 
+        # Orchestra embedding
+        self.kernel_size_orch = model_param["kernel_size_orch"] # only pitch_dim, add 1 for temporal conv 
         temp = model_param['hs_orch']
         self.hs_orch = list(temp)
         self.hs_orch.append(embeddings_size)
@@ -60,6 +63,9 @@ class Recurrent_embeddings_0(MLFP):
         super_space = MLFP.get_hp_space()
 
         space = {
+            'kernel_size_piano': quniform_int('kernel_size_piano', 4, 24, 1),
+            'kernel_size_orch': quniform_int('kernel_size_orch', 4, 24, 1),
+            'hs_orch': list_log_hopt(500, 2000, 10, 0, 2, 'hs_orch'),
             'hs_piano': list_log_hopt(500, 2000, 10, 0, 2, 'hs_piano'),
             'hs_orch': list_log_hopt(500, 2000, 10, 0, 2, 'hs_orch'),
             'embeddings_size': qloguniform_int('hs_orch', log(500), log(1000), 10),
@@ -69,26 +75,54 @@ class Recurrent_embeddings_0(MLFP):
         return space
 
     def piano_embedding(self, piano_t, piano_future):
-        # Build input
-        # Add a time axis to piano_t
-        piano_t_time = tf.reshape(piano_t, [-1, 1, self.piano_dim])
-        # Concatenate t and future
-        input_seq = tf.concat([piano_t_time, piano_future], 1)
-        # Flip the matrix along the time axis so that the last time index is t
-        input_seq = tf.reverse(input_seq, [1])
+        import pdb; pdb.set_trace()
+        with tf.name_scope("build_piano_input"):
+            # Add a time axis to piano_t
+            piano_t_time = tf.reshape(piano_t, [-1, 1, self.piano_dim])
+            # Concatenate t and future
+            input_seq = tf.concat([piano_t_time, piano_future], 1)
+            # Flip the matrix along the time axis so that the last time index is t
+            input_seq = tf.reverse(input_seq, [1])
+            # Format as a 4D
+            input_seq = tf.reshape(input_seq, [-1, self.temporal_order, self.piano_dim, 1])
+
+        with tf.name_scope("conv_piano"):
+            conv_layer = Conv1D(1, self.kernel_size_piano, activation='relu')
+            conv_layer_timeDist = TimeDistributed(conv_layer, input_shape=(self.temporal_order, self.piano_dim, 1))
+            p0 = conv_layer_timeDist(input_seq)
+            keras_layer_summary(conv_layer)
+
+        # Remove the last useless dimension
+        cropped_piano_dim = self.piano_dim-self.kernel_size_piano
+        p0 = tf.reshape(p0, [-1, self.temporal_order, cropped_piano_dim])
 
         with tf.name_scope("gru"):
-            piano_embedding = stacked_rnn(input_seq, self.hs_piano, 
+            piano_embedding = stacked_rnn(p0, self.hs_piano, 
                 rnn_type='gru', 
-                weight_decay_coeff=self.weight_decay_coeff, 
+                weight_decay_coeff=self.weight_decay_coeff,
                 dropout_probability=self.dropout_probability, 
                 activation='relu'
                 )
         return piano_embedding
 
     def orchestra_embedding(self, orch_past):
+        import pdb; pdb.set_trace()
+        with tf.name_scope("build_orch_input"):
+            # Format as a 4D
+            input_seq = tf.reshape(orch_past, [-1, self.temporal_order-1, self.piano_dim, 1])
+
+        with tf.name_scope("conv_orch"):
+            conv_layer = Conv1D(1, self.kernel_size_orch, activation='relu')
+            conv_layer_timeDist = TimeDistributed(conv_layer, input_shape=(self.temporal_order-1, self.orch_dim, 1))
+            o0 = conv_layer_timeDist(input_seq)
+            keras_layer_summary(conv_layer)
+
+        # Remove the last useless dimension
+        cropped_piano_dim = self.orch_dim-self.kernel_size_orch
+        o0 = tf.reshape(o0, [-1, self.temporal_order-1, cropped_orch_dim])
+        
         with tf.name_scope("gru"):
-            orchestra_embedding = stacked_rnn(orch_past, self.hs_orch, 
+            orchestra_embedding = stacked_rnn(o0, self.hs_orch, 
                 rnn_type='gru', 
                 weight_decay_coeff=self.weight_decay_coeff, 
                 dropout_probability=self.dropout_probability, 

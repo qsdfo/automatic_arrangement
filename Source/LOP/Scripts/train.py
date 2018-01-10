@@ -150,7 +150,7 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
     num_parameters = count_parameters(tf.get_default_graph())
     logger_train.info((u'** Num trainable parameters :  {}'.format(num_parameters)).encode('utf8'))
     with open(os.path.join(config_folder, 'num_parameters.txt'), 'wb') as ff:
-        ff.write(num_parameters)
+        ff.write("{:d}".format(num_parameters))
 
     ############################################################
     # Training

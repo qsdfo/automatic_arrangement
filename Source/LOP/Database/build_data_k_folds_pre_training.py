@@ -31,7 +31,7 @@ import gc
 # from guppy import hpy; hp = hpy()
 # import sys
 
-DEBUG = False
+DEBUG = True
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano):
     logging.info(folder_path)
@@ -238,7 +238,6 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
     statistics = {}
     statistics_pretraining = {}
 
-    hp.setrelheap()
     temp = pickle.load(open(meta_info_path, 'rb'))
     instru_mapping = temp['instru_mapping']
     quantization = temp['quantization']
@@ -372,7 +371,7 @@ if __name__ == '__main__':
     # because train is data augmented but not test and validate
     temporal_granularity = 'event_level'
     quantization = 8
-    pretraining_bool = True
+    pretraining_bool = False
 
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = os.path.join(config.database_root(), 'LOP_database_06_09_17')

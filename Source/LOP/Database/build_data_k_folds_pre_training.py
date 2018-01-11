@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8-unix -*-
 
-
 #################################################
 #################################################
 #################################################
@@ -28,8 +27,8 @@ from avoid_tracks import avoid_tracks
 # memory issues
 import gc
 # gc.collect()
-# from guppy import hpy; hp = hpy()
-# import sys
+from guppy import hpy; hp = hpy()
+import sys
 
 DEBUG = True
 
@@ -112,9 +111,10 @@ def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path='temp.
         folder_path_pre = folder_path_pre.rstrip()
         instru_mapping, T_pretraining = update_instru_mapping(folder_path_pre, instru_mapping, T_pretraining, quantization, is_piano=False)
         folder_paths_pretraining_split.append(folder_path_pre)
-    # Don't forget the last one !
-    T_pretraining_splits.append(T_pretraining)
-    folder_paths_pretraining_splits.append(folder_paths_pretraining_split)
+    if len(folder_paths_pretraining) > 0:
+        # Don't forget the last one !
+        T_pretraining_splits.append(T_pretraining)
+        folder_paths_pretraining_splits.append(folder_paths_pretraining_split)
         
     # Build the index_min and index_max in the instru_mapping dictionary
     counter = 0
@@ -220,6 +220,11 @@ def build_training_matrix(folder_paths, instru_mapping,
                 statistics[instrument_name]['n_track_present'] = 1
                 statistics[instrument_name]['n_note_played'] = n_note_played
 
+        del(new_pr_piano)
+        del(new_pr_orchestra)
+        del(new_instru_orchestra)
+        gc.collect()
+
     return pr_piano, pr_orchestra, duration_piano, duration_orch, statistics, tracks_start_end
 
 def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl', quantization=12, temporal_granularity='frame_level', store_folder='../Data', pitch_translation_augmentations=[0], logging=None):
@@ -230,7 +235,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
     else:
         T_limit = 1e6
     
-    get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
+    # get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
 
     logging.info("##########")
     logging.info("Build data")
@@ -276,13 +281,17 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
             np.save(outfile, mask_orch)
         pickle.dump(tracks_start_end, open(store_folder + '/tracks_start_end_' + str(counter_split) + '.pkl', 'wb'))
 
-        # Explicitely free memory
-        del(pr_orchestra)
-        del(pr_piano)
-        del(duration_orch)
-        del(duration_piano)
-        del(mask_orch)
-        gc.collect()
+        # print(str(counter_split) + " : ")
+        # print(hp.heap())
+        # print("Number of objects tracked by GC : " + str(len(gc.get_objects())))
+
+    # Explicitely free memory
+    del(pr_piano)
+    del(pr_orchestra) 
+    del(duration_piano)
+    del(duration_orch)
+    del(tracks_start_end)
+    gc.collect()
 
     for counter_split, (T_pretraining_split, folder_paths_pretraining_split) in enumerate(zip(T_pretraining_splits, folder_paths_pretraining_splits)):
         pr_orchestra_pretraining = np.zeros((T_pretraining_split, N_orchestra), dtype=np.float32)
@@ -312,13 +321,12 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
             np.save(outfile, mask_orch_pretraining)
         pickle.dump(tracks_start_end_pretraining, open(store_folder + '/tracks_start_end_pretraining_' + str(counter_split) + '.pkl', 'wb'))
 
-        # Explicitely free memory
-        del(pr_orchestra_pretraining)
-        del(pr_piano_pretraining)
-        del(duration_orch_pretraining)
-        del(duration_piano_pretraining)
-        del(mask_orch_pretraining)
-        gc.collect()
+    del(pr_piano_pretraining)
+    del(pr_orchestra_pretraining) 
+    del(duration_piano_pretraining)
+    del(duration_orch_pretraining)
+    del(tracks_start_end_pretraining)
+    gc.collect()
 
     # Save pr_orchestra, pr_piano, instru_mapping
     metadata = {}
@@ -371,7 +379,7 @@ if __name__ == '__main__':
     # because train is data augmented but not test and validate
     temporal_granularity = 'event_level'
     quantization = 8
-    pretraining_bool = False
+    pretraining_bool = True
 
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = os.path.join(config.database_root(), 'LOP_database_06_09_17')
@@ -392,9 +400,9 @@ if __name__ == '__main__':
         data_folder += '_pretraining'
     data_folder += '_tempGran' + str(quantization)
     
-    if os.path.isdir(data_folder):
-        shutil.rmtree(data_folder)    
-    os.makedirs(data_folder)
+    # if os.path.isdir(data_folder):
+    #     shutil.rmtree(data_folder)    
+    # os.makedirs(data_folder)
 
     # Create a list of paths
     def build_filepaths_list(db_path=DATABASE_PATH, db_names=DATABASE_NAMES):

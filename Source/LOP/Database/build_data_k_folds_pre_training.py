@@ -30,7 +30,7 @@ import gc
 from guppy import hpy; hp = hpy()
 import sys
 
-DEBUG = True
+DEBUG = False
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano):
     logging.info(folder_path)
@@ -235,7 +235,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
     else:
         T_limit = 1e6
     
-    # get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
+    get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
 
     logging.info("##########")
     logging.info("Build data")
@@ -400,9 +400,9 @@ if __name__ == '__main__':
         data_folder += '_pretraining'
     data_folder += '_tempGran' + str(quantization)
     
-    # if os.path.isdir(data_folder):
-    #     shutil.rmtree(data_folder)    
-    # os.makedirs(data_folder)
+    if os.path.isdir(data_folder):
+        shutil.rmtree(data_folder)    
+    os.makedirs(data_folder)
 
     # Create a list of paths
     def build_filepaths_list(db_path=DATABASE_PATH, db_names=DATABASE_NAMES):

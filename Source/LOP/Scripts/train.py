@@ -8,7 +8,8 @@ import numpy as np
 import keras
 import time
 import os
-from multiprocessing.pool import ThreadPool
+# from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import Pool
 
 import config
 from LOP.Utils.early_stopping import up_criterion
@@ -23,7 +24,7 @@ from asynchronous_load_mat import async_load_mat
 
 DEBUG = False
 # Note : debug sans summarize, qui pollue le tableau de variables
-SUMMARIZE = False
+SUMMARIZE = True
 ANALYSIS = False
 # Device to use (flag direct)
 # os.environ["CUDA_VISIBLE_DEVICES"]="1"
@@ -55,7 +56,7 @@ def validate(context, init_matrices_validation, valid_splits_batches, normalizer
 
     path_piano_matrices_valid = valid_splits_batches.keys()
     N_matrix_files = len(path_piano_matrices_valid)
-    pool = ThreadPool(processes=1)
+    pool = Pool(processes=1)
     matrices_from_thread = init_matrices_validation
 
     for file_ind_CURRENT in range(N_matrix_files):
@@ -110,6 +111,8 @@ def validate(context, init_matrices_validation, valid_splits_batches, normalizer
         del(matrices_from_thread)
         matrices_from_thread = async_valid.get()
 
+    pool.close()
+    pool.join()
     return np.asarray(accuracy), np.asarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score), np.asarray(Xent)
 
 def train(model, train_splits_batches, valid_splits_batches, normalizer,
@@ -142,7 +145,7 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
     embedding_concat = debug[0]
 
     if SUMMARIZE:
-        tf.summary.scalar('loss', loss)
+        tf.summary.scalar('loss', loss_node)
     ############################################################
 
     ############################################################
@@ -221,7 +224,7 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
         global_time_start = time.time()
         
         load_data_start = time.time()
-        pool = ThreadPool(processes=1)
+        pool = Pool(processes=1)
         async_train = pool.apply_async(async_load_mat, (normalizer, path_piano_matrices_train[0], parameters))
         matrices_from_thread = async_train.get()
         init_matrices_validation = matrices_from_thread
@@ -417,6 +420,8 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
         best_f_score = val_tab_f_score[best_epoch]
         best_Xent = val_tab_Xent[best_epoch]
 
+        pool.close()
+        pool.join()
     return best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch
 
 
@@ -443,12 +448,12 @@ def build_training_nodes(model, parameters):
     ############################################################
     # Loss
     with tf.name_scope('loss'):
-        # distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
+        distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
         # distance = Xent_tf(orch_t_ph, preds)
         # distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
         # distance = bin_Xen_weighted_1_tf(orch_t_ph, preds, model.tn_weight)
         # distance = accuracy_tf(orch_t_ph, preds)
-        distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=model.tn_weight)
+        # distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=model.tn_weight)
 
         # Add sparsity constraint on the output ? Is it still loss_val or just loss :/ ???
         sparsity_coeff = model.sparsity_coeff
@@ -464,9 +469,9 @@ def build_training_nodes(model, parameters):
 
         if parameters['mask_orch']:
             loss_masked = tf.where(mask_orch_ph==1, loss_val_, tf.zeros_like(loss_val_))
-            loss_val = tf.reduce_mean(loss_masked, name="loss")
+            loss_val = tf.reduce_mean(loss_masked, name="loss_val")
         else:
-            loss_val = tf.reduce_mean(loss_val_, name="loss")
+            loss_val = tf.reduce_mean(loss_val_, name="loss_val")
     
     # Weight decay 
     if model.weight_decay_coeff != 0:

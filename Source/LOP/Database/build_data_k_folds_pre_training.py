@@ -156,10 +156,10 @@ def cast_pr(new_pr_orchestra, new_instru_orchestra, new_pr_piano, start_time, du
     
     list_instru = new_instru_orchestra.values()
     for instru in list_instru:
-        if instru == 'Remove':
-            continue
         instru_names = build_data_aux.unmixed_instru(instru)    
         for instru_name in instru_names:
+            if instru_name == 'Remove':
+                continue
             ind_bot = instru_mapping[instru_name]['index_min']
             ind_top = instru_mapping[instru_name]['index_max']
             mask_orch[start_time:start_time+duration, ind_bot:ind_top] = 1
@@ -240,7 +240,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
     else:
         T_limit = 1e6
     
-    get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
+    # get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
 
     logging.info("##########")
     logging.info("Build data")
@@ -392,13 +392,13 @@ if __name__ == '__main__':
         DATABASE_NAMES = ["debug"] #, "imslp"]
     else:
         DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives"] # , "imslp"]
-        DATABASE_NAMES = []
+        # DATABASE_NAMES = []
     DATABASE_PATH_PRETRAINING = os.path.join(config.database_pretraining_root(), 'SOD')
     if DEBUG:
         DATABASE_NAMES_PRETRAINING = ["debug"]
     else:
-        # DATABASE_NAMES_PRETRAINING = ["Kunstderfuge", "Musicalion", "Mutopia", "OpenMusicScores"]
-        DATABASE_NAMES_PRETRAINING = ["Musicalion"]
+        DATABASE_NAMES_PRETRAINING = ["Kunstderfuge", "Musicalion", "Mutopia", "OpenMusicScores"]
+        # DATABASE_NAMES_PRETRAINING = ["Musicalion"]
 
     data_folder = '../../../Data/Data'
     if DEBUG:
@@ -407,9 +407,9 @@ if __name__ == '__main__':
         data_folder += '_pretraining'
     data_folder += '_tempGran' + str(quantization)
     
-    if os.path.isdir(data_folder):
-        shutil.rmtree(data_folder)    
-    os.makedirs(data_folder)
+    # if os.path.isdir(data_folder):
+    #     shutil.rmtree(data_folder)    
+    # os.makedirs(data_folder)
 
     # Create a list of paths
     def build_filepaths_list(db_path=DATABASE_PATH, db_names=DATABASE_NAMES):

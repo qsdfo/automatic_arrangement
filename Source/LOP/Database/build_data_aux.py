@@ -28,8 +28,7 @@ def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
     def file_processing(path, quantization, clip):
         reader_midi = Read_midi(path, quantization)
         # Read midi
-        reader_midi.read_file()
-        pianoroll = reader_midi.pianoroll
+        pianoroll = reader_midi.read_file()
         # Clip
         if clip:
             pianoroll = clip_pr(pianoroll)
@@ -86,9 +85,6 @@ def instru_pitch_range(instrumentation, pr, instru_mapping):
             if instru_name == 'Remove':
                 continue
             if instru_name in instru_mapping.keys():
-                # ???
-                # v_no_suffix = re.split(ur'\s', instru_name)[0]
-                #######
                 old_max = instru_mapping[instru_name]['pitch_max']
                 old_min = instru_mapping[instru_name]['pitch_min']
                 # Get the min :

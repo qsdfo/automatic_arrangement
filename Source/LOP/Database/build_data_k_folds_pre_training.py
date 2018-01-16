@@ -17,6 +17,7 @@
 
 import os
 import shutil
+import re
 import numpy as np
 import LOP.Scripts.config as config
 import build_data_aux
@@ -30,11 +31,14 @@ import gc
 from guppy import hpy; hp = hpy()
 import sys
 
-DEBUG = True
+DEBUG = False
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano):
     logging.info(folder_path)
     if not os.path.isdir(folder_path):
+        return instru_mapping, T
+
+    if int((re.split('/', folder_path)[-1])) > 1000:
         return instru_mapping, T
     
     # Read pr
@@ -66,6 +70,7 @@ def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano
                                                        pr=pr_orch,
                                                        instru_mapping=instru_mapping,
                                                        )
+
     return instru_mapping, T
 
 
@@ -235,7 +240,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path='temp.pkl'
     else:
         T_limit = 1e6
     
-    # get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
+    get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
 
     logging.info("##########")
     logging.info("Build data")
@@ -387,11 +392,13 @@ if __name__ == '__main__':
         DATABASE_NAMES = ["debug"] #, "imslp"]
     else:
         DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives"] # , "imslp"]
+        DATABASE_NAMES = []
     DATABASE_PATH_PRETRAINING = os.path.join(config.database_pretraining_root(), 'SOD')
     if DEBUG:
         DATABASE_NAMES_PRETRAINING = ["debug"]
     else:
-        DATABASE_NAMES_PRETRAINING = ["Kunstderfuge", "Musicalion", "Mutopia", "OpenMusicScores"]
+        # DATABASE_NAMES_PRETRAINING = ["Kunstderfuge", "Musicalion", "Mutopia", "OpenMusicScores"]
+        DATABASE_NAMES_PRETRAINING = ["Musicalion"]
 
     data_folder = '../../../Data/Data'
     if DEBUG:
@@ -400,9 +407,9 @@ if __name__ == '__main__':
         data_folder += '_pretraining'
     data_folder += '_tempGran' + str(quantization)
     
-    # if os.path.isdir(data_folder):
-    #     shutil.rmtree(data_folder)    
-    # os.makedirs(data_folder)
+    if os.path.isdir(data_folder):
+        shutil.rmtree(data_folder)    
+    os.makedirs(data_folder)
 
     # Create a list of paths
     def build_filepaths_list(db_path=DATABASE_PATH, db_names=DATABASE_NAMES):

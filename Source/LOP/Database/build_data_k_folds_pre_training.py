@@ -312,7 +312,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 
     ###################################################################################################
     # Training matrices
-    for counter_split, (T_split, folder_paths_split) in enumerate(zip(T_splits, folder_paths_splits)):
+    for counter_split, (T_split, folder_paths_split) in folder_paths_splits.iteritems():
         pr_orchestra = np.zeros((T_split, N_orchestra), dtype=np.float32)
         pr_piano = np.zeros((T_split, N_piano), dtype=np.float32)
         duration_piano = np.zeros((T_split), dtype=np.int)

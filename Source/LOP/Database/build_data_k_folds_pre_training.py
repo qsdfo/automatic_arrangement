@@ -277,9 +277,9 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
     for counter_split, (T_pretraining_split, folder_paths_pretraining_split) in folder_paths_pretraining_splits.iteritems():
         pr_orchestra_pretraining = np.zeros((T_pretraining_split, N_orchestra), dtype=np.float32)
         pr_piano_pretraining = np.zeros((T_pretraining_split, N_piano), dtype=np.float32)
-        duration_piano_pretraining = np.zeros((T_pretraining_split), dtype=np.int)
-        duration_orch_pretraining = np.zeros((T_pretraining_split), dtype=np.int)
-        mask_orch_pretraining = np.zeros((T_pretraining_split, N_orchestra), dtype=np.int)
+        duration_piano_pretraining = np.zeros((T_pretraining_split), dtype=np.int16)
+        duration_orch_pretraining = np.zeros((T_pretraining_split), dtype=np.int16)
+        mask_orch_pretraining = np.zeros((T_pretraining_split, N_orchestra), dtype=np.int8)
         
         pr_piano_pretraining, pr_orchestra_pretraining, duration_piano_pretraining, duration_orch_pretraining, \
         statistics_pretraining, tracks_start_end_pretraining = \
@@ -315,9 +315,9 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
     for counter_split, (T_split, folder_paths_split) in folder_paths_splits.iteritems():
         pr_orchestra = np.zeros((T_split, N_orchestra), dtype=np.float32)
         pr_piano = np.zeros((T_split, N_piano), dtype=np.float32)
-        duration_piano = np.zeros((T_split), dtype=np.int)
-        duration_orch = np.zeros((T_split), dtype=np.int)
-        mask_orch = np.zeros((T_split, N_orchestra), dtype=np.int)
+        duration_piano = np.zeros((T_split), dtype=np.int16)
+        duration_orch = np.zeros((T_split), dtype=np.int16)
+        mask_orch = np.zeros((T_split, N_orchestra), dtype=np.int8)
 
         pr_piano, pr_orchestra, duration_piano, duration_orch, \
         statistics, tracks_start_end = \

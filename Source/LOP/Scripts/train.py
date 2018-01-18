@@ -31,7 +31,7 @@ ANALYSIS = False
 # Logging device use ?
 LOGGING_DEVICE = False
 
-def validate(context, init_matrices_validation, valid_splits_batches, normalizer, parameters):
+def validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters):
     
     sess = context['sess']
     temporal_order = context['temporal_order']
@@ -55,6 +55,7 @@ def validate(context, init_matrices_validation, valid_splits_batches, normalizer
     Xent = []
 
     path_piano_matrices_valid = valid_splits_batches.keys()
+    path_piano_matrices_valid_long_range = valid_long_range_splits_batches.keys()
     N_matrix_files = len(path_piano_matrices_valid)
     pool = ThreadPool(processes=1)
     matrices_from_thread = init_matrices_validation
@@ -65,8 +66,12 @@ def validate(context, init_matrices_validation, valid_splits_batches, normalizer
         #######################################
         # We train on the current matrix
         path_piano_matrix_CURRENT = path_piano_matrices_valid[file_ind_CURRENT]
+        # Just a small check
+        assert path_piano_matrix_CURRENT == path_piano_matrices_valid_long_range[file_ind_CURRENT], "Valid and valid_long_range are not the same"
+        # Get indices
         valid_index = valid_splits_batches[path_piano_matrix_CURRENT]
-        # But load the next one : Useless if only one matrix, but I don't care, plenty of CPUs on lagavulin
+        valid_long_range_index = valid_long_range_splits_batches[path_piano_matrix_CURRENT]
+        # But load the next one : Useless if only one matrix, but I don't care, plenty of CPUs on lagavulin... (memory though ?)
         file_ind_NEXT = (file_ind_CURRENT+1) % N_matrix_files
         path_piano_matrix_NEXT = path_piano_matrices_valid[file_ind_NEXT]
         
@@ -77,6 +82,9 @@ def validate(context, init_matrices_validation, valid_splits_batches, normalizer
 
         piano_transformed, orch, duration_piano, mask_orch = matrices_from_thread
     
+        #######################################
+        # Loop for short-term validation
+        #######################################
         for batch_index in valid_index:
             # Build batch
             piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t = build_batch(batch_index, piano_transformed, orch, mask_orch, len(batch_index), temporal_order)
@@ -108,14 +116,98 @@ def validate(context, init_matrices_validation, valid_splits_batches, normalizer
             f_score.extend(f_score_batch)
             Xent.extend(Xent_batch)
 
+        #######################################
+        # Loop for long-term validation
+        # The task is filling a gap of size parameters["long_range"]
+        # So the algo is given :
+        #       orch[0:temporal_order]
+        #       orch[temporal_order+parameters["long_range"]:
+        #            (2*temporal_order)+parameters["long_range"]]
+        # And must fill :
+        #       orch[temporal_order:
+        #            temporal_order+parameters["long_range"]]
+        #######################################
+        accuracy_long_range = []
+        precision_long_range = []
+        recall_long_range = []
+        val_loss_long_range = []
+        true_accuracy_long_range = []
+        f_score_long_range = []
+        Xent_long_range = []
+        for batch_index in valid_long_range_index:
+            # Init
+            # Extract from piano and orchestra the matrices required for the task
+            seq_len = (temporal_order-1) * 2 + parameters["long_range"]
+            piano_dim = piano_transformed.shape[1]
+            orch_dim = orch.shape[1]
+            piano_extracted = np.zeros((len(batch_index), seq_len, piano_dim))
+            orch_extracted = np.zeros((len(batch_index), seq_len, orch_dim))
+            orch_gen = np.zeros((len(batch_index), seq_len, orch_dim))
+            for ind_b, this_batch_ind in enumerate(batch_index):
+                start_ind = this_batch_ind-temporal_order+1
+                end_ind = start_ind + seq_len
+                piano_extracted[ind_b] = piano_transformed[start_ind:end_ind,:]
+                orch_extracted[ind_b] = orch[start_ind:end_ind,:]
+            
+            # We know the past orchestration at the beginning...
+            orch_gen[:, :temporal_order-1, :] = orch_extracted[:, :temporal_order-1, :]
+            # and the future orchestration at the end
+            orch_gen[:, -temporal_order+1:, :] = orch_extracted[:, -temporal_order+1:, :]
+            # check we didn't gave the correct information
+            assert orch_gen[:, temporal_order-1:(temporal_order-1)+parameters["long_range"], :].sum()==0, "The gap to fill in orch_gen contains values !"
+
+            for t in range(temporal_order-1, temporal_order-1+parameters["long_range"]):
+                # We cannot use build_batch function here, but getting the matrices is quite easy
+                piano_t = piano_extracted[:, t, :]
+                piano_past = piano_extracted[:, t-(temporal_order-1):t, :]
+                piano_future = piano_extracted[:, t+1:t+temporal_order, :]
+                orch_t = orch_extracted[:, t, :]
+                orch_past = orch_gen[:, t-(temporal_order-1):t, :]
+                orch_future = orch_gen[:, t+1:t+temporal_order, :]
+                mask_orch_t = np.ones_like(orch_t)
+
+                # Feed dict
+                feed_dict = {piano_t_ph: piano_t,
+                            piano_past_ph: piano_past,
+                            piano_future_ph: piano_future,
+                            orch_past_ph: orch_past,
+                            orch_future_ph: orch_future,
+                            orch_t_ph: orch_t,
+                            mask_orch_ph: mask_orch_t,
+                            keras_learning_phase: 0}
+
+                # Get prediction
+                preds_batch, loss_batch = sess.run([preds_node, loss_val_node], feed_dict)
+                # Preds should be a probability distribution. Sample from it
+                # Note that it doesn't need to be part of the graph since we don't use the sampled value to compute the backproped error
+                prediction_sampled = np.random.binomial(1, preds_batch)
+                orch_gen[:, t, :] = prediction_sampled
+
+                # Compute performances measures
+                val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
+                Xent_batch = binary_cross_entropy(orch_t, preds_batch)
+                accuracy_batch = accuracy_measure(orch_t, preds_batch)
+                precision_batch = precision_measure(orch_t, preds_batch)
+                recall_batch = recall_measure(orch_t, preds_batch)
+                true_accuracy_batch = true_accuracy_measure(orch_t, preds_batch)
+                f_score_batch = f_measure(orch_t, preds_batch)
+
+                accuracy_long_range.extend(accuracy_batch)
+                precision_long_range.extend(precision_batch)
+                recall_long_range.extend(recall_batch)
+                true_accuracy_long_range.extend(true_accuracy_batch)
+                f_score_long_range.extend(f_score_batch)
+                Xent_long_range.extend(Xent_batch)
+
         del(matrices_from_thread)
         matrices_from_thread = async_valid.get()
 
     pool.close()
     pool.join()
-    return np.asarray(accuracy), np.asarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score), np.asarray(Xent)
+    return np.asarray(accuracy), np.asarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score), np.asarray(Xent), \
+        np.asarray(accuracy_long_range), np.asarray(precision_long_range), np.asarray(recall_long_range), np.asarray(val_loss_long_range), np.asarray(true_accuracy_long_range), np.asarray(f_score_long_range), np.asarray(Xent_long_range)
 
-def train(model, train_splits_batches, valid_splits_batches, normalizer,
+def train(model, train_splits_batches, valid_splits_batches, valid_long_range_splits_batches, normalizer,
           parameters, config_folder, start_time_train, logger_train):
 
     # Time information used
@@ -233,7 +325,7 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
 
         if model.optimize() == False:
             # Some baseline models don't need training step optimization
-            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, init_matrices_validation, valid_splits_batches, normalizer, parameters)
+            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
             mean_val_loss = np.mean(val_loss)
             mean_accuracy = 100 * np.mean(accuracy)
             mean_precision = 100 * np.mean(precision)
@@ -313,7 +405,7 @@ def train(model, train_splits_batches, valid_splits_batches, normalizer,
             #######################################
             # Validate
             #######################################
-            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, init_matrices_validation, valid_splits_batches, normalizer, parameters)
+            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
             mean_val_loss = np.mean(val_loss)
             mean_accuracy = 100 * np.mean(accuracy)
             mean_precision = 100 * np.mean(precision)

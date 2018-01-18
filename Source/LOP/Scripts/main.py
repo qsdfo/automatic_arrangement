@@ -190,7 +190,7 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 	K_folds, valid_names, test_names, dimensions = \
 		get_folds(database_path, parameters['k_folds'], parameters, model_params, suffix="", logger=logger_config)
 	pretraining_bool = re.search ("_pretraining", config.data_name())
-	if  pretraining_bool:
+	if pretraining_bool:
 		K_folds_pretraining, valid_names_pretraining, test_names_pretraining, _ = \
 			get_folds(database_path, parameters['k_folds'], parameters, model_params, suffix="_pretraining", logger=logger_config)
 	pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
@@ -277,7 +277,8 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 	K_fold = [
 			{'train': [],
 			'test': [],
-			'valid': []}
+			'valid': [],
+			'valid_long_range': []}
 		]
 	K_folds = []
 	valid_names = []
@@ -289,18 +290,18 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 		piano, orch, duration_piano, mask_orch, tracks_start_end = load_matrices(piano_file, parameters)
 
 		if num_k_folds == 0:
-			this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, 10, model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED_FOLDS, logger_load=None)
+			this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, 10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
 			this_K_folds = [K_folds[0]]
 			this_valid_names = [this_valid_names[0]]
 			this_test_names = [this_test_names[0]]
 		elif num_k_folds == -1:
-			this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, -1, model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED_FOLDS, logger_load=None)
+			this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, -1, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
 		else:
-			this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, num_k_folds, model_params["temporal_order"], parameters["batch_size"], RANDOM_SEED_FOLDS, logger_load=None)
+			this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, num_k_folds, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
 		
 		for k_ind, fold in enumerate(this_K_folds):
 			if init_folds:
-				K_folds.append({'train' : {}, 'test': {}, 'valid': {}})
+				K_folds.append({'train' : {}, 'test': {}, 'valid': {}, 'valid_long_range': {}})
 				valid_names.append([])
 				test_names.append([])
 			for split_name, batches in fold.iteritems():
@@ -337,6 +338,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
 	K_fold_ind, K_fold = K_fold_pair
 	train_folds = K_fold['train']
 	valid_folds = K_fold['valid']
+	valid_long_range_folds = K_fold['valid_long_range']
 
 	config_folder_fold = config_folder + '/' + str(K_fold_ind)
 	os.makedirs(config_folder_fold)
@@ -380,12 +382,15 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
 		return counter
 	n_train_batches = count_number_batch(train_folds)
 	n_val_batches = count_number_batch(valid_folds)
+	n_val_long_range_batches = count_number_batch(valid_long_range_folds)
 
 	logger.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
 	logger.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
+	logger.info((u'# n_val_long_range_batch :  {}'.format(n_val_long_range_batches)).encode('utf8'))
 
 	parameters['n_train_batches'] = n_train_batches
 	parameters['n_val_batches'] = n_val_batches
+	parameters['n_val_long_range_batches'] = n_val_long_range_batches
 
 	############################################################
 	# Instanciate model and save folder
@@ -400,7 +405,7 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
 	############################################################
 	time_train_0 = time.time()
 	best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch =\
-		train(model, train_folds, valid_folds, normalizer, parameters, config_folder_fold, time_train_0, logger)
+		train(model, train_folds, valid_folds, valid_long_range_folds, normalizer, parameters, config_folder_fold, time_train_0, logger)
 	time_train_1 = time.time()
 	training_time = time_train_1-time_train_0
 	logger.info('TTT : Training data took {} seconds'.format(training_time))

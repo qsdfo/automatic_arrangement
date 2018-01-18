@@ -21,6 +21,7 @@ def build_folds(tracks_start_end, piano, orchestra, k_folds=10, temporal_order=2
         # For each folds, build list of indices for train, test and validate
         train_ind = []
         valid_ind = []
+        valid_ind_long_range = []
         test_ind = []
         this_valid_names = []
         this_test_names = []

@@ -204,8 +204,26 @@ def validate(context, init_matrices_validation, valid_splits_batches, valid_long
 
     pool.close()
     pool.join()
-    return np.asarray(accuracy), np.asarray(precision), np.asarray(recall), np.asarray(val_loss), np.asarray(true_accuracy), np.asarray(f_score), np.asarray(Xent), \
-        np.asarray(accuracy_long_range), np.asarray(precision_long_range), np.asarray(recall_long_range), np.asarray(val_loss_long_range), np.asarray(true_accuracy_long_range), np.asarray(f_score_long_range), np.asarray(Xent_long_range)
+    valid_results = {
+        'accuracy': np.asarray(accuracy), 
+        'precision': np.asarray(precision), 
+        'recall': np.asarray(recall), 
+        'val_loss': np.asarray(val_loss), 
+        'true_accuracy': np.asarray(true_accuracy), 
+        'f_score': np.asarray(f_score), 
+        'Xent': np.asarray(Xent)
+        }
+    valid_long_range_results = {
+        'accuracy': np.asarray(accuracy_long_range),
+        'precision': np.asarray(precision_long_range), 
+        'recall': np.asarray(recall_long_range),
+        'val_loss': np.asarray(val_loss_long_range), 
+        'true_accuracy': np.asarray(true_accuracy_long_range), 
+        'f_score': np.asarray(f_score_long_range), 
+        'Xent': np.asarray(Xent_long_range)
+        }
+    return valid_results, valid_long_range_results
+        
 
 def train(model, train_splits_batches, valid_splits_batches, valid_long_range_splits_batches, normalizer,
           parameters, config_folder, start_time_train, logger_train):
@@ -254,18 +272,55 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
     epoch = 0
     OVERFITTING = False
     TIME_LIMIT = False
-    val_tab_acc = np.zeros(max(1, parameters['max_iter']))
-    val_tab_prec = np.zeros(max(1, parameters['max_iter']))
-    val_tab_rec = np.zeros(max(1, parameters['max_iter']))
-    val_tab_loss = np.zeros(max(1, parameters['max_iter']))
-    val_tab_true_acc = np.zeros(max(1, parameters['max_iter']))
-    val_tab_f_score = np.zeros(max(1, parameters['max_iter']))
-    val_tab_Xent = np.zeros(max(1, parameters['max_iter']))
+
+    # Train error
     loss_tab = np.zeros(max(1, parameters['max_iter']))
-    best_Xent = float("inf")
-    best_acc = 0.
-    best_loss = float("inf")
-    best_epoch = None
+
+    # Select criteria
+    overfitting_measure = 'loss'
+    save_measures = parameters['save_measures']
+
+    # Short-term validation error
+    valid_tabs = {
+        'loss': np.zeros(max(1, parameters['max_iter'])),
+        'accuracy': np.zeros(max(1, parameters['max_iter'])),
+        'precision': np.zeros(max(1, parameters['max_iter'])),
+        'recall': np.zeros(max(1, parameters['max_iter'])),
+        'true_accuracy': np.zeros(max(1, parameters['max_iter'])),
+        'f_score': np.zeros(max(1, parameters['max_iter'])),
+        'Xent': np.zeros(max(1, parameters['max_iter']))
+        }
+    # Best epoch for each measure
+    best_epoch = {
+        'loss': 0, 
+        'accuracy': 0, 
+        'precision': 0, 
+        'recall': 0, 
+        'true_accuracy': 0, 
+        'f_score': 0, 
+        'Xent': 0
+    }
+    
+    # Long-term validation error
+    valid_tabs_LR = {
+        'loss': np.zeros(max(1, parameters['max_iter'])), 
+        'accuracy': np.zeros(max(1, parameters['max_iter'])), 
+        'precision': np.zeros(max(1, parameters['max_iter'])), 
+        'recall': np.zeros(max(1, parameters['max_iter'])), 
+        'true_accuracy': np.zeros(max(1, parameters['max_iter'])), 
+        'f_score': np.zeros(max(1, parameters['max_iter'])), 
+        'Xent': np.zeros(max(1, parameters['max_iter']))
+        }
+    # Best epoch for each measure
+    best_epoch_LR = {
+        'loss': 0, 
+        'accuracy': 0, 
+        'precision': 0, 
+        'recall': 0, 
+        'true_accuracy': 0, 
+        'f_score': 0, 
+        'Xent': 0
+    }
 
     if parameters['memory_gpu']:
         configSession = tf.ConfigProto()
@@ -325,15 +380,11 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 
         if model.optimize() == False:
             # Some baseline models don't need training step optimization
-            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
-            mean_val_loss = np.mean(val_loss)
-            mean_accuracy = 100 * np.mean(accuracy)
-            mean_precision = 100 * np.mean(precision)
-            mean_recall = 100 * np.mean(recall)
-            mean_true_accuracy = 100 * np.mean(true_accuracy)
-            mean_f_score = 100 * np.mean(f_score)
-            mean_Xent = np.mean(Xent)
-            return mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score, mean_Xent, 0
+            valid_results, valid_long_range_results = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
+            mean_and_store_results(valid_results, valid_tabs, 0)
+            mean_and_store_results(valid_long_range_results, valid_tabs_LR, 0)
+
+            return val_tab_loss[0], val_tab_acc[0], val_tab_prec[0], val_tab_rec[0], val_tab_true_acc[0], val_tab_f_score[0], val_tab_Xent[0], 0
 
         # Training iteration
         while (not OVERFITTING and not TIME_LIMIT
@@ -405,33 +456,16 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
             #######################################
             # Validate
             #######################################
-            accuracy, precision, recall, val_loss, true_accuracy, f_score, Xent = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
-            mean_val_loss = np.mean(val_loss)
-            mean_accuracy = 100 * np.mean(accuracy)
-            mean_precision = 100 * np.mean(precision)
-            mean_recall = 100 * np.mean(recall)
-            mean_true_accuracy = 100 * np.mean(true_accuracy)
-            mean_f_score = 100 * np.mean(f_score)
-            mean_Xent = np.mean(Xent)
-            val_tab_loss[epoch] = mean_val_loss
-            val_tab_acc[epoch] = mean_accuracy
-            val_tab_prec[epoch] = mean_precision
-            val_tab_rec[epoch] = mean_recall
-            val_tab_true_acc[epoch] = mean_true_accuracy
-            val_tab_f_score[epoch] = mean_f_score
-            val_tab_Xent[epoch] = mean_Xent
-
+            valid_results, valid_long_range_results = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
+            mean_and_store_results(valid_results, valid_tabs, epoch)
+            mean_and_store_results(valid_long_range_results, valid_tabs_LR, epoch)
             end_time_epoch = time.time()
             
             #######################################
             # Overfitting ? 
             if epoch >= parameters['min_number_iteration']:
-                # Based on Xentr
-               # OVERFITTING = up_criterion(val_tab_Xent, epoch, parameters["number_strips"], parameters["validation_order"])
-                # Based on accuracy
-                # OVERFITTING = up_criterion(-val_tab_acc, epoch, parameters["number_strips"], parameters["validation_order"])
-                # Use loss on validation as early stopping criterion (most logic)
-                OVERFITTING = up_criterion(val_tab_loss, epoch, parameters["number_strips"], parameters["validation_order"])
+                # Choose short/long range and the measure
+                OVERFITTING = up_criterion(valid_tabs[overfitting_measure], epoch, parameters["number_strips"], parameters["validation_order"])
             #######################################
 
             #######################################
@@ -447,8 +481,10 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
             logger_train.info(('Epoch : {} , Training loss : {} , Validation loss : {} \n \
                                Validation accuracy : {:.3f} %, precision : {:.3f} %, recall : {:.3f} % \n \
                                True_accuracy : {:.3f} %, f_score : {:.3f} %, Xent_100 : {:.3f}'
-                              .format(epoch, mean_loss, mean_val_loss, mean_accuracy, mean_precision, mean_recall, mean_true_accuracy, mean_f_score, 100*mean_Xent))
-                              .encode('utf8'))
+                              .format(epoch, mean_loss,
+                                valid_tabs['loss'][epoch], valid_tabs['accuracy'][epoch], valid_tabs['precision'][epoch],
+                                valid_tabs['recall'][epoch], valid_tabs['true_accuracy'][epoch], valid_tabs['f_score'][epoch], 100*valid_tabs['Xent'][epoch])
+                              .encode('utf8')))
 
             logger_train.info(('Time : {}'
                               .format(end_time_epoch - start_time_epoch))
@@ -458,31 +494,14 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
             # Best model ?
             # Xent criterion
             start_time_saving = time.time()
-            if mean_Xent <= best_Xent:
-                logger_train.info('Save Xent')
-                saver.save(sess, config_folder + "/model_Xent/model")
-#                best_epoch = epoch
-                best_Xent = mean_Xent
-                 
-                if ANALYSIS:
-#                    accuracy_and_binary_Xent(context, valid_index, os.path.join(os.getcwd(), "debug/acc_Xent"), 20)
-                    compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Xent_criterion"))
+            for measure_name, measure_curve in valid_tabs.iteritems():
+                best_measure_so_far = measure_curve[best_epoch[measure_name]]
+                measure_for_this_epoch = measure_curve[epoch]
+                if measure_for_this_epoch <= best_measure_so_far:
+                    if measure_name in save_measures:
+                        saver.save(sess, config_folder + "/model_" + measure_name + "/model")
+                    best_epoch[measure_name] = epoch
        
-            # Accuracy criterion
-            if mean_accuracy >= best_acc:
-                logger_train.info('Save Acc')
-                saver.save(sess, config_folder + "/model_acc/model")
-                best_acc = mean_accuracy
-
-                if ANALYSIS:
-                    compare_Xent_acc_corresponding_preds(context, valid_index[:5], os.path.join(config_folder, "debug/Acc_criterion"))
-
-            # Loss criterion
-            if mean_val_loss <= best_loss:
-                logger_train.info('Save val loss')
-                saver.save(sess, config_folder + "/model_loss/model")
-                best_loss = mean_val_loss
-
             end_time_saving = time.time()
             logger_train.info('Saving time : {:.3f}'.format(end_time_saving-start_time_saving))
             #######################################
@@ -493,28 +512,15 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
             if TIME_LIMIT:
                 logger_train.info('TIME OUT !!')
 
-
             #######################################
             # Epoch +1
             #######################################
             epoch += 1
 
-
-        # Selection criterion
-        best_epoch = np.argmin(val_tab_loss[:epoch])
-
-        # Return best accuracy
-        best_accuracy = val_tab_acc[best_epoch]
-        best_validation_loss = val_tab_loss[best_epoch]
-        best_precision = val_tab_prec[best_epoch]
-        best_recall = val_tab_rec[best_epoch]
-        best_true_accuracy = val_tab_true_acc[best_epoch]
-        best_f_score = val_tab_f_score[best_epoch]
-        best_Xent = val_tab_Xent[best_epoch]
-
         pool.close()
         pool.join()
-    return best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch
+    
+    return valid_tabs, best_epoch, valid_tabs_LR, best_epoch_LR
 
 
 def build_training_nodes(model, parameters):
@@ -595,7 +601,7 @@ def build_training_nodes(model, parameters):
     tf.add_to_collection('inputs_ph', piano_future_ph)
     tf.add_to_collection('inputs_ph', orch_past_ph)
     tf.add_to_collection('inputs_ph', orch_future_ph)
-#    Debug collection
+    # Debug collection
     tf.add_to_collection('debug', embedding_concat)
     debug = (embedding_concat,)
     if model.optimize():
@@ -621,5 +627,23 @@ def load_pretrained_model(path_to_model):
     debug = tf.get_collection("debug")
     return inputs_ph, orch_t_ph, preds, loss, loss_val, mask_orch_ph, train_step, keras_learning_phase, debug, saver
 
+def mean_and_store_results(results, tabs, epoch):
+    # Use minus signs to ensure measures are loss
+    mean_val_loss = np.mean(results['val_loss'])
+    mean_accuracy = -100 * np.mean(results['accuracy'])
+    mean_precision = -100 * np.mean(results['precision'])
+    mean_recall = -100 * np.mean(results['recall'])
+    mean_true_accuracy = -100 * np.mean(results['true_accuracy'])
+    mean_f_score = -100 * np.mean(results['f_score'])
+    mean_Xent = np.mean(results['Xent'])
+
+    tabs['loss'][epoch] = mean_val_loss
+    tabs['accuracy'][epoch] = mean_accuracy
+    tabs['precision'][epoch] = mean_precision
+    tabs['recall'][epoch] = mean_recall
+    tabs['true_accuracy'][epoch] = mean_true_accuracy
+    tabs['f_score'][epoch] = mean_f_score
+    tabs['Xent'][epoch] = mean_Xent
+    return
 # bias=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/bias:0"][0]
 # kernel=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/kernel:0"][0]

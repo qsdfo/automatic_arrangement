@@ -151,9 +151,10 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     # Generate
     ############################################################
     time_generate_0 = time.time()
-    generated_sequences_Xent = generate(pr_piano_gen_norm, silence_piano, config_folder, 'model_Xent', pr_orchestra_gen, batch_size=number_of_version)
-    generated_sequences_acc = generate(pr_piano_gen_norm, silence_piano, config_folder, 'model_acc', pr_orchestra_gen, batch_size=number_of_version)
-    generated_sequences_loss = generate(pr_piano_gen_norm, silence_piano, config_folder, 'model_loss', pr_orchestra_gen, batch_size=number_of_version)
+    generated_sequences = {}
+    for measure_name in parameters['save_measures']:
+        model_path = 'model_' + measure_name
+        generated_sequences[measure_name] = generate(pr_piano_gen_norm, silence_piano, config_folder, model_path, pr_orchestra_gen, batch_size=number_of_version)
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 
@@ -178,9 +179,9 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
             else:
                 write_midi(pr_orchestra, 1, write_path, tempo=80)
         return
-    reconstruct_write_aux(generated_sequences_Xent, 'Xent')
-    reconstruct_write_aux(generated_sequences_acc, 'acc')
-    reconstruct_write_aux(generated_sequences_loss, 'loss')
+
+    for measure_name in parameters["save_measures"]:
+        reconstruct_write_aux(generated_sequences[measure_name], measure_name)
     
     ############################################################
     ############################################################

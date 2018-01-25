@@ -55,7 +55,7 @@ def main():
 	log_file_path = 'log'
 	# set up logging to file - see previous section for more details
 	logging.basicConfig(level=logging.INFO,
-						format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+						format='%(asctime)s %(levelname)-8s %(message)s',
 						datefmt='%m-%d %H:%M',
 						filename=log_file_path,
 						filemode='w')
@@ -63,7 +63,7 @@ def main():
 	console = logging.StreamHandler()
 	console.setLevel(logging.INFO)
 	# set a format which is simpler for console use
-	formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+	formatter = logging.Formatter('%(levelname)-8s %(message)s')
 	# tell the handler to use this format
 	console.setFormatter(formatter)
 	# add the handler to the root logger
@@ -396,38 +396,45 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
 	# Instanciate model and save folder
 	############################################################
 	model = Model(model_params, dimensions)
-	os.mkdir(config_folder_fold + '/model_Xent/')
-	os.mkdir(config_folder_fold + '/model_acc/')
-	os.mkdir(config_folder_fold + '/model_loss/')
-
+	for measure_name in parameters["save_measures"]:
+		os.mkdir(config_folder_fold + '/model_' + measure_name)
+	
 	############################################################
 	# Train
 	############################################################
 	time_train_0 = time.time()
-	best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent, best_epoch =\
-		train(model, train_folds, valid_folds, valid_long_range_folds, normalizer, parameters, config_folder_fold, time_train_0, logger)
+	valid_tabs, best_epoch, valid_tabs_LR, best_epoch_LR = train(model, train_folds, valid_folds, valid_long_range_folds, normalizer, parameters, config_folder_fold, time_train_0, logger)
 	time_train_1 = time.time()
 	training_time = time_train_1-time_train_0
 	logger.info('TTT : Training data took {} seconds'.format(training_time))
-	logger.info((u'# Best model obtained at epoch :  {}'.format(best_epoch)).encode('utf8'))
-	logger.info((u'# Loss :  {}'.format(best_validation_loss)).encode('utf8'))
-	logger.info((u'# Accuracy :  {}'.format(best_accuracy)).encode('utf8'))
+	logger.info((u'# Best loss obtained at epoch :  {}'.format(best_epoch['loss'])).encode('utf8'))
+	logger.info((u'# Loss :  {}'.format(valid_tabs['loss'][best_epoch['loss']])).encode('utf8'))
+	logger.info((u'# Accuracy :  {}'.format(valid_tabs['accuracy'][best_epoch['accuracy']])).encode('utf8'))
 	logger.info((u'###################\n').encode('utf8'))
 
 	############################################################
 	# Write result in a txt file
 	############################################################
-	result_file_path = config_folder_fold + '/result.csv'
-	with open(result_file_path, 'wb') as f:
-		f.write("epoch;loss;accuracy;precision;recall;true_accuracy;f_score;Xent\n" +\
-				"{:d};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f};{:.3f}".format(best_epoch, best_validation_loss, best_accuracy, best_precision, best_recall, best_true_accuracy, best_f_score, best_Xent))
+	os.mkdir(os.path.join(config_folder_fold, 'results_short_range'))
+	os.mkdir(os.path.join(config_folder_fold, 'results_long_range'))
+	
+	# Short range
+	for measure_name, measure_curve in valid_tabs.iteritems():
+		np.savetxt(os.path.join(config_folder_fold, 'results_short_range', measure_name + '.txt'), measure_curve, fmt='%.6f')
+		with open(os.path.join(config_folder_fold, 'results_short_range', measure_name + '_best_epoch.txt'), 'wb') as f:
+			f.write("{:d}".format(best_epoch[measure_name]))
+	# Long range
+	for measure_name, measure_curve in valid_tabs_LR.iteritems():
+		np.savetxt(os.path.join(config_folder_fold, 'results_long_range', measure_name + '.txt'), measure_curve, fmt='%.6f')
+		with open(os.path.join(config_folder_fold, 'results_long_range', measure_name + '_best_epoch.txt'), 'wb') as f:
+			f.write("{:d}".format(best_epoch[measure_name]))
+
 	# Generating
 	if GENERATE:
 		generate_wrapper(config_folder_fold, track_paths_generation, logger)
 	if not save_model:
-		shutil.rmtree(config_folder_fold + '/model_Xent')
-		shutil.rmtree(config_folder_fold + '/model_acc')
-		shutil.rmtree(config_folder_fold + '/model_loss')
+		for measure_name in parameters['save_measures']:
+			shutil.rmtree(config_folder_fold + '/model_' + measure_name)
 		########################################################
 	return
 

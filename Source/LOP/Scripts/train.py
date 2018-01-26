@@ -54,6 +54,14 @@ def validate(context, init_matrices_validation, valid_splits_batches, valid_long
     f_score = []
     Xent = []
 
+    accuracy_long_range = []
+    precision_long_range = []
+    recall_long_range = []
+    val_loss_long_range = []
+    true_accuracy_long_range = []
+    f_score_long_range = []
+    Xent_long_range = []
+
     path_piano_matrices_valid = valid_splits_batches.keys()
     path_piano_matrices_valid_long_range = valid_long_range_splits_batches.keys()
     N_matrix_files = len(path_piano_matrices_valid)
@@ -127,13 +135,6 @@ def validate(context, init_matrices_validation, valid_splits_batches, valid_long
         #       orch[temporal_order:
         #            temporal_order+parameters["long_range"]]
         #######################################
-        accuracy_long_range = []
-        precision_long_range = []
-        recall_long_range = []
-        val_loss_long_range = []
-        true_accuracy_long_range = []
-        f_score_long_range = []
-        Xent_long_range = []
         for batch_index in valid_long_range_index:
             # Init
             # Extract from piano and orchestra the matrices required for the task
@@ -180,11 +181,12 @@ def validate(context, init_matrices_validation, valid_splits_batches, valid_long
                 preds_batch, loss_batch = sess.run([preds_node, loss_val_node], feed_dict)
                 # Preds should be a probability distribution. Sample from it
                 # Note that it doesn't need to be part of the graph since we don't use the sampled value to compute the backproped error
+                
                 prediction_sampled = np.random.binomial(1, preds_batch)
                 orch_gen[:, t, :] = prediction_sampled
 
                 # Compute performances measures
-                val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
+                val_loss_long_range += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
                 Xent_batch = binary_cross_entropy(orch_t, preds_batch)
                 accuracy_batch = accuracy_measure(orch_t, preds_batch)
                 precision_batch = precision_measure(orch_t, preds_batch)

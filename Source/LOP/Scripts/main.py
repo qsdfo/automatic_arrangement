@@ -22,7 +22,7 @@ from load_matrices import load_matrices
 
 # MODEL
 from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
-# from LOP.Models.Future_past_piano.recurrent_embeddings import Recurrent_embeddings as Model
+# from LOP.Models.Future_past_piano.Conv_recurrent.conv_recurrent_embedding_0 import Conv_recurrent_embedding_0 as Model
 
 # NORMALIZER
 from LOP.Utils.Normalization.no_normalization import no_normalization as Normalizer

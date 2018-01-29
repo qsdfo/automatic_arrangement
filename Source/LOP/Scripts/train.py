@@ -446,7 +446,6 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 					# Keep track of cost
 					train_cost_epoch.append(loss_batch)
 					sparse_loss_epoch.append(sparse_loss_batch)
-					import pdb; pdb.set_trace()
 
 				#######################################
 				# New matrices from thread
@@ -570,12 +569,11 @@ def build_training_nodes(model, parameters):
 		sparsity_coeff = model.sparsity_coeff
 		sparse_loss = sparsity_penalty_l1(preds)
 		# sparse_loss = sparsity_penalty_l2(preds)
-
+		
 		# Try something like this ???
-		# sparse_loss = tf.nn.relu(tf.reduce_sum(preds-THRESH__, axis=1))
-
+		# sparse_loss = case({tf.less(sparse_loss, 10): (lambda: tf.constant(0))}, default=(lambda: sparse_loss), exclusive=True)
 		# sparse_loss = tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
-
+		
 		sparse_loss = sparsity_coeff * sparse_loss
 		# DEBUG purposes
 		sparse_loss_mean = tf.reduce_mean(sparse_loss)

@@ -332,7 +332,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 		##############
 		##############
 	else:
-	    configSession = None
+		configSession = None
 
 	with tf.Session(config=configSession) as sess:
 		
@@ -441,10 +441,12 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 						_, loss_batch, summary = sess.run([train_step_node, loss_node, merged_node], feed_dict)
 					else:
 						_, loss_batch, preds_batch, sparse_loss_batch = sess.run([train_step_node, loss_node, preds_node, sparse_loss_node], feed_dict)
+						# _, loss_batch, preds_batch = sess.run([train_step_node, loss_node, preds_node], feed_dict)
 
 					# Keep track of cost
 					train_cost_epoch.append(loss_batch)
 					sparse_loss_epoch.append(sparse_loss_batch)
+					import pdb; pdb.set_trace()
 
 				#######################################
 				# New matrices from thread
@@ -575,6 +577,8 @@ def build_training_nodes(model, parameters):
 		# sparse_loss = tf.keras.layers.LeakyReLU(tf.reduce_sum(preds, axis=1))
 
 		sparse_loss = sparsity_coeff * sparse_loss
+		# DEBUG purposes
+		sparse_loss_mean = tf.reduce_mean(sparse_loss)
 		######################################################
 
 		if sparsity_coeff != 0:
@@ -620,8 +624,8 @@ def build_training_nodes(model, parameters):
 	tf.add_to_collection('inputs_ph', orch_future_ph)
 	# Debug collection
 	tf.add_to_collection('debug', embedding_concat)
-	tf.add_to_collection('debug', sparse_loss)
-	debug = (embedding_concat, sparse_loss)
+	tf.add_to_collection('debug', sparse_loss_mean)
+	debug = (embedding_concat, sparse_loss_mean)
 	if model.optimize():
 		saver = tf.train.Saver()
 	else:

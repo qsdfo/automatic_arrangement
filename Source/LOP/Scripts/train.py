@@ -530,9 +530,16 @@ Sparse_loss : {:.3f}'
 
 		pool.close()
 		pool.join()
-	
-	return valid_tabs, best_epoch, valid_tabs_LR, best_epoch_LR
 
+	# Remove useless part of measures curves
+	remove_tail_training_curves(dico):
+		ret = {}
+		for k, v in dico.iteritems():
+			ret[k] = v[:epoch]
+		return ret
+	
+	return remove_tail_training_curves(valid_tabs), best_epoch, 
+		remove_tail_training_curves(valid_tabs_LR), best_epoch_LR
 
 def build_training_nodes(model, parameters):
 	############################################################
@@ -592,6 +599,7 @@ def build_training_nodes(model, parameters):
 	
 	# Weight decay 
 	if model.weight_decay_coeff != 0:
+		# Keras weight decay does not work...
 		loss = loss_val + tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * model.weight_decay_coeff
 	else:
 		loss = loss_val

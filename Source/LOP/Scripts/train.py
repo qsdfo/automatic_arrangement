@@ -350,9 +350,9 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			sess.run(tf.global_variables_initializer())
 			
 
-		if DEBUG:
-			sess = tf_debug.LocalCLIDebugWrapperSession(sess)
-			sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
+		# if DEBUG:
+		# 	sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+		# 	sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
 			
 		############################################################
 		# Define the context dict used to store graphs and nodes and use them in auxiliary functions
@@ -389,7 +389,6 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			valid_results, valid_long_range_results = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
 			mean_and_store_results(valid_results, valid_tabs, 0)
 			mean_and_store_results(valid_long_range_results, valid_tabs_LR, 0)
-
 			return val_tab_loss[0], val_tab_acc[0], val_tab_prec[0], val_tab_rec[0], val_tab_true_acc[0], val_tab_f_score[0], val_tab_Xent[0], 0
 
 		# Training iteration
@@ -469,6 +468,14 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			mean_and_store_results(valid_results, valid_tabs, epoch)
 			mean_and_store_results(valid_long_range_results, valid_tabs_LR, epoch)
 			end_time_epoch = time.time()
+
+			#######################################
+			# DEBUG
+			# Save numpy arrays of measures values
+			if DEBUG:
+				for measure_name, measure_tab in valid_tabs.iteritems():
+					np.save(os.path.join(config_folder, measure_name + '.npy'), measure_tab)
+			#######################################
 			
 			#######################################
 			# Overfitting ? 

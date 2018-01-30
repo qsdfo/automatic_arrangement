@@ -243,6 +243,7 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 						  valid_names[K_fold_ind], test_names[K_fold_ind], track_paths_generation, 
 						  save_model=SAVE, logger=logger_config)
 		####################
+		
 	elif parameters['training_mode'] == 2:
 		####################
 		# 3/

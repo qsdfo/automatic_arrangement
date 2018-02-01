@@ -252,7 +252,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 
     # Get dimensions
     if DEBUG:
-        T_limit = 5000
+        T_limit = 20000
     else:
         T_limit = 1e6
     

@@ -389,7 +389,8 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			valid_results, valid_long_range_results = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
 			mean_and_store_results(valid_results, valid_tabs, 0)
 			mean_and_store_results(valid_long_range_results, valid_tabs_LR, 0)
-			return val_tab_loss[0], val_tab_acc[0], val_tab_prec[0], val_tab_rec[0], val_tab_true_acc[0], val_tab_f_score[0], val_tab_Xent[0], 0
+			return remove_tail_training_curves(valid_tabs, 1), best_epoch, \
+				remove_tail_training_curves(valid_tabs_LR, 1), best_epoch_LR
 
 		# Training iteration
 		while (not OVERFITTING and not TIME_LIMIT
@@ -537,16 +538,9 @@ Sparse_loss : {:.3f}'
 
 		pool.close()
 		pool.join()
-
-	# Remove useless part of measures curves
-	def remove_tail_training_curves(dico):
-		ret = {}
-		for k, v in dico.iteritems():
-			ret[k] = v[:epoch]
-		return ret
 	
-	return remove_tail_training_curves(valid_tabs), best_epoch, \
-		remove_tail_training_curves(valid_tabs_LR), best_epoch_LR
+	return remove_tail_training_curves(valid_tabs, epoch), best_epoch, \
+		remove_tail_training_curves(valid_tabs_LR, epoch), best_epoch_LR
 
 def build_training_nodes(model, parameters):
 	############################################################
@@ -679,5 +673,13 @@ def mean_and_store_results(results, tabs, epoch):
 	tabs['f_score'][epoch] = mean_f_score
 	tabs['Xent'][epoch] = mean_Xent
 	return
+
+# Remove useless part of measures curves
+def remove_tail_training_curves(dico, epoch):
+	ret = {}
+	for k, v in dico.iteritems():
+		ret[k] = v[:epoch]
+	return ret
+
 # bias=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/bias:0"][0]
 # kernel=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/kernel:0"][0]

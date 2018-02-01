@@ -276,7 +276,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 	loss_tab = np.zeros(max(1, parameters['max_iter']))
 
 	# Select criteria
-	overfitting_measure = 'loss'
+	overfitting_measure = 'accuracy'
 	save_measures = parameters['save_measures']
 
 	# Short-term validation error
@@ -539,13 +539,13 @@ Sparse_loss : {:.3f}'
 		pool.join()
 
 	# Remove useless part of measures curves
-	remove_tail_training_curves(dico):
+	def remove_tail_training_curves(dico):
 		ret = {}
 		for k, v in dico.iteritems():
 			ret[k] = v[:epoch]
 		return ret
 	
-	return remove_tail_training_curves(valid_tabs), best_epoch, 
+	return remove_tail_training_curves(valid_tabs), best_epoch, \
 		remove_tail_training_curves(valid_tabs_LR), best_epoch_LR
 
 def build_training_nodes(model, parameters):
@@ -571,11 +571,11 @@ def build_training_nodes(model, parameters):
 	############################################################
 	# Loss
 	with tf.name_scope('loss'):
-		# distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
+		distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
 		# distance = Xent_tf(orch_t_ph, preds)
 		# distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
 		# distance = bin_Xen_weighted_1_tf(orch_t_ph, preds, model.tn_weight)
-		distance = accuracy_tf(orch_t_ph, preds)
+		# distance = accuracy_tf(orch_t_ph, preds)
 		# distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=model.tn_weight)
 
 		######################################################

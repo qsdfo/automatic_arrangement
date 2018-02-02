@@ -28,7 +28,7 @@ class MLP_K(Model_lop):
 		Model_lop.__init__(self, model_param, dimensions)
 
 		# Hidden layers architecture
-		self.layers = model_param['layers']
+		self.layers = model_param['n_hidden']
 		# Is it a keras model ?
 		self.keras = True
 
@@ -54,7 +54,7 @@ class MLP_K(Model_lop):
 	def get_hp_space():
 		super_space = Model_lop.get_hp_space()
 
-		space = {'layers': multi_layer_hopt(500, 2000, 10, 1, 2, "layers")}
+		space = {'n_hidden': multi_layer_hopt(500, 2000, 10, 1, 2, "n_hidden")}
 
 		space.update(super_space)
 		return space

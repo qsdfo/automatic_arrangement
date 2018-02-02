@@ -22,10 +22,10 @@ from LOP.Utils.Analysis.compare_Xent_acc_corresponding_preds import compare_Xent
 
 from asynchronous_load_mat import async_load_mat
 
-DEBUG = False
+DEBUG=False
 # Note : debug sans summarize, qui pollue le tableau de variables
-SUMMARIZE = False
-ANALYSIS = False
+SUMMARIZE=False
+ANALYSIS=False
 
 def validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters):
 	
@@ -276,7 +276,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 	loss_tab = np.zeros(max(1, parameters['max_iter']))
 
 	# Select criteria
-	overfitting_measure = 'accuracy'
+	overfitting_measure = parameters["overfitting_measure"]
 	save_measures = parameters['save_measures']
 
 	# Short-term validation error
@@ -442,10 +442,9 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 					else:
 						_, loss_batch, preds_batch, sparse_loss_batch = sess.run([train_step_node, loss_node, preds_node, sparse_loss_node], feed_dict)
 						# _, loss_batch, preds_batch = sess.run([train_step_node, loss_node, preds_node], feed_dict)
-
-					# Keep track of cost
-					train_cost_epoch.append(loss_batch)
-					sparse_loss_epoch.append(sparse_loss_batch)
+						# Keep track of cost
+						train_cost_epoch.append(loss_batch)
+						sparse_loss_epoch.append(sparse_loss_batch)
 
 				#######################################
 				# New matrices from thread

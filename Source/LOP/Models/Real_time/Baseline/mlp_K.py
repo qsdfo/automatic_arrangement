@@ -6,7 +6,7 @@
 # Used to test main scripts and as a baseline
 
 from LOP.Models.model_lop import Model_lop
-from LOP.Utils.hopt_utils import multi_layer_hopt
+from LOP.Utils.hopt_utils import list_log_hopt
 from LOP.Models.Utils.weight_summary import keras_layer_summary
 
 # Tensorflow
@@ -54,14 +54,18 @@ class MLP_K(Model_lop):
 	def get_hp_space():
 		super_space = Model_lop.get_hp_space()
 
-		space = {'n_hidden': multi_layer_hopt(500, 2000, 10, 1, 2, "n_hidden")}
+		space = {'n_hidden': list_log_hopt(500, 2000, 10, 1, 2, "n_hidden")}
 
 		space.update(super_space)
 		return space
 
-	def predict(self, piano_t, orch_past):
-		x = piano_t
+	def predict(self, inputs_ph):
+		piano_t, _, _, orch_past, _ = inputs_ph
 		
+		# x = piano_t
+		orch_past_flat = tf.reshape(orch_past, [-1, (self.temporal_order-1) * self.orch_dim])
+		x = tf.concat([piano_t, orch_past_flat], axis=1)
+
 		for i, l in enumerate(self.layers):
 			with tf.name_scope("layer_" + str(i)):
 				dense = Dense(l, activation='relu', kernel_regularizer=regularizers.l2(self.weight_decay_coeff))
@@ -71,4 +75,4 @@ class MLP_K(Model_lop):
 
 		orch_prediction = Dense(self.orch_dim, activation='sigmoid')(x)
 
-		return orch_prediction
+		return orch_prediction, None

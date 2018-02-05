@@ -22,7 +22,7 @@ from LOP.Utils.Analysis.compare_Xent_acc_corresponding_preds import compare_Xent
 
 from asynchronous_load_mat import async_load_mat
 
-DEBUG=False
+DEBUG=True
 # Note : debug sans summarize, qui pollue le tableau de variables
 SUMMARIZE=False
 ANALYSIS=False
@@ -426,7 +426,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 				for batch_index in train_index:
 					# Build batch
 					piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t = build_batch(batch_index, piano_transformed, orch, mask_orch, len(batch_index), model.temporal_order)
-					
+
 					# Train step
 					feed_dict = {piano_t_ph: piano_t,
 								piano_past_ph: piano_past,

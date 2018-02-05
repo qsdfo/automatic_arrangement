@@ -25,12 +25,13 @@ from load_matrices import load_matrices
 # from LOP.Models.Real_time.Baseline.mlp import MLP as Model
 # from LOP.Models.Real_time.Baseline.mlp_K import MLP_K as Model
 from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
+# from LOP.Models.Real_time.LSTM_static_bias import LSTM_static_bias as Model
 # from LOP.Models.Future_past_piano.Conv_recurrent.conv_recurrent_embedding_0 import Conv_recurrent_embedding_0 as Model
 
 # NORMALIZER
 from LOP.Utils.Normalization.no_normalization import no_normalization as Normalizer
 
-GENERATE=False
+GENERATE=True
 SAVE=False
 DEFINED_CONFIG=True  # HYPERPARAM ?
 # For reproducibility

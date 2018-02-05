@@ -49,6 +49,12 @@ def validate(context, init_matrices_validation, valid_splits_batches, valid_long
 	true_accuracy = []
 	f_score = []
 	Xent = []
+	if DEBUG:
+		preds = []
+		truth = []
+	else:
+		preds = None
+		truth = None
 
 	accuracy_long_range = []
 	precision_long_range = []
@@ -119,6 +125,10 @@ def validate(context, init_matrices_validation, valid_splits_batches, valid_long
 			true_accuracy.extend(true_accuracy_batch)
 			f_score.extend(f_score_batch)
 			Xent.extend(Xent_batch)
+
+			if DEBUG:
+				preds.extend(preds_batch)
+				truth.extend(orch_t)
 
 		#######################################
 		# Loop for long-term validation
@@ -220,7 +230,7 @@ def validate(context, init_matrices_validation, valid_splits_batches, valid_long
 		'f_score': np.asarray(f_score_long_range), 
 		'Xent': np.asarray(Xent_long_range)
 		}
-	return valid_results, valid_long_range_results
+	return valid_results, valid_long_range_results, preds, truth
 		
 
 def train(model, train_splits_batches, valid_splits_batches, valid_long_range_splits_batches, normalizer,
@@ -386,7 +396,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 
 		if model.optimize() == False:
 			# Some baseline models don't need training step optimization
-			valid_results, valid_long_range_results = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
+			valid_results, valid_long_range_results, _, _ = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
 			mean_and_store_results(valid_results, valid_tabs, 0)
 			mean_and_store_results(valid_long_range_results, valid_tabs_LR, 0)
 			return remove_tail_training_curves(valid_tabs, 1), best_epoch, \
@@ -464,7 +474,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			#######################################
 			# Validate
 			#######################################
-			valid_results, valid_long_range_results = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
+			valid_results, valid_long_range_results, preds_val, truth_val = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
 			mean_and_store_results(valid_results, valid_tabs, epoch)
 			mean_and_store_results(valid_long_range_results, valid_tabs_LR, epoch)
 			end_time_epoch = time.time()
@@ -475,6 +485,8 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			if DEBUG:
 				for measure_name, measure_tab in valid_tabs.iteritems():
 					np.save(os.path.join(config_folder, measure_name + '.npy'), measure_tab)
+				np.save(os.path.join(config_folder, 'preds.npy'), np.asarray(preds_val))
+				np.save(os.path.join(config_folder, 'truth.npy'), np.asarray(truth_val))
 			#######################################
 			
 			#######################################
@@ -564,10 +576,10 @@ def build_training_nodes(model, parameters):
 	############################################################
 	# Loss
 	with tf.name_scope('loss'):
-		distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
+		# distance = keras.losses.binary_crossentropy(orch_t_ph, preds)
 		# distance = Xent_tf(orch_t_ph, preds)
 		# distance = bin_Xen_weighted_0_tf(orch_t_ph, preds, parameters['activation_ratio'])
-		# distance = bin_Xen_weighted_1_tf(orch_t_ph, preds, model.tn_weight)
+		distance = bin_Xen_weighted_1_tf(orch_t_ph, preds, model.tn_weight)
 		# distance = accuracy_tf(orch_t_ph, preds)
 		# distance = accuracy_low_TN_tf(orch_t_ph, preds, weight=model.tn_weight)
 

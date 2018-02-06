@@ -508,11 +508,11 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			logger_train.info("############################################################")
 			logger_train.info(('Epoch : {} , Training loss : {} , Validation loss : {} \n \
 Validation accuracy : {:.3f} %, precision : {:.3f} %, recall : {:.3f} % \n \
-True_accuracy : {:.3f} %, f_score : {:.3f} %, Xent_100 : {:.3f}\n \
+True_accuracy : {:.3f} %, f_score : {:.3f} %, Xent : {:.6f}\n \
 Sparse_loss : {:.3f}'
 							  .format(epoch, mean_loss,
 								valid_tabs['loss'][epoch], valid_tabs['accuracy'][epoch], valid_tabs['precision'][epoch],
-								valid_tabs['recall'][epoch], valid_tabs['true_accuracy'][epoch], valid_tabs['f_score'][epoch], 100*valid_tabs['Xent'][epoch],
+								valid_tabs['recall'][epoch], valid_tabs['true_accuracy'][epoch], valid_tabs['f_score'][epoch], valid_tabs['Xent'][epoch],
 								np.mean(sparse_loss_epoch))
 							  .encode('utf8')))
 

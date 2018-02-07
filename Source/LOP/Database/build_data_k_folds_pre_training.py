@@ -31,24 +31,12 @@ import gc
 from guppy import hpy; hp = hpy()
 import sys
 
-DEBUG = False
+DEBUG = True
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano):
     logging.info(folder_path)
     if not os.path.isdir(folder_path):
         return instru_mapping, T
-
-    ################
-    ########
-    ########
-    ########
-    ########
-    # if int((re.split('/', folder_path)[-1])) > 1000:
-    #     return instru_mapping, T
-    ########
-    ########
-    ########
-    ########
     
     # Read pr
     if is_piano:

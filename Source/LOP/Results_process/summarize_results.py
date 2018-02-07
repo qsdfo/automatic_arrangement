@@ -70,14 +70,14 @@ def main(config_folder, measure_name):
         #########################################################################################################
         # A changer dans le future
         # Hacky parce que j'ai oublie d'arreter le monitoring a la fin du training....
-        # def remove_tail(mat, best):
-        #     if len(np.nonzero(mat)[0])!=0:
-        #         last_ind = max(np.nonzero(mat)[0][-1], best+1)
-        #     else:
-        #         last_ind = best+1
-        #     return mat[:last_ind]
-        # results_long_range = remove_tail(results_long_range, long_range_best)
-        # results_short_range = remove_tail(results_short_range, short_range_best)
+        def remove_tail(mat, best):
+            if len(np.nonzero(mat)[0])!=0:
+                last_ind = max(np.nonzero(mat)[0][-1], best+1)
+            else:
+                last_ind = best+1
+            return mat[:last_ind]
+        results_long_range = remove_tail(results_long_range, long_range_best)
+        results_short_range = remove_tail(results_short_range, short_range_best)
         #########################################################################################################
         #########################################################################################################
         #########################################################################################################
@@ -137,7 +137,7 @@ def main(config_folder, measure_name):
 
 if __name__ == '__main__':
     # config_folders = ["configs/" + str(e) for e in range(40)]
-    config_folders = ["/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Results/Data_tempGran8/Baseline_Repeat/0"]
+    config_folders = ["/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/NADE/TEMP/Baselines_MLP/Baseline_MLP_keras/0"]
     measures = ["accuracy", "loss", "f_score", "precision", "recall", "true_accuracy", "Xent"]
     for config_folder in config_folders:    
         

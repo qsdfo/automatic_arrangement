@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
+import time
 from multiprocessing.pool import ThreadPool
 import numpy as np
 
 from LOP.Scripts.asynchronous_load_mat import async_load_mat
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure, binary_cross_entropy
 
-def validate(trainer, sess, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters, DEBUG):
+def validate(trainer, sess, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters, logger, DEBUG):
 
 	temporal_order = trainer.temporal_order
 
@@ -64,7 +65,9 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 		#######################################
 		# Loop for short-term validation
 		#######################################
-		for batch_index in valid_index:
+		for batch_counter, batch_index in enumerate(valid_index):
+
+			start_time_batch = time.time()
 
 			loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch)
 			
@@ -86,6 +89,8 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 			if DEBUG:
 				preds.extend(preds_batch)
 				truth.extend(orch_t)
+			end_time_batch = time.time()
+			logger.info("Batch {} : {} seconds".format(batch_counter, end_time_batch - start_time_batch))
 
 		#######################################
 		# Loop for long-term validation

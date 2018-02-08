@@ -44,11 +44,11 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 	if which_trainer == 'standard_trainer':
 		from LOP.Scripts.standard_learning.standard_trainer import Standard_trainer as Trainer
 	elif which_trainer == 'NADE_trainer':
-		from LOP.Scripts.standard_learning.NADE_trainer import NADE_trainer as Trainer
+		from LOP.Scripts.NADE_learning.NADE_trainer import NADE_trainer as Trainer
 	else:
 		raise Exception("Undefined trainer")
 
-	trainer = Trainer(model.temporal_order)
+	trainer = Trainer(model)
 
 
 	if parameters['pretrained_model'] is None:
@@ -210,6 +210,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			train_cost_epoch = []
 			sparse_loss_epoch = []
 
+			train_time = time.time()
 			for file_ind_CURRENT in range(N_matrix_files):
 
 				#######################################
@@ -239,12 +240,13 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 					train_cost_epoch.append(loss_batch)
 					sparse_loss_batch = debug_outputs[0]
 					sparse_loss_epoch.append(sparse_loss_batch)
-
 				#######################################
 				# New matrices from thread
 				#######################################
 				del(matrices_from_thread)
 				matrices_from_thread = async_train.get()
+			train_time = time.time() - train_time
+			logger_train.info("Training time : {}".format(train_time))
 
 			if SUMMARIZE:
 				if (epoch<5) or (epoch%10==0):
@@ -258,16 +260,18 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			#######################################
 			# Validate
 			#######################################
+			valid_time = time.time()
 			valid_results, valid_long_range_results, preds_val, truth_val = \
 				validate(trainer, sess, 
 					init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, 
 					normalizer, parameters,
-					DEBUG)
+					logger_train, DEBUG)
+			valid_time = time.time() - valid_time
+			logger_train.info("Validation time : {}".format(valid_time))
 
 			training_utils.mean_and_store_results(valid_results, valid_tabs, epoch)
 			training_utils.mean_and_store_results(valid_long_range_results, valid_tabs_LR, epoch)
 			end_time_epoch = time.time()
-
 			#######################################
 			# DEBUG
 			# Save numpy arrays of measures values

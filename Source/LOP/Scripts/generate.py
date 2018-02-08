@@ -34,7 +34,7 @@ def generate(which_trainer, piano, silence_ind, path_to_config, model_name='mode
     if which_trainer == 'standard_trainer':
         from LOP.Scripts.standard_learning.standard_trainer import Standard_trainer as Trainer
     elif which_trainer == 'NADE_trainer':
-        from LOP.Scripts.standard_learning.NADE_trainer import NADE_trainer as Trainer
+        from LOP.Scripts.NADE_learning.NADE_trainer import NADE_trainer as Trainer
     else:
         raise Exception("Undefined trainer")
     trainer = Trainer(temporal_order)

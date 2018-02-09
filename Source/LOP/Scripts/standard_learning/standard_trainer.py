@@ -11,8 +11,8 @@ from LOP.Utils.build_batch import build_batch
 
 class Standard_trainer(object):
 	
-	def __init__(self, model):
-		self.temporal_order = model.temporal_order
+	def __init__(self, **kwargs):
+		self.temporal_order = kwargs["temporal_order"]
 		return
 
 	def build_variables_nodes(self, model, parameters):

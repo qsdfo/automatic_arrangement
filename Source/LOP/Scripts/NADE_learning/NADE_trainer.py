@@ -13,10 +13,10 @@ from LOP.Scripts.standard_learning.standard_trainer import Standard_trainer
 
 class NADE_trainer(Standard_trainer):
 	
-	def __init__(self, model):
-		Standard_trainer.__init__(self, model)
+	def __init__(self, **kwargs):
+		Standard_trainer.__init__(self, **kwargs)
 		# Number of ordering used when bagging NADEs
-		self.num_ordering = model.num_ordering
+		self.num_ordering = kwargs["num_ordering"]
 		return
 
 	def build_variables_nodes(self, model, parameters):
@@ -82,8 +82,8 @@ class NADE_trainer(Standard_trainer):
 	def load_pretrained_model(self, path_to_model):
 		# Restore model and preds graph
 		Standard_trainer.load_pretrained_model(self, path_to_model)
-		self.mask_input = tf.get_collection('mask_input')
-		self.orch_pred = tf.get_collection('orch_pred')
+		self.mask_input = tf.get_collection('mask_input')[0]
+		self.orch_pred = tf.get_collection('orch_pred')[0]
 		return
 
 	def training_step(self, sess, batch_index, piano, orch, mask_orch, summarize_dict):

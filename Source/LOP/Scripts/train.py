@@ -43,12 +43,14 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 		ff.write(which_trainer)
 	if which_trainer == 'standard_trainer':
 		from LOP.Scripts.standard_learning.standard_trainer import Standard_trainer as Trainer
+		kwargs_trainer = {'temporal_order': model.temporal_order}
 	elif which_trainer == 'NADE_trainer':
 		from LOP.Scripts.NADE_learning.NADE_trainer import NADE_trainer as Trainer
+		kwargs_trainer = {'temporal_order': model.temporal_order, 'num_ordering': model.num_ordering}
 	else:
 		raise Exception("Undefined trainer")
 
-	trainer = Trainer(model)
+	trainer = Trainer(**kwargs_trainer)
 
 
 	if parameters['pretrained_model'] is None:

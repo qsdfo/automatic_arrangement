@@ -151,6 +151,16 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     # Get trainer
     with open(os.path.join(config_folder, 'which_trainer'), 'rb') as ff:
         which_trainer = ff.read()
+    # Trainer
+    if which_trainer == 'standard_trainer':
+        from LOP.Scripts.standard_learning.standard_trainer import Standard_trainer as Trainer
+        kwargs_trainer = {'temporal_order': model_parameters["temporal_order"]}
+    elif which_trainer == 'NADE_trainer':
+        from LOP.Scripts.NADE_learning.NADE_trainer import NADE_trainer as Trainer
+        kwargs_trainer = {'temporal_order': model_parameters["temporal_order"], 'num_ordering': model_parameters["num_ordering"]}
+    else:
+        raise Exception("Undefined trainer")
+    trainer = Trainer(**kwargs_trainer)
     ########################
 
     ############################################################
@@ -160,7 +170,7 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     generated_sequences = {}
     for measure_name in parameters['save_measures']:
         model_path = 'model_' + measure_name
-        generated_sequences[measure_name] = generate(which_trainer, pr_piano_gen_norm, silence_piano, config_folder, model_path, pr_orchestra_gen, batch_size=number_of_version)
+        generated_sequences[measure_name] = generate(trainer, pr_piano_gen_norm, silence_piano, config_folder, model_path, pr_orchestra_gen, batch_size=number_of_version)
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 

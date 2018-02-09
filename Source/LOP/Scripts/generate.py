@@ -10,7 +10,7 @@ from keras import backend as K
 from LOP.Utils.build_batch import build_batch
 
 
-def generate(which_trainer, piano, silence_ind, path_to_config, model_name='model', orch_init=None, batch_size=5):
+def generate(trainer, piano, silence_ind, path_to_config, model_name='model', orch_init=None, batch_size=5):
     # Perform N=batch_size orchestrations
     # Sample by sample generation
     # Input : 
@@ -29,15 +29,6 @@ def generate(which_trainer, piano, silence_ind, path_to_config, model_name='mode
     orch_dim = dimensions['orch_dim']
     temporal_order = dimensions['temporal_order']
     total_length = piano.shape[0]
-
-    # Trainer
-    if which_trainer == 'standard_trainer':
-        from LOP.Scripts.standard_learning.standard_trainer import Standard_trainer as Trainer
-    elif which_trainer == 'NADE_trainer':
-        from LOP.Scripts.NADE_learning.NADE_trainer import NADE_trainer as Trainer
-    else:
-        raise Exception("Undefined trainer")
-    trainer = Trainer(temporal_order)
 
     if orch_init is not None:
         init_length = orch_init.shape[0]

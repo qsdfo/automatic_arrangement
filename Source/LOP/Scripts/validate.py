@@ -149,6 +149,7 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 
 	pool.close()
 	pool.join()
+
 	valid_results = {
 		'accuracy': np.asarray(accuracy), 
 		'precision': np.asarray(precision), 

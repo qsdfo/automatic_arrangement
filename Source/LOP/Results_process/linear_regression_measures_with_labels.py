@@ -91,6 +91,7 @@ def process_measure(config_folders, name_measure_A, name_measure_B, result_folde
     measure_B_list = []
     for config_folder in config_folders:
         # Read npy
+        import pdb; pdb.set_trace()
         measure_A_list.append(np.load(os.path.join(config_folder, name_measure_A + '.npy')))
         measure_B_list.append(np.load(os.path.join(config_folder, name_measure_B + '.npy')))
     measure_A = np.concatenate(measure_A_list)
@@ -99,8 +100,9 @@ def process_measure(config_folders, name_measure_A, name_measure_B, result_folde
     return
 
 if __name__ == '__main__':
-    source_folder = '/Users/leo/Recherche/GitHub_Aciditeam/lop/Results/MEASURE/scatter_measure_link_labels'
-    config_folders = [os.path.join(source_folder, str(0), 'debug', 'Xent_criterion')]
+    # source_folder = '/Users/leo/Recherche/GitHub_Aciditeam/lop/Results/MEASURE/scatter_measure_link_labels'
+    # config_folders = [os.path.join(source_folder, str(0), 'debug', 'Xent_criterion')]
+    config_folders = ["/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_fuly_trained/30/0"]
     result_folder = 'compare_measure'
 
     if os.path.isdir(result_folder):

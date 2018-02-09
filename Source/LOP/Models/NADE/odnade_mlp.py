@@ -81,6 +81,5 @@ class Odnade_mlp(Model_lop):
 				x = Dropout(self.dropout_probability)(x)
 
 		orch_prediction = Dense(self.orch_dim, activation='sigmoid')(x)
-		debug = None
 
-		return orch_prediction, debug
+		return orch_prediction, x

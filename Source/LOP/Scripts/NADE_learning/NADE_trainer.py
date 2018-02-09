@@ -118,7 +118,9 @@ class NADE_trainer(Standard_trainer):
 		return loss_batch, preds_batch, debug_outputs, summary
 
 	def generate_mean_ordering(self, sess, feed_dict, orch_t):
+		
 		batch_size, orch_dim = orch_t.shape
+		loss_batch_list = []
 
 		# Generate the orderings in parallel -> duplicate the matrices along batch dim
 		for k, v in feed_dict.iteritems():
@@ -150,6 +152,8 @@ class NADE_trainer(Standard_trainer):
 			feed_dict[self.mask_input] = mask
 			
 			loss_batch, preds_batch = sess.run([self.loss_val, self.preds], feed_dict)
+
+			loss_batch_list.append(loss_batch)
 			
 			# Update matrices
 			for ordering_ind in range(self.num_ordering):
@@ -169,7 +173,10 @@ class NADE_trainer(Standard_trainer):
 			preds_mean_over_ordering[ind_batch, :] = np.mean(orch_pred[ind_orderings, :], axis=0)
 			ind_orderings += 1
 
-		return None, preds_mean_over_ordering
+		# Ca c'est n'importe quoi
+		loss_batch_mean = np.mean(loss_batch_list)
+
+		return loss_batch_mean, preds_mean_over_ordering
 
 	def valid_step(self, sess, batch_index, piano, orch, mask_orch):
 		feed_dict, orch_t = Standard_trainer.build_feed_dict(self, batch_index, piano, orch, mask_orch)
@@ -178,11 +185,10 @@ class NADE_trainer(Standard_trainer):
 
 	def valid_long_range_step(self, sess, t, piano_extracted, orch_extracted, orch_gen):
 		# This takes way too much time in the case of NADE, so just remove it
-		# feed_dict, orch_t = Standard_trainer.build_feed_dict_long_range(self, t, piano_extracted, orch_extracted, orch_gen)
+		feed_dict, orch_t = Standard_trainer.build_feed_dict_long_range(self, t, piano_extracted, orch_extracted, orch_gen)
 		# loss_batch, preds_batch  = self.generate_mean_ordering(sess, feed_dict, orch_t)
-		loss_batch = None
-		preds_batch = None
-		orch_t = None
+		loss_batch = 0.
+		preds_batch = np.zeros_like(orch_t)
 		return loss_batch, preds_batch, orch_t
 
 	def generation_step(self, sess, batch_index, piano, orch_gen, mask_orch):

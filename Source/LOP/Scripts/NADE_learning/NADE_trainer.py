@@ -8,7 +8,6 @@ import random
 import time
 from keras import backend as K
 
-from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf, sparsity_penalty_l1, sparsity_penalty_l2, bin_Xen_weighted_1_tf
 from LOP.Utils.build_batch import build_batch
 from LOP.Scripts.standard_learning.standard_trainer import Standard_trainer
 

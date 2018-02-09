@@ -67,8 +67,6 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 		#######################################
 		for batch_counter, batch_index in enumerate(valid_index):
 
-			start_time_batch = time.time()
-
 			loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch)
 			
 			val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
@@ -89,8 +87,6 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 			if DEBUG:
 				preds.extend(preds_batch)
 				truth.extend(orch_t)
-			end_time_batch = time.time()
-			logger.info("Batch {} : {} seconds".format(batch_counter, end_time_batch - start_time_batch))
 
 		#######################################
 		# Loop for long-term validation

@@ -44,6 +44,9 @@ class LSTM_plugged_base(Model_lop):
     def optimize():
         return True
     @staticmethod
+    def trainer():
+        return "standard_trainer"
+    @staticmethod
     def get_hp_space():
         super_space = Model_lop.get_hp_space()
 

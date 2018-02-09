@@ -22,7 +22,7 @@ class MLP(Model_lop):
 		Model_lop.__init__(self, model_param, dimensions)
 
 		# Hidden layers architecture
-		self.layers = [self.piano_dim] + list(model_param['layers'])
+		self.layers = [self.piano_dim] + list(model_param['n_hidden'])
 		# Is it a keras model ?
 		self.keras = False
 
@@ -48,7 +48,7 @@ class MLP(Model_lop):
 	def get_hp_space():
 		super_space = Model_lop.get_hp_space()
 
-		space = {'layers': hp.choice('layers', [
+		space = {'n_hidden': hp.choice('n_hidden', [
 				[],
 				[hopt_wrapper.qloguniform_int('layer_'+str(i), log(100), log(5000), 10) for i in range(1)],
 				[hopt_wrapper.qloguniform_int('layer_'+str(i), log(100), log(5000), 10) for i in range(2)],
@@ -59,7 +59,8 @@ class MLP(Model_lop):
 		space.update(super_space)
 		return space
 
-	def predict(self, piano_t, orch_past):
+	def predict(self, inputs_ph):
+		piano_t, _, _, orch_past, _ = inputs_ph
 		def add_layer(input, W_shape, b_shape, sigmoid=False):
 			W = tf.get_variable("W", W_shape, initializer=tf.random_normal_initializer())
 			b = tf.get_variable("b", b_shape, initializer=tf.constant_initializer(0.0))
@@ -67,7 +68,6 @@ class MLP(Model_lop):
 				out = tf.nn.sigmoid(tf.matmul(x, W) + b)
 			else:
 				out = tf.nn.relu(tf.matmul(x, W) + b)
-
 			return out
 
 		x = piano_t
@@ -79,4 +79,13 @@ class MLP(Model_lop):
 		with tf.variable_scope("layer_" + str(len(self.layers))):
 			orch_prediction = add_layer(x, [self.layers[-1], self.orch_dim], [self.orch_dim], True)
 
-		return orch_prediction
+		return orch_prediction, None
+
+# "0" : {
+#  'temporal_order' : 3,
+#  'dropout_probability' : 0,
+#  'weight_decay_coeff' : 0,
+#  'n_hidden': [200, 200],
+#  'tn_weight': 1/10,
+#  'sparsity_coeff': 0
+# },

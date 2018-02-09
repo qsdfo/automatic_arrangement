@@ -9,14 +9,12 @@ from keras.layers.recurrent import GRU, LSTM
 from LOP.Models.Utils.weight_summary import keras_layer_summary
 
 
-def stacked_rnn(input_seq, layers, rnn_type='gru', weight_decay_coeff=0, dropout_probability=0, activation='relu'):
+def stacked_rnn(input_seq, layers, rnn_type='gru', dropout_probability=0, activation='relu'):
 
 	def layer_rnn(layer, rnn_type, return_sequences):
 		if rnn_type is 'gru':
 			this_layer = GRU(layer, return_sequences=return_sequences,
-					activation=activation, dropout=dropout_probability,
-					kernel_regularizer=keras.regularizers.l2(weight_decay_coeff),
-					bias_regularizer=keras.regularizers.l2(weight_decay_coeff))
+					activation=activation, dropout=dropout_probability)
 		return this_layer
 
 	if len(layers) > 1:

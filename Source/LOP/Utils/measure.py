@@ -145,6 +145,7 @@ def compute_numerical_gradient(measure_fun, true_frame, pred_frame, epsilon):
         numeric_grad[:, i] = (f_pos - f_neg) / (2*epsilon)
     return numeric_grad
 
+
 def weighted_accuracy_test(true_frame, pred_frame, lamb=1):
     axis = len(true_frame.shape) - 1
 
@@ -159,6 +160,8 @@ def weighted_accuracy_test(true_frame, pred_frame, lamb=1):
     accuracy_measure = np.true_divide(dividend, divisor)
 
     return accuracy_measure
+
+
 if __name__=='__main__':
     
     # Create a grid

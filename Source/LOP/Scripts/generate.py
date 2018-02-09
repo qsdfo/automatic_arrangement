@@ -10,7 +10,7 @@ from keras import backend as K
 from LOP.Utils.build_batch import build_batch
 
 
-def generate(piano, silence_ind, path_to_config, model_name='model', orch_init=None, batch_size=5):
+def generate(which_trainer, piano, silence_ind, path_to_config, model_name='model', orch_init=None, batch_size=5):
     # Perform N=batch_size orchestrations
     # Sample by sample generation
     # Input : 
@@ -30,6 +30,15 @@ def generate(piano, silence_ind, path_to_config, model_name='model', orch_init=N
     temporal_order = dimensions['temporal_order']
     total_length = piano.shape[0]
 
+    # Trainer
+    if which_trainer == 'standard_trainer':
+        from LOP.Scripts.standard_learning.standard_trainer import Standard_trainer as Trainer
+    elif which_trainer == 'NADE_trainer':
+        from LOP.Scripts.NADE_learning.NADE_trainer import NADE_trainer as Trainer
+    else:
+        raise Exception("Undefined trainer")
+    trainer = Trainer(temporal_order)
+
     if orch_init is not None:
         init_length = orch_init.shape[0]
         assert (init_length < total_length), "Orchestration initialization is longer than the piano score"[0]
@@ -44,19 +53,14 @@ def generate(piano, silence_ind, path_to_config, model_name='model', orch_init=N
 
     # Restore model and preds graph
     tf.reset_default_graph() # First clear graph to avoid memory overflow when running training and generation in the same process
-    saver = tf.train.import_meta_graph(path_to_model + '/model.meta')
-    preds = tf.get_collection("preds")[0]
-    inputs_ph = tf.get_collection('inputs_ph')
-    mask_orch_ph = tf.get_collection('mask_orch_ph')[0]
-    piano_t_ph, piano_past_ph, piano_future_ph, orch_past_ph, orch_future_ph = inputs_ph
-    keras_learning_phase = tf.get_collection("keras_learning_phase")[0]
+    trainer.load_pretrained_model(path_to_model)
 
     with tf.Session() as sess:
             
         if is_keras:
             K.set_session(sess)
 
-        saver.restore(sess, path_to_model + '/model')
+        trainer.saver.restore(sess, path_to_model + '/model')
         
         # for t in range(init_length, total_length):    A REMPLACER PAR TOTAL_LENGTH - TEMPORAL ORDER QUAND ON FERA AUSSI BACKAARD
         for t in range(init_length, total_length-temporal_order):
@@ -64,22 +68,10 @@ def generate(piano, silence_ind, path_to_config, model_name='model', orch_init=N
             if t not in silence_ind:
                 # Just duplicate the temporal index to create batch generation
                 batch_index = np.tile(t, batch_size)
-                    
-                piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t = build_batch(batch_index, piano, orch_gen, None, batch_size, temporal_order)
-    
-                # Feed dict
-                feed_dict = {piano_t_ph: piano_t,
-                            piano_past_ph: piano_past,
-                            piano_future_ph: piano_future,
-                            orch_past_ph: orch_past,
-                            orch_future_ph: orch_future,
-                            mask_orch_ph: mask_orch_t,
-                            keras_learning_phase: 0}
-    
-                # Get prediction
-                prediction = sess.run(preds, feed_dict)
-                
-                # Preds should be a probability distribution. Sample from it
+
+                prediction = trainer.generation_step(sess, batch_index, piano, orch_gen, None)
+
+                # prediction should be a probability distribution. Then we can sample from it
                 # Note that it doesn't need to be part of the graph since we don't use the sampled value to compute the backproped error
                 prediction_sampled = np.random.binomial(1, prediction)
     

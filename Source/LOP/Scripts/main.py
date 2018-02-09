@@ -21,8 +21,13 @@ from LOP.Utils.data_statistics import get_activation_ratio, get_mean_number_unit
 from load_matrices import load_matrices
 
 # MODEL
-from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
+# from LOP.Models.Real_time.Baseline.repeat import Repeat as Model
+# from LOP.Models.Real_time.Baseline.mlp import MLP as Model
+# from LOP.Models.Real_time.Baseline.mlp_K import MLP_K as Model
+# from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
+# from LOP.Models.Real_time.LSTM_static_bias import LSTM_static_bias as Model
 # from LOP.Models.Future_past_piano.Conv_recurrent.conv_recurrent_embedding_0 import Conv_recurrent_embedding_0 as Model
+from LOP.Models.NADE.odnade_mlp import Odnade_mlp as Model
 
 # NORMALIZER
 from LOP.Utils.Normalization.no_normalization import no_normalization as Normalizer
@@ -289,6 +294,15 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 	for counter_split, piano_file in enumerate(piano_files):
 
 		piano, orch, duration_piano, mask_orch, tracks_start_end = load_matrices(piano_file, parameters)
+
+		################################################################################
+		################################################################################
+		################################################################################
+		# COuld be the weight for the weighted binary cross-entropy ???
+		# stat_for_Xent_weight = orch.shape[0]*orch.shape[1]/orch.sum()
+		################################################################################
+		################################################################################
+		################################################################################
 
 		if num_k_folds == 0:
 			this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, 10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)

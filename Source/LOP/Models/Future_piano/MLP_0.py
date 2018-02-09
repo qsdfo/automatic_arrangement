@@ -18,7 +18,7 @@ from LOP.Models.Utils.stacked_rnn import stacked_rnn
 from LOP.Utils.hopt_utils import list_log_hopt
 from LOP.Utils.hopt_wrapper import qloguniform_int
 
-class Recurrent_embeddings_0(MLFP):
+class MLP_0(MLFP):
     """Recurrent embeddings for both the piano and orchestral scores
     Piano embedding : p(t), ..., p(t+N) through stacked RNN. Last time index of last layer is taken as embedding.
     Orchestra embedding : o(t-N), ..., p(t) Same architecture than piano embedding.
@@ -28,12 +28,13 @@ class Recurrent_embeddings_0(MLFP):
 
         MLFP.__init__(self, model_param, dimensions)
 
-        # Gru piano
+        # MPL piano
         embeddings_size = model_param['embeddings_size']
         temp = model_param['hs_piano']
         self.hs_piano = list(temp)
         self.hs_piano.append(embeddings_size)
 
+        # MLP orch
         temp = model_param['hs_orch']
         self.hs_orch = list(temp)
         self.hs_orch.append(embeddings_size)
@@ -75,25 +76,17 @@ class Recurrent_embeddings_0(MLFP):
         # Concatenate t and future
         input_seq = tf.concat([piano_t_time, piano_future], 1)
         # Flip the matrix along the time axis so that the last time index is t
-        input_seq = tf.reverse(input_seq, [1])
+        input_seq = tf.reshape(piano_t, [-1, self.temporal_order * self.piano_dim])
 
-        with tf.name_scope("gru"):
-            piano_embedding = stacked_rnn(input_seq, self.hs_piano, 
-                rnn_type='gru', 
-                weight_decay_coeff=self.weight_decay_coeff, 
-                dropout_probability=self.dropout_probability, 
-                activation='relu'
-                )
+        with tf.name_scope("MLP"):
+            piano_embedding = MLP(x, self.hs_piano, activation='relu')
+
         return piano_embedding
 
     def orchestra_embedding(self, orch_past):
-        with tf.name_scope("gru"):
-            orchestra_embedding = stacked_rnn(orch_past, self.hs_orch, 
-                rnn_type='gru', 
-                weight_decay_coeff=self.weight_decay_coeff, 
-                dropout_probability=self.dropout_probability, 
-                activation='relu'
-                )       
+        x = tf.reshape(orch_past, [-1, (self.temporal_order-1)*self.orch_dim])
+        with tf.name_scope("MLP"):
+            piano_embedding = MLP(x, self.hs_orchestra, activation='relu')            
         return orchestra_embedding
 
     def predict(self, inputs_ph):

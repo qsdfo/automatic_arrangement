@@ -85,6 +85,7 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 			Xent.extend(Xent_batch)
 
 			if DEBUG:
+				# No need to store all the training points
 				preds.extend(preds_batch)
 				truth.extend(orch_t)
 

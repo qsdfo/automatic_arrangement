@@ -18,7 +18,7 @@ import training_utils
 
 from validate import validate
 
-DEBUG=False
+DEBUG=True
 # Note : debug sans summarize, qui pollue le tableau de variables
 SUMMARIZE=False
 ANALYSIS=False
@@ -274,15 +274,6 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			training_utils.mean_and_store_results(valid_results, valid_tabs, epoch)
 			training_utils.mean_and_store_results(valid_long_range_results, valid_tabs_LR, epoch)
 			end_time_epoch = time.time()
-			#######################################
-			# DEBUG
-			# Save numpy arrays of measures values
-			if DEBUG:
-				for measure_name, measure_tab in valid_tabs.iteritems():
-					np.save(os.path.join(config_folder, measure_name + '.npy'), measure_tab)
-				np.save(os.path.join(config_folder, 'preds.npy'), np.asarray(preds_val))
-				np.save(os.path.join(config_folder, 'truth.npy'), np.asarray(truth_val))
-			#######################################
 			
 			#######################################
 			# Overfitting ? 
@@ -326,6 +317,17 @@ Sparse_loss : {:.3f}'
 					if measure_name in save_measures:
 						trainer.saver.save(sess, config_folder + "/model_" + measure_name + "/model")
 					best_epoch[measure_name] = epoch
+
+				#######################################
+				# DEBUG
+				# Save numpy arrays of measures values
+				import pdb; pdb.set_trace()
+				if DEBUG:
+					for measure_name, measure_tab in valid_results.iteritems():
+						np.save(os.path.join(config_folder, measure_name + '.npy'), measure_tab[:2000])
+					np.save(os.path.join(config_folder, 'preds.npy'), np.asarray(preds_val[:2000]))
+					np.save(os.path.join(config_folder, 'truth.npy'), np.asarray(truth_val[:2000]))
+				#######################################
 	   
 			end_time_saving = time.time()
 			logger_train.info('Saving time : {:.3f}'.format(end_time_saving-start_time_saving))

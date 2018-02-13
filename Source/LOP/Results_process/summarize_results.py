@@ -136,27 +136,27 @@ def main(config_folder, measure_name):
     return
 
 if __name__ == '__main__':
-    # config_folders = ["configs/" + str(e) for e in range(40)]
-    aaa="/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_fuly_trained"
-    bbb="/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_static_bias_fully_trained"
-    config_folders = [
-        aaa + "/30",
-        aaa + "/31",
-        aaa + "/32",
-        aaa + "/33",
-        aaa + "/34",
-        aaa + "/35",
-        aaa + "/36",
-        aaa + "/37",
-        bbb + "/300",
-        bbb + "/301",
-        bbb + "/302",
-        bbb + "/303",
-        bbb + "/304",
-        bbb + "/305",
-        bbb + "/306",
-        bbb + "/307",
-        ]
+    config_folders = ["/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/NADE/13"]
+    # aaa="/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_fuly_trained"
+    # bbb="/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_static_bias_fully_trained"
+    # config_folders = [
+    #     aaa + "/30",
+    #     aaa + "/31",
+    #     aaa + "/32",
+    #     aaa + "/33",
+    #     aaa + "/34",
+    #     aaa + "/35",
+    #     aaa + "/36",
+    #     aaa + "/37",
+    #     bbb + "/300",
+    #     bbb + "/301",
+    #     bbb + "/302",
+    #     bbb + "/303",
+    #     bbb + "/304",
+    #     bbb + "/305",
+    #     bbb + "/306",
+    #     bbb + "/307",
+    #     ]
 
     measures = ["accuracy", "loss", "f_score", "precision", "recall", "true_accuracy", "Xent"]
     for config_folder in config_folders:    

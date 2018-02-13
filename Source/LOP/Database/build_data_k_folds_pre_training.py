@@ -395,7 +395,7 @@ if __name__ == '__main__':
     pretraining_bool = False
 
     # Database have to be built jointly so that the ranges match
-    DATABASE_PATH = os.path.join(config.database_root(), 'LOP_database_06_09_17')
+    DATABASE_PATH = config.database_root()
     if DEBUG:
         DATABASE_NAMES = ["debug"] #, "imslp"]
     else:

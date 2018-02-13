@@ -31,7 +31,7 @@ import gc
 from guppy import hpy; hp = hpy()
 import sys
 
-DEBUG = True
+DEBUG = False
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano):
     logging.info(folder_path)
@@ -46,6 +46,9 @@ def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano
         pr_piano, _, _, instru_piano, _, pr_orch, _, _, instru_orch, _, duration =\
             build_data_aux_no_piano.process_folder_NP(folder_path, quantization, temporal_granularity)
     
+    if len(set(instru_orch.values())) < 4:
+        import pdb; pdb.set_trace()
+
     if duration is None:
         # Files that could not be aligned
         return instru_mapping, T
@@ -399,7 +402,7 @@ if __name__ == '__main__':
     if DEBUG:
         DATABASE_NAMES = ["debug"] #, "imslp"]
     else:
-        DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives"] # , "imslp"]
+        DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
         # DATABASE_NAMES = []
     DATABASE_PATH_PRETRAINING = os.path.join(config.database_pretraining_root(), 'SOD')
     if DEBUG:

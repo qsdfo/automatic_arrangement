@@ -404,7 +404,7 @@ if __name__ == '__main__':
     else:
         DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
         # DATABASE_NAMES = []
-    DATABASE_PATH_PRETRAINING = os.path.join(config.database_pretraining_root(), 'SOD')
+    DATABASE_PATH_PRETRAINING = config.database_pretraining_root()
     if DEBUG:
         DATABASE_NAMES_PRETRAINING = ["debug"]
     else:

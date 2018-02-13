@@ -11,8 +11,12 @@ def avoid_tracks():
 	imslp_files = glob.glob(config.database_root() + '/imslp/[0-9]*')
 
 	training_avoid = [
+		# Too good
 		os.path.join(config.database_root(), "hand_picked_Spotify/40"),
 		os.path.join(config.database_root(), "hand_picked_Spotify/45"),
+		# Too bad
+		os.path.join(config.database_root(), "hand_picked_Spotify/15"),
+		os.path.join(config.database_root(), "hand_picked_Spotify/24"),
 	] + imslp_files
 
 	pre_training_avoid = [

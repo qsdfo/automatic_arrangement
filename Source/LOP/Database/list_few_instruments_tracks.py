@@ -25,7 +25,7 @@ if __name__ == '__main__':
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = config.database_root()
     DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
-    DATABASE_PATH_PRETRAINING = os.path.join(config.database_pretraining_root(), 'SOD')
+    DATABASE_PATH_PRETRAINING = config.database_pretraining_root()
     DATABASE_NAMES_PRETRAINING = ["Kunstderfuge", "Musicalion", "Mutopia", "OpenMusicScores"]
 
     # Create a list of paths
@@ -46,13 +46,24 @@ if __name__ == '__main__':
     folder_paths_pretraining = [os.path.join(DATABASE_PATH_PRETRAINING, e) for e in folder_paths_pretraining]
 
     rotten_files = []
-    for track in (folder_paths_pretraining + folder_paths):
+    for track in (folder_paths):
         num_instru = list_tracks(track)
         if num_instru < MIN_INSTRU:
             rotten_files.append(track)
 
     with open("few_instrument_files.txt", 'wb') as ff:
         for rotten_file in rotten_files:
+            # Get only the last part
+            split_filename = re.split('/', rotten_file)
+            ff.write(split_filename[-2] + '/' + split_filename[-1] + '\n')
+
+    rotten_files_pretraining = []
+    for track in (folder_paths_pretraining):
+        num_instru = list_tracks(track)
+        if num_instru < MIN_INSTRU:
+            rotten_files_pretraining.append(track)
+    with open("few_instrument_files_pretraining.txt", 'wb') as ff:
+        for rotten_file in rotten_files_pretraining:
             # Get only the last part
             split_filename = re.split('/', rotten_file)
             ff.write(split_filename[-2] + '/' + split_filename[-1] + '\n')

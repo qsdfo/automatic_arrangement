@@ -18,7 +18,7 @@ import training_utils
 
 from validate import validate
 
-DEBUG=True
+DEBUG=False
 # Note : debug sans summarize, qui pollue le tableau de variables
 SUMMARIZE=False
 ANALYSIS=False
@@ -321,7 +321,6 @@ Sparse_loss : {:.3f}'
 				#######################################
 				# DEBUG
 				# Save numpy arrays of measures values
-				import pdb; pdb.set_trace()
 				if DEBUG:
 					for measure_name, measure_tab in valid_results.iteritems():
 						np.save(os.path.join(config_folder, measure_name + '.npy'), measure_tab[:2000])

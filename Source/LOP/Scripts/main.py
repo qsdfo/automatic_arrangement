@@ -97,23 +97,23 @@ def main():
 	# On from each database and each set
 	track_paths_generation = [
 		# Bouliane train
-		config.database_root() + '/LOP_database_06_09_17/bouliane/0',
+		config.database_root() + '/bouliane/0',
 		# Bouliane test
-		config.database_root() + '/LOP_database_06_09_17/bouliane/17',
+		config.database_root() + '/bouliane/17',
 		# Bouliane valid
-		config.database_root() + '/LOP_database_06_09_17/bouliane/16',
+		config.database_root() + '/bouliane/16',
 		# Spotify train
-		config.database_root() + '/LOP_database_06_09_17/hand_picked_Spotify/0',
+		config.database_root() + '/hand_picked_Spotify/0',
 		# Spotify test
-		config.database_root() + '/LOP_database_06_09_17/hand_picked_Spotify/21',
+		config.database_root() + '/hand_picked_Spotify/21',
 		# Spotify valid
-		config.database_root() + '/LOP_database_06_09_17/hand_picked_Spotify/20',
+		config.database_root() + '/hand_picked_Spotify/20',
 		# Liszt train
-		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/0',
+		config.database_root() + '/liszt_classical_archives/0',
 		# Liszt test
-		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/17',
+		config.database_root() + '/liszt_classical_archives/17',
 		# Liszt valid
-		config.database_root() + '/LOP_database_06_09_17/liszt_classical_archives/16'
+		config.database_root() + '/liszt_classical_archives/16'
 	]
 
 	############################################################

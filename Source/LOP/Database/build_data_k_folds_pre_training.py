@@ -185,9 +185,6 @@ def build_training_matrix(folder_paths, instru_mapping,
         if not os.path.isdir(folder_path):
             continue
 
-        # if "/home/aciditeam-leo/Aciditeam/database/Arrangement/SOD/Kunstderfuge/240" == folder_path:
-        #     import pdb; pdb.set_trace()
-
         # Get pr, warped and duration
         if is_piano:
             new_pr_piano, _, new_duration_piano, _, _, new_pr_orchestra, _, new_duration_orch, new_instru_orchestra, _, duration\
@@ -399,19 +396,30 @@ if __name__ == '__main__':
 
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = config.database_root()
+    DATABASE_PATH_PRETRAINING = config.database_pretraining_root()
+    
     if DEBUG:
         DATABASE_NAMES = ["debug"] #, "imslp"]
     else:
-        DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
-        # DATABASE_NAMES = []
-    DATABASE_PATH_PRETRAINING = config.database_pretraining_root()
+        DATABASE_NAMES = [
+            DATABASE_PATH + "/bouliane", 
+            DATABASE_PATH + "/hand_picked_Spotify", 
+            DATABASE_PATH + "/liszt_classical_archives", 
+            # DATABASE_PATH + "/imslp"
+        ]
+    
     if DEBUG:
         DATABASE_NAMES_PRETRAINING = ["debug"]
     else:
-        DATABASE_NAMES_PRETRAINING = ["Kunstderfuge", "Musicalion", "Mutopia", "OpenMusicScores"]
-        # DATABASE_NAMES_PRETRAINING = ["Musicalion"]
+        DATABASE_NAMES_PRETRAINING = [
+            # DATABASE_PATH + "/imslp"
+            # DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
+            # DATABASE_PATH_PRETRAINING + "/Musicalion", 
+            # DATABASE_PATH_PRETRAINING + "/Mutopia", 
+            # DATABASE_PATH_PRETRAINING + "/OpenMusicScores"
+        ]
 
-    data_folder = '../../../Data/Data'
+    data_folder = '../../../Data/Data_NoIMSLP'
     if DEBUG:
         data_folder += '_DEBUG'
     if pretraining_bool:
@@ -423,24 +431,21 @@ if __name__ == '__main__':
     os.makedirs(data_folder)
 
     # Create a list of paths
-    def build_filepaths_list(db_path=DATABASE_PATH, db_names=DATABASE_NAMES):
+    def build_filepaths_list(path):
         folder_paths = []
-        for db_name in db_names:
-            path = db_path + '/' + db_name
-            for file_name in os.listdir(path):
-                if file_name != '.DS_Store':
-                    this_path = db_name + '/' + file_name
-                    folder_paths.append(this_path)
+        for file_name in os.listdir(path):
+            if file_name != '.DS_Store':
+                this_path = db_name + '/' + file_name
+                folder_paths.append(os.path.join(path, this_path))
         return folder_paths
     
-    folder_paths = build_filepaths_list(DATABASE_PATH, DATABASE_NAMES)
-    folder_paths = [os.path.join(DATABASE_PATH, e) for e in folder_paths]
-    
+    folder_paths = []
+    for path in DATABASE_NAMES:
+        folder_path += build_filepaths_list(path)
+    folder_paths_pretraining = []
     if pretraining_bool:
-        folder_paths_pretraining = build_filepaths_list(DATABASE_PATH_PRETRAINING, DATABASE_NAMES_PRETRAINING)
-        folder_paths_pretraining = [os.path.join(DATABASE_PATH_PRETRAINING, e) for e in folder_paths_pretraining]
-    else:
-        folder_paths_pretraining = []
+        for path in DATABASE_NAMES_PRETRAINING:
+            folder_paths_pretraining = build_filepaths_list(path)
 
     # Remove garbage tracks
     avoid_tracks_list = avoid_tracks()

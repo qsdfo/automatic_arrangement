@@ -16,6 +16,7 @@
 
 
 import os
+import glob
 import shutil
 import re
 import numpy as np
@@ -33,11 +34,20 @@ import sys
 
 DEBUG = False
 
-def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano):
+def update_instru_mapping(folder_path, instru_mapping, T, quantization):
     logging.info(folder_path)
     if not os.path.isdir(folder_path):
         return instru_mapping, T
     
+    # Is there an original piano score or do we have to create it ?
+    num_midi = len(glob.glob(folder_path + '/*.mid'))
+    if num_midi == 2:
+        is_piano = True
+    elif num_midi == 1:
+        is_piano = False
+    else:
+        raise Exception("CAVAVAVAMAVAL")
+
     # Read pr
     if is_piano:
         pr_piano, _, _, instru_piano, _, pr_orch, _, _, instru_orch, _, duration =\
@@ -99,7 +109,7 @@ def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path, quant
             folder_paths_pretraining_split = []
             split_counter+=1
         folder_path_pre = folder_path_pre.rstrip()
-        instru_mapping, T_pretraining = update_instru_mapping(folder_path_pre, instru_mapping, T_pretraining, quantization, is_piano=False)
+        instru_mapping, T_pretraining = update_instru_mapping(folder_path_pre, instru_mapping, T_pretraining, quantization)
         folder_paths_pretraining_split.append(folder_path_pre)
     if len(folder_paths_pretraining) > 0:
         # Don't forget the last one !
@@ -118,7 +128,7 @@ def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path, quant
             folder_paths_split = []
             split_counter+=1
         folder_path = folder_path.rstrip()
-        instru_mapping, T = update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano=True)
+        instru_mapping, T = update_instru_mapping(folder_path, instru_mapping, T, quantization)
         folder_paths_split.append(folder_path)
     # Don't forget the last one !
     if len(folder_paths) > 0:
@@ -172,8 +182,7 @@ def build_training_matrix(folder_paths, instru_mapping,
                           pr_piano, pr_orchestra,
                           duration_piano, duration_orch,
                           mask_orch,
-                          statistics,
-                          is_piano): 
+                          statistics): 
     # Write the prs in the matrix
     time = 0
     tracks_start_end = {}
@@ -184,6 +193,15 @@ def build_training_matrix(folder_paths, instru_mapping,
         logging.info(str(Dcounter) + " : " + folder_path)
         if not os.path.isdir(folder_path):
             continue
+
+        # Is there an original piano score or do we have to create it ?
+        num_midi = len(glob.glob(folder_path + '/*.mid'))
+        if num_midi == 2:
+            is_piano = True
+        elif num_midi == 1:
+            is_piano = False
+        else:
+            raise Exception("CAVAVAVAMAVAL")
 
         # Get pr, warped and duration
         if is_piano:
@@ -275,8 +293,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
                               pr_piano_pretraining, pr_orchestra_pretraining,
                               duration_piano_pretraining, duration_orch_pretraining,
                               mask_orch_pretraining,
-                              statistics_pretraining,
-                              is_piano=False)
+                              statistics_pretraining)
     
         with open(store_folder + '/orchestra_pretraining_' + str(counter_split) + '.npy', 'wb') as outfile:
             np.save(outfile, pr_orchestra_pretraining)
@@ -313,8 +330,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
                               pr_piano, pr_orchestra,
                               duration_piano, duration_orch,
                               mask_orch,
-                              statistics,
-                              is_piano=True)
+                              statistics)
 
         with open(store_folder + '/orchestra_' + str(counter_split) + '.npy', 'wb') as outfile:
             np.save(outfile, pr_orchestra)
@@ -412,7 +428,7 @@ if __name__ == '__main__':
         DATABASE_NAMES_PRETRAINING = ["debug"]
     else:
         DATABASE_NAMES_PRETRAINING = [
-            DATABASE_PATH + "/imslp"
+            DATABASE_PATH + "/imslp",
             # DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
             # DATABASE_PATH_PRETRAINING + "/Musicalion", 
             # DATABASE_PATH_PRETRAINING + "/Mutopia", 
@@ -460,6 +476,9 @@ if __name__ == '__main__':
             folder_paths_pretraining.append(noVal_file)
             folder_paths.remove(noVal_file)
 
+    print("Train&Val : " + str(len(folder_paths)))
+    print("Train only : " + str(len(folder_paths_pretraining)))
+    import pdb; pdb.set_trace()
 
     build_data(folder_paths=folder_paths,
                folder_paths_pretraining=folder_paths_pretraining,

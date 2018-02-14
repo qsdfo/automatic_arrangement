@@ -28,13 +28,13 @@ def avoid_tracks():
 		os.path.join(config.database_pretraining_root(), "Kunstderfuge/1434"),
 	]
 
-	tracks_with_too_few_instruments = []
-	with open("few_instrument_files_pretraining.txt", 'rb') as ff:
-		for line in ff:
-			tracks_with_too_few_instruments.append(os.path.join(config.database_pretraining_root(), line.rstrip("\n")))
-	with open("few_instrument_files.txt", 'rb') as ff:
-		for line in ff:
-			tracks_with_too_few_instruments.append(os.path.join(config.database_root(), line.rstrip("\n")))
+	# tracks_with_too_few_instruments = []
+	# with open("few_instrument_files_pretraining.txt", 'rb') as ff:
+	# 	for line in ff:
+	# 		tracks_with_too_few_instruments.append(os.path.join(config.database_pretraining_root(), line.rstrip("\n")))
+	# with open("few_instrument_files.txt", 'rb') as ff:
+	# 	for line in ff:
+	# 		tracks_with_too_few_instruments.append(os.path.join(config.database_root(), line.rstrip("\n")))
 	
 	# return training_avoid + pre_training_avoid + tracks_with_too_few_instruments
 	return training_avoid + pre_training_avoid

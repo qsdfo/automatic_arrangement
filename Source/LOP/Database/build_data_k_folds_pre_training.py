@@ -23,7 +23,7 @@ import LOP.Scripts.config as config
 import build_data_aux
 import build_data_aux_no_piano
 import cPickle as pickle
-from avoid_tracks import avoid_tracks
+from avoid_tracks import avoid_tracks, no_valid_tracks
 
 # memory issues
 import gc
@@ -46,8 +46,8 @@ def update_instru_mapping(folder_path, instru_mapping, T, quantization, is_piano
         pr_piano, _, _, instru_piano, _, pr_orch, _, _, instru_orch, _, duration =\
             build_data_aux_no_piano.process_folder_NP(folder_path, quantization, temporal_granularity)
     
-    if len(set(instru_orch.values())) < 4:
-        import pdb; pdb.set_trace()
+    # if len(set(instru_orch.values())) < 4:
+    #     import pdb; pdb.set_trace()
 
     if duration is None:
         # Files that could not be aligned
@@ -392,7 +392,7 @@ if __name__ == '__main__':
     # because train is data augmented but not test and validate
     temporal_granularity = 'event_level'
     quantization = 8
-    pretraining_bool = False
+    pretraining_bool = True
 
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = config.database_root()
@@ -412,14 +412,14 @@ if __name__ == '__main__':
         DATABASE_NAMES_PRETRAINING = ["debug"]
     else:
         DATABASE_NAMES_PRETRAINING = [
-            # DATABASE_PATH + "/imslp"
+            DATABASE_PATH + "/imslp"
             # DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
             # DATABASE_PATH_PRETRAINING + "/Musicalion", 
             # DATABASE_PATH_PRETRAINING + "/Mutopia", 
             # DATABASE_PATH_PRETRAINING + "/OpenMusicScores"
         ]
 
-    data_folder = '../../../Data/Data_NoIMSLP'
+    data_folder = '../../../Data/Data_TrainAll'
     if DEBUG:
         data_folder += '_DEBUG'
     if pretraining_bool:
@@ -435,14 +435,16 @@ if __name__ == '__main__':
         folder_paths = []
         for file_name in os.listdir(path):
             if file_name != '.DS_Store':
-                this_path = db_name + '/' + file_name
-                folder_paths.append(os.path.join(path, this_path))
+                this_path = os.path.join(path, file_name)
+                folder_paths.append(this_path)
         return folder_paths
     
     folder_paths = []
     for path in DATABASE_NAMES:
-        folder_path += build_filepaths_list(path)
+        folder_paths += build_filepaths_list(path)
+
     folder_paths_pretraining = []
+    
     if pretraining_bool:
         for path in DATABASE_NAMES_PRETRAINING:
             folder_paths_pretraining = build_filepaths_list(path)
@@ -451,6 +453,13 @@ if __name__ == '__main__':
     avoid_tracks_list = avoid_tracks()
     folder_paths = [e for e in folder_paths if e not in avoid_tracks_list]
     folder_paths_pretraining = [e for e in folder_paths_pretraining if e not in avoid_tracks_list]
+
+    noVal_tracks_list = no_valid_tracks()
+    for noVal_file in noVal_tracks_list:
+        if noVal_file in folder_paths:
+            folder_paths_pretraining.append(noVal_file)
+            folder_paths.remove(noVal_file)
+
 
     build_data(folder_paths=folder_paths,
                folder_paths_pretraining=folder_paths_pretraining,

@@ -46,11 +46,15 @@ class NADE_trainer(Standard_trainer):
 			with tf.name_scope("NADE_mask_input"):
 				##################################################
 				##################################################
+				# Masked gradients are the values known in the input : so 1 - mask are used for gradient 
 				# loss_val_masked = tf.boolean_mask(self.mask_input==1, loss_val_, tf.zeros_like(loss_val_))
-				loss_val_masked = tf.stop_gradient((1-self.mask_input)*loss_val_) + self.mask_input*loss_val_
+				loss_val_masked_ = tf.stop_gradient(self.mask_input*loss_val_) + (1-self.mask_input)*loss_val_
 				# LEQUEL ??
 				##################################################
 				##################################################
+				# Normalization
+				norm_nade = model.orch_dim / (model.orch_dim - tf.reduce_sum(self.mask_input, axis=1) + 1)
+				loss_val_masked = model.orch_dim
 
 			with tf.name_scope('mask_orch'):
 				if parameters['mask_orch']:

@@ -191,12 +191,14 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 		pool = ThreadPool(processes=1)
 		async_train = pool.apply_async(async_load_mat, (normalizer, path_piano_matrices_train[0], parameters))
 		matrices_from_thread = async_train.get()
-		init_matrices_validation = matrices_from_thread
 		load_data_time = time.time() - load_data_start
 		logger_train.info("Load the first matrix time : " + str(load_data_time))
 
 		# For dumb baseline models like random or repeat which don't need training step optimization
 		if model.optimize() == False:
+			# WARNING : first validation matrix is not necessarily the same as the first train matrix
+			async_valid = pool.apply_async(async_load_mat, (normalizer, valid_splits_batches.keys()[0], parameters))
+			init_matrices_validation = async_valid.get()
 			valid_results, valid_long_range_results, _, _ = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
 			training_utils.mean_and_store_results(valid_results, valid_tabs, 0)
 			training_utils.mean_and_store_results(valid_long_range_results, valid_tabs_LR, 0)
@@ -224,7 +226,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 				# But load the one next one
 				file_ind_NEXT = (file_ind_CURRENT+1) % N_matrix_files
 				path_piano_matrix_NEXT = path_piano_matrices_train[file_ind_NEXT]
-				
+
 				#######################################
 				# Load matrix thread
 				#######################################
@@ -250,6 +252,10 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			train_time = time.time() - train_time
 			logger_train.info("Training time : {}".format(train_time))
 
+			# WARNING : first validation matrix is not necessarily the same as the first train matrix
+			# So now that it's here, parallelization is absolutely useless....
+			async_valid = pool.apply_async(async_load_mat, (normalizer, valid_splits_batches.keys()[0], parameters))
+
 			if SUMMARIZE:
 				if (epoch<5) or (epoch%10==0):
 					# Note that summarize here only look at the variables after the last batch of the epoch
@@ -263,6 +269,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			# Validate
 			#######################################
 			valid_time = time.time()
+			init_matrices_validation = async_valid.get()
 			valid_results, valid_long_range_results, preds_val, truth_val = \
 				validate(trainer, sess, 
 					init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, 

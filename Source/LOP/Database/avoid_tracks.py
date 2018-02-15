@@ -12,6 +12,33 @@ def avoid_tracks():
 		# Too good
 		# os.path.join(config.database_root(), "hand_picked_Spotify/40"),
 		# os.path.join(config.database_root(), "hand_picked_Spotify/45"),
+		# # Imslp bad
+		# os.path.join(config.database_root(), "imslp/21"),
+		# os.path.join(config.database_root(), "imslp/43"),
+		# os.path.join(config.database_root(), "imslp/20"),
+		# os.path.join(config.database_root(), "imslp/44"),
+		# os.path.join(config.database_root(), "imslp/22"),
+		# os.path.join(config.database_root(), "imslp/12"),
+		# os.path.join(config.database_root(), "imslp/14"),
+		# os.path.join(config.database_root(), "imslp/62"),
+		# os.path.join(config.database_root(), "imslp/68"),
+		# os.path.join(config.database_root(), "imslp/39"),
+		# os.path.join(config.database_root(), "imslp/15"),
+		# os.path.join(config.database_root(), "imslp/26"),
+		# os.path.join(config.database_root(), "imslp/71"),
+		# os.path.join(config.database_root(), "imslp/3"),
+		# os.path.join(config.database_root(), "imslp/78"),
+		# os.path.join(config.database_root(), "imslp/11"),
+		# os.path.join(config.database_root(), "imslp/86"),
+		# os.path.join(config.database_root(), "imslp/16"),
+		# os.path.join(config.database_root(), "imslp/25"),
+		# os.path.join(config.database_root(), "imslp/56"),
+		# os.path.join(config.database_root(), "imslp/77"),
+		# os.path.join(config.database_root(), "imslp/5"),
+		# os.path.join(config.database_root(), "imslp/23"),
+		# os.path.join(config.database_root(), "imslp/45"),
+		# os.path.join(config.database_root(), "imslp/50"),
+		# os.path.join(config.database_root(), "imslp/64"),
 	] 
 	
 	# All IMSLP files
@@ -42,8 +69,8 @@ def avoid_tracks():
 def no_valid_tracks():
 	no_valid_tracks = [
 		# Too good
-		os.path.join(config.database_root(), "hand_picked_Spotify/40"),
-		os.path.join(config.database_root(), "hand_picked_Spotify/45"),
+		# os.path.join(config.database_root(), "hand_picked_Spotify/40"),
+		# os.path.join(config.database_root(), "hand_picked_Spotify/45"),
 	] 
 	return no_valid_tracks
 

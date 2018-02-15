@@ -298,7 +298,7 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 		################################################################################
 		################################################################################
 		################################################################################
-		# COuld be the weight for the weighted binary cross-entropy ???
+		# Could be the weight for the weighted binary cross-entropy ???
 		# stat_for_Xent_weight = orch.shape[0]*orch.shape[1]/orch.sum()
 		################################################################################
 		################################################################################
@@ -354,6 +354,34 @@ def train_wrapper(parameters, model_params, dimensions, config_folder,
 	train_folds = K_fold['train']
 	valid_folds = K_fold['valid']
 	valid_long_range_folds = K_fold['valid_long_range']
+
+	# List the validation files onwhich we want tro train
+	list_valid = [
+	# TO BAN ABSOLUTELY
+	# bouliane/11
+	# bouliane/27
+	# bouliane/5
+	# hand_picked_Spotify/10
+		os.path.join(config.database_root(), "bouliane/0"),
+		os.path.join(config.database_root(), "bouliane/10"),
+		os.path.join(config.database_root(), "bouliane/15"),
+		os.path.join(config.database_root(), "bouliane/20"),
+		os.path.join(config.database_root(), "bouliane/30"),
+		os.path.join(config.database_root(), "hand_picked_Spotify/0"),
+		os.path.join(config.database_root(), "hand_picked_Spotify/11"),
+		os.path.join(config.database_root(), "hand_picked_Spotify/20"),
+		os.path.join(config.database_root(), "hand_picked_Spotify/30"),
+		os.path.join(config.database_root(), "hand_picked_Spotify/40"),
+		os.path.join(config.database_root(), "hand_picked_Spotify/50"),
+		os.path.join(config.database_root(), "liszt_classical_archives/0"),
+		os.path.join(config.database_root(), "liszt_classical_archives/10"),
+		os.path.join(config.database_root(), "liszt_classical_archives/15"),
+		os.path.join(config.database_root(), "liszt_classical_archives/25"),
+		os.path.join(config.database_root(), "liszt_classical_archives/30"),
+	]
+	if not (valid_names[0] in list_valid):
+		# Don't train for these examples
+		return
 
 	config_folder_fold = config_folder + '/' + str(K_fold_ind)
 	os.makedirs(config_folder_fold)

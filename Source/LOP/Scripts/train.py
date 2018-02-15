@@ -322,7 +322,7 @@ Sparse_loss : {:.3f}'
 			for measure_name, measure_curve in valid_tabs.iteritems():
 				best_measure_so_far = measure_curve[best_epoch[measure_name]]
 				measure_for_this_epoch = measure_curve[epoch]
-				if measure_for_this_epoch <= best_measure_so_far:
+				if (measure_for_this_epoch <= best_measure_so_far) or (epoch==0):
 					if measure_name in save_measures:
 						trainer.saver.save(sess, config_folder + "/model_" + measure_name + "/model")
 					best_epoch[measure_name] = epoch

@@ -11,8 +11,8 @@ from multiprocessing.pool import ThreadPool
 # from multiprocessing.pool import Pool
 
 import LOP.Scripts.config as config
-from LOP.Utils.early_stopping import up_criterion
-from LOP.Utils.model_statistics import count_parameters
+import LOP.Utils.early_stopping as early_stopping
+import LOP.Utils.model_statistics as model_statistics
 from LOP.Scripts.asynchronous_load_mat import async_load_mat
 import training_utils
 
@@ -79,7 +79,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 
 	############################################################
 	# Display informations about the models
-	num_parameters = count_parameters(tf.get_default_graph())
+	num_parameters = model_statistics.count_parameters(tf.get_default_graph())
 	logger_train.info((u'** Num trainable parameters :  {}'.format(num_parameters)).encode('utf8'))
 	with open(os.path.join(config_folder, 'num_parameters.txt'), 'wb') as ff:
 		ff.write("{:d}".format(num_parameters))
@@ -279,7 +279,9 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			# Overfitting ? 
 			if epoch >= parameters['min_number_iteration']:
 				# Choose short/long range and the measure
-				OVERFITTING = up_criterion(valid_tabs[overfitting_measure], epoch, parameters["number_strips"], parameters["validation_order"])
+				OVERFITTING = early_stopping.up_criterion(valid_tabs[overfitting_measure], epoch, parameters["number_strips"], parameters["validation_order"])
+				# Also check for NaN
+				OVERFITTING = early_stopping.check_for_nan(valid_tabs, save_measures, max_nan=3)
 			#######################################
 
 			#######################################

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
+import numpy as np
+
 
 def up_criterion(val_tab, epoch, number_strips=3, validation_order=2):
     #######################################
@@ -20,3 +22,9 @@ def up_criterion(val_tab, epoch, number_strips=3, validation_order=2):
         if not UP:
             OVERFITTING = False
     return OVERFITTING
+
+def check_for_nan(val_tab, measures_to_check, max_nan):
+    isnan = 0
+    for measure in measures_to_check:
+        isnan = max(isnan, np.sum(np.isnan(val_tab[measure])))
+    return (isnan > 3)

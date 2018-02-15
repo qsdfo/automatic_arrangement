@@ -421,21 +421,20 @@ if __name__ == '__main__':
             DATABASE_PATH + "/bouliane", 
             DATABASE_PATH + "/hand_picked_Spotify", 
             DATABASE_PATH + "/liszt_classical_archives", 
-            # DATABASE_PATH + "/imslp"
+            DATABASE_PATH + "/imslp"
         ]
     
     if DEBUG:
         DATABASE_NAMES_PRETRAINING = ["debug"]
     else:
         DATABASE_NAMES_PRETRAINING = [
-            DATABASE_PATH + "/imslp",
             # DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
             # DATABASE_PATH_PRETRAINING + "/Musicalion", 
             # DATABASE_PATH_PRETRAINING + "/Mutopia", 
             # DATABASE_PATH_PRETRAINING + "/OpenMusicScores"
         ]
 
-    data_folder = '../../../Data/Data_TrainAll'
+    data_folder = '../../../Data/Data_Discard_1'
     if DEBUG:
         data_folder += '_DEBUG'
     if pretraining_bool:
@@ -476,8 +475,8 @@ if __name__ == '__main__':
             folder_paths_pretraining.append(noVal_file)
             folder_paths.remove(noVal_file)
 
-    print("Train&Val : " + str(len(folder_paths)))
-    print("Train only : " + str(len(folder_paths_pretraining)))
+    print("Training : " + str(len(folder_paths)))
+    print("Pretraining : " + str(len(folder_paths_pretraining)))
     import pdb; pdb.set_trace()
 
     build_data(folder_paths=folder_paths,

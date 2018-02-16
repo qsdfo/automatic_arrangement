@@ -56,8 +56,8 @@ class Standard_trainer(object):
 		
 		sparse_loss = sparsity_coeff * sparse_loss
 		# DEBUG purposes
-		self.sparse_loss_mean = tf.reduce_mean(sparse_loss)
-		return sparse_loss
+		sparse_loss_mean = tf.reduce_mean(sparse_loss)
+		return sparse_loss, sparse_loss_mean
 
 	def build_weight_decay(self, model):
 		weight_decay = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * model.weight_decay_coeff
@@ -68,28 +68,32 @@ class Standard_trainer(object):
 			with tf.name_scope('distance'):
 				distance = self.build_distance(model, parameters)
 		
-			with tf.name_scope('sparse_output_constraint'):
-				sparse_loss = self.build_sparsity_term(model, parameters)
-				if model.sparsity_coeff != 0:
+			if model.sparsity_coeff != 0:
+				with tf.name_scope('sparse_output_constraint'):
+					sparse_loss, sparse_loss_mean = self.build_sparsity_term(model, parameters)
 					loss_val_ = distance + sparse_loss
-				else:
-					loss_val_ = distance
+					self.sparse_loss_mean = sparse_loss_mean
+			else:
+				loss_val_ = distance
+				temp = tf.zeros_like(loss_val_)
+				self.sparse_loss_mean = tf.reduce_mean(temp)
 
-			with tf.name_scope('mask_orch'):
-				if parameters['mask_orch']:
+
+			if parameters['mask_orch']:
+				with tf.name_scope('mask_orch'):
 					loss_masked = tf.where(mask_orch_ph==1, loss_val_, tf.zeros_like(loss_val_))
 					self.loss_val = tf.reduce_mean(loss_masked, name="loss_val")
-				else:
-					self.loss_val = tf.reduce_mean(loss_val_, name="loss_val")
+			else:
+				self.loss_val = tf.reduce_mean(loss_val_, name="loss_val")
 		
-			with tf.name_scope('weight_decay'):
-				weight_decay = self.build_weight_decay(model)
+			if model.weight_decay_coeff != 0:
+				with tf.name_scope('weight_decay'):
 				# Weight decay
-				if model.weight_decay_coeff != 0:
+					weight_decay = self.build_weight_decay(model)
 					# Keras weight decay does not work...
 					self.loss = self.loss_val + weight_decay
-				else:
-					self.loss = self.loss_val
+			else:
+				self.loss = self.loss_val
 		return
 		
 	def build_train_step_node(self, model, optimizer):
@@ -114,9 +118,6 @@ class Standard_trainer(object):
 		tf.add_to_collection('inputs_ph', self.piano_future_ph)
 		tf.add_to_collection('inputs_ph', self.orch_past_ph)
 		tf.add_to_collection('inputs_ph', self.orch_future_ph)
-		# Debug collection
-		tf.add_to_collection('debug', self.embedding_concat)
-		tf.add_to_collection('debug', self.sparse_loss_mean)
 		if model.optimize():
 			self.saver = tf.train.Saver()
 		else:
@@ -135,9 +136,6 @@ class Standard_trainer(object):
 		self.mask_orch_ph = tf.get_collection("mask_orch_ph")[0]
 		self.train_step = tf.get_collection('train_step')[0]
 		self.keras_learning_phase = tf.get_collection("keras_learning_phase")[0]
-		debug = tf.get_collection("debug")
-		self.embedding_concat = debug[0]
-		self.sparse_loss_mean = debug[1]
 		return
 
 	def build_feed_dict(self, batch_index, piano, orch, mask_orch):

@@ -50,6 +50,8 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 	else:
 		raise Exception("Undefined trainer")
 
+	# Flag to know if the model has to be trained or not
+	model_optimize = model.optimize()
 	trainer = Trainer(**kwargs_trainer)
 
 
@@ -70,8 +72,9 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 		time_building_graph = time.time() - start_time_building_graph
 		logger_train.info("TTT : Loading pretrained model took {0:.2f}s".format(time_building_graph))
 
-	embedding_concat = trainer.embedding_concat
-	sparse_loss_node = trainer.sparse_loss_mean
+	if model_optimize:
+		embedding_concat = trainer.embedding_concat
+		sparse_loss_node = trainer.sparse_loss_mean
 
 	if SUMMARIZE:
 		tf.summary.scalar('loss', trainer.loss)
@@ -195,15 +198,18 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 		logger_train.info("Load the first matrix time : " + str(load_data_time))
 
 		# For dumb baseline models like random or repeat which don't need training step optimization
-		if model.optimize() == False:
+		if model_optimize == False:
 			# WARNING : first validation matrix is not necessarily the same as the first train matrix
 			async_valid = pool.apply_async(async_load_mat, (normalizer, valid_splits_batches.keys()[0], parameters))
 			init_matrices_validation = async_valid.get()
-			valid_results, valid_long_range_results, _, _ = validate(context, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters)
+			valid_results, valid_long_range_results, _, _ = validate(trainer, sess, 
+					init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, 
+					normalizer, parameters,
+					logger_train, DEBUG)
 			training_utils.mean_and_store_results(valid_results, valid_tabs, 0)
 			training_utils.mean_and_store_results(valid_long_range_results, valid_tabs_LR, 0)
-			return remove_tail_training_curves(valid_tabs, 1), best_epoch, \
-				remove_tail_training_curves(valid_tabs_LR, 1), best_epoch_LR
+			return training_utils.remove_tail_training_curves(valid_tabs, 1), best_epoch, \
+				training_utils.remove_tail_training_curves(valid_tabs_LR, 1), best_epoch_LR
 
 		# Training iteration
 		while (not OVERFITTING and not TIME_LIMIT

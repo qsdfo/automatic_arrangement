@@ -70,14 +70,14 @@ def main(config_folder, measure_name):
         #########################################################################################################
         # A changer dans le future
         # Hacky parce que j'ai oublie d'arreter le monitoring a la fin du training....
-        def remove_tail(mat, best):
-            if len(np.nonzero(mat)[0])!=0:
-                last_ind = max(np.nonzero(mat)[0][-1], best+1)
-            else:
-                last_ind = best+1
-            return mat[:last_ind]
-        results_long_range = remove_tail(results_long_range, long_range_best)
-        results_short_range = remove_tail(results_short_range, short_range_best)
+        # def remove_tail(mat, best):
+        #     if len(np.nonzero(mat)[0])!=0:
+        #         last_ind = max(np.nonzero(mat)[0][-1], best+1)
+        #     else:
+        #         last_ind = best+1
+        #     return mat[:last_ind]
+        # results_long_range = remove_tail(results_long_range, long_range_best)
+        # results_short_range = remove_tail(results_short_range, short_range_best)
         #########################################################################################################
         #########################################################################################################
         #########################################################################################################
@@ -136,7 +136,7 @@ def main(config_folder, measure_name):
     return
 
 if __name__ == '__main__':
-    config_folders = ["/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/NADE/13"]
+    config_folders = ["/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_Discard0_tempGran8/LSTM_plugged_base/0"]
     # aaa="/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_fuly_trained"
     # bbb="/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_static_bias_fully_trained"
     # config_folders = [

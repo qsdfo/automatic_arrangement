@@ -26,7 +26,9 @@ class Repeat(Model_lop):
     @staticmethod
     def optimize():
         return False
-
+    @staticmethod
+    def trainer():
+        return "standard_trainer"
     @staticmethod
     def get_hp_space():
         space = Model_lop.get_hp_space()

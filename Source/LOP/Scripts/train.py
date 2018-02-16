@@ -287,8 +287,9 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			if epoch >= parameters['min_number_iteration']:
 				# Choose short/long range and the measure
 				OVERFITTING = early_stopping.up_criterion(valid_tabs[overfitting_measure], epoch, parameters["number_strips"], parameters["validation_order"])
-				# Also check for NaN
-				OVERFITTING = early_stopping.check_for_nan(valid_tabs, save_measures, max_nan=3)
+				if not OVERFITTING:
+					# Also check for NaN
+					OVERFITTING = early_stopping.check_for_nan(valid_tabs, save_measures, max_nan=3)
 			#######################################
 
 			#######################################

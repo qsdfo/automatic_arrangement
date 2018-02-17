@@ -31,6 +31,7 @@ def build_folds(tracks_start_end, piano, orchestra, k_folds=10, temporal_order=2
         test_ind = []
         this_valid_names = []
         this_test_names = []        
+        # Valid & Train
         for counter, filename in enumerate(list_files_valid):
             # Get valid indices for a track
             start_track, end_track = tracks_start_end[filename]
@@ -46,7 +47,7 @@ def build_folds(tracks_start_end, piano, orchestra, k_folds=10, temporal_order=2
             elif (counter_fold % k_folds) == k_folds-1:
                 this_test_names.append(filename)
                 test_ind.extend(ind)
-        import pdb; pdb.set_trace()
+        # Train only
         for filename in list_files_train_only:
             start_track, end_track = tracks_start_end[filename]
             ind = range(start_track+temporal_order-1, end_track-temporal_order+1)

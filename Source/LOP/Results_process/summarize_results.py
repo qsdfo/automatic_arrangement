@@ -7,6 +7,8 @@ Created on Thu Nov 30 17:07:52 2017
 @author: leo
 """
 
+import matplotlib as mpl
+mpl.use('Agg')
 from matplotlib import pyplot as plt
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
@@ -142,13 +144,7 @@ def main(config_folder, measure_name, avoid_folds):
     return
 
 if __name__ == '__main__':
-    config_folders = [
-        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Baseline_Random"
-        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Baseline_Repeat"
-        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_All_tempGran8",
-        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_Discard0_tempGran8",
-        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_Discard1_tempGran8",
-        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_Discard2_tempGran8"]
+    config_folders = ["/home/aciditeam-leo/Aciditeam/lop/Results/Data_tempGran8/LSTM_plugged_base/1"]
     # aaa="/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_fuly_trained"
     # bbb="/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_static_bias_fully_trained"
     # config_folders = [

@@ -24,7 +24,7 @@ import LOP.Scripts.config as config
 import build_data_aux
 import build_data_aux_no_piano
 import cPickle as pickle
-from avoid_tracks import avoid_tracks, no_valid_tracks
+import avoid_tracks 
 
 # memory issues
 import gc
@@ -408,7 +408,7 @@ if __name__ == '__main__':
     # because train is data augmented but not test and validate
     temporal_granularity = 'event_level'
     quantization = 8
-    pretraining_bool = True
+    pretraining_bool = False
 
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = config.database_root()
@@ -434,7 +434,7 @@ if __name__ == '__main__':
             # DATABASE_PATH_PRETRAINING + "/OpenMusicScores"
         ]
 
-    data_folder = '../../../Data/Data_Discard_1'
+    data_folder = '../../../Data/Data'
     if DEBUG:
         data_folder += '_DEBUG'
     if pretraining_bool:
@@ -442,7 +442,7 @@ if __name__ == '__main__':
     data_folder += '_tempGran' + str(quantization)
     
     if os.path.isdir(data_folder):
-        shutil.rmtree(data_folder)    
+        shutil.rmtree(data_folder)
     os.makedirs(data_folder)
 
     # Create a list of paths
@@ -465,19 +465,12 @@ if __name__ == '__main__':
             folder_paths_pretraining = build_filepaths_list(path)
 
     # Remove garbage tracks
-    avoid_tracks_list = avoid_tracks()
+    avoid_tracks_list = avoid_tracks.avoid_tracks()
     folder_paths = [e for e in folder_paths if e not in avoid_tracks_list]
     folder_paths_pretraining = [e for e in folder_paths_pretraining if e not in avoid_tracks_list]
 
-    noVal_tracks_list = no_valid_tracks()
-    for noVal_file in noVal_tracks_list:
-        if noVal_file in folder_paths:
-            folder_paths_pretraining.append(noVal_file)
-            folder_paths.remove(noVal_file)
-
     print("Training : " + str(len(folder_paths)))
     print("Pretraining : " + str(len(folder_paths_pretraining)))
-    import pdb; pdb.set_trace()
 
     build_data(folder_paths=folder_paths,
                folder_paths_pretraining=folder_paths_pretraining,

@@ -17,7 +17,7 @@ import glob
 import csv
 import numpy as np
 
-def main(config_folder, measure_name):
+def main(config_folder, measure_name, avoid_folds):
     """Plots learning curves
     
     Paramaters
@@ -49,6 +49,8 @@ def main(config_folder, measure_name):
     # List folds
     folds = glob.glob(config_folder + '/[0-9]*')
 
+    folds = [e for e in folds if re.split("/", e)[-1] not in avoid_folds]
+
     # Best means
     best_mean_short = []
     best_mean_long = []
@@ -59,6 +61,11 @@ def main(config_folder, measure_name):
 
         results_long_range = np.loadtxt(fold + '/results_long_range/' + measure_name + '.txt')
         results_short_range = np.loadtxt(fold + '/results_short_range/' + measure_name + '.txt')
+
+        # Avoid Nan ? Not recommended
+        # if np.all(np.isnan(results_short_range)):
+        #     continue
+
 
         with open(fold + '/results_long_range/' + measure_name + '_best_epoch.txt', 'rb') as ff:
             long_range_best = int(ff.read())
@@ -132,11 +139,16 @@ def main(config_folder, measure_name):
         writer.writerow({'measure': measure_name,
             'short term': np.mean(best_mean_short),
             'long term': np.mean(best_mean_long)})
-
     return
 
 if __name__ == '__main__':
-    config_folders = ["/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_Discard0_tempGran8/LSTM_plugged_base/0"]
+    config_folders = [
+        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Baseline_Random"
+        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Baseline_Repeat"
+        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_All_tempGran8",
+        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_Discard0_tempGran8",
+        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_Discard1_tempGran8",
+        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_Discard2_tempGran8"]
     # aaa="/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_fuly_trained"
     # bbb="/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_static_bias_fully_trained"
     # config_folders = [
@@ -159,6 +171,9 @@ if __name__ == '__main__':
     #     ]
 
     measures = ["accuracy", "loss", "f_score", "precision", "recall", "true_accuracy", "Xent"]
+
+    avoid_folds = ["2", "14"] # Should be set to [] most of the times
+
     for config_folder in config_folders:    
         
         if not os.path.isdir(config_folder):
@@ -171,4 +186,4 @@ if __name__ == '__main__':
         os.mkdir(res_summary)
 
         for measure in measures:
-            main(config_folder, measure)
+            main(config_folder, measure, avoid_folds)

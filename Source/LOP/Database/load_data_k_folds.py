@@ -2,17 +2,23 @@
 # -*- coding: utf8 -*-
 
 import random
+import avoid_tracks
 
 def build_folds(tracks_start_end, piano, orchestra, k_folds=10, temporal_order=20, batch_size=100, long_range_pred=1, random_seed=None, logger_load=None):
-    list_files = tracks_start_end.keys()
+    list_files = tracks_start_end.keys()    
 
     # Folds are built on files, not directly the indices
     # By doing so, we prevent the same file being spread over train, test and validate sets
     random.seed(random_seed)
     random.shuffle(list_files)
 
+    # Remove no validation files
+    no_valid_files = set(avoid_tracks.no_valid_tracks())
+    list_files_valid = [e for e in list_files if (e not in no_valid_files)]
+    list_files_train_only = set(list_files) - set(list_files_valid)
+
     if k_folds == -1:
-        k_folds = len(list_files)
+        k_folds = len(list_files_valid)
 
     folds = []
     valid_names = []
@@ -24,8 +30,8 @@ def build_folds(tracks_start_end, piano, orchestra, k_folds=10, temporal_order=2
         valid_ind_long_range = []
         test_ind = []
         this_valid_names = []
-        this_test_names = []
-        for counter, filename in enumerate(list_files):
+        this_test_names = []        
+        for counter, filename in enumerate(list_files_valid):
             # Get valid indices for a track
             start_track, end_track = tracks_start_end[filename]
             ind = range(start_track+temporal_order-1, end_track-temporal_order+1)
@@ -40,6 +46,11 @@ def build_folds(tracks_start_end, piano, orchestra, k_folds=10, temporal_order=2
             elif (counter_fold % k_folds) == k_folds-1:
                 this_test_names.append(filename)
                 test_ind.extend(ind)
+        import pdb; pdb.set_trace()
+        for filename in list_files_train_only:
+            start_track, end_track = tracks_start_end[filename]
+            ind = range(start_track+temporal_order-1, end_track-temporal_order+1)
+            train_ind.extend(ind)
         train_ind_noSilence = remove_silences(train_ind, piano, orchestra)
         valid_ind_noSilence = remove_silences(valid_ind, piano, orchestra)
         valid_ind_long_range_noSilence = remove_silences(valid_ind_long_range, piano, orchestra)

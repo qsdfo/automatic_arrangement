@@ -21,7 +21,7 @@ def list_tracks(folder_path):
     return len(set(row.values()))
 
 if __name__ == '__main__':
-    MIN_INSTRU = 4
+    MIN_INSTRU = 5
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = config.database_root()
     DATABASE_NAMES = ["bouliane", "hand_picked_Spotify", "liszt_classical_archives", "imslp"]
@@ -51,7 +51,7 @@ if __name__ == '__main__':
         if num_instru < MIN_INSTRU:
             rotten_files.append(track)
 
-    with open("few_instrument_files.txt", 'wb') as ff:
+    with open(config.data_root() + "/few_instrument_files.txt", 'wb') as ff:
         for rotten_file in rotten_files:
             # Get only the last part
             split_filename = re.split('/', rotten_file)
@@ -62,9 +62,8 @@ if __name__ == '__main__':
         num_instru = list_tracks(track)
         if num_instru < MIN_INSTRU:
             rotten_files_pretraining.append(track)
-    with open("few_instrument_files_pretraining.txt", 'wb') as ff:
+    with open(config.data_root() + "/few_instrument_files_pretraining.txt", 'wb') as ff:
         for rotten_file in rotten_files_pretraining:
             # Get only the last part
             split_filename = re.split('/', rotten_file)
             ff.write(split_filename[-2] + '/' + split_filename[-1] + '\n')
-    

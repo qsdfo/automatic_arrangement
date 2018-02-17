@@ -6,6 +6,7 @@ import numpy as np
 import keras
 import random
 import time
+import config
 from keras import backend as K
 
 from LOP.Utils.build_batch import build_batch
@@ -36,12 +37,15 @@ class NADE_trainer(Standard_trainer):
 			with tf.name_scope('distance'):
 				distance = Standard_trainer.build_distance(self, model, parameters)
 		
-			with tf.name_scope('sparse_output_constraint'):
-				sparse_loss = Standard_trainer.build_sparsity_term(self, model, parameters)
-				if model.sparsity_coeff != 0:
+			if model.sparsity_coeff != 0:
+				with tf.name_scope('sparse_output_constraint'):
+					sparse_loss, sparse_loss_mean = self.build_sparsity_term(model, parameters)
 					loss_val_ = distance + sparse_loss
-				else:
-					loss_val_ = distance
+					self.sparse_loss_mean = sparse_loss_mean
+			else:
+				loss_val_ = distance
+				temp = tf.zeros_like(loss_val_)
+				self.sparse_loss_mean = tf.reduce_mean(temp)
 
 			with tf.name_scope("NADE_mask_input"):
 				##################################################

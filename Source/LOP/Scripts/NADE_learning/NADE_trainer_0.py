@@ -66,21 +66,23 @@ class NADE_trainer_0(Standard_trainer):
 				norm_nade = model.orch_dim / (model.orch_dim - tf.reduce_sum(self.mask_input, axis=1) + 1)
 				loss_val_masked = model.orch_dim
 
-			with tf.name_scope('mask_orch'):
-				if parameters['mask_orch']:
+			# Note: don't reduce_mean the validation loss, we need to have the per-sample value
+			if parameters['mask_orch']:
+				with tf.name_scope('mask_orch'):
 					loss_masked = tf.where(mask_orch_ph==1, loss_val_, tf.zeros_like(loss_val_))
-					self.loss_val = tf.reduce_mean(loss_masked, name="loss_val")
-				else:
-					self.loss_val = tf.reduce_mean(loss_val_, name="loss_val")
+					self.loss_val = loss_masked
+			else:
+				self.loss_val = loss_val_
 		
+			mean_loss = tf.reduce_mean(self.loss_val)
 			with tf.name_scope('weight_decay'):
 				weight_decay = Standard_trainer.build_weight_decay(self, model)
 				# Weight decay
 				if model.weight_decay_coeff != 0:
 					# Keras weight decay does not work...
-					self.loss = self.loss_val + weight_decay
+					self.loss = mean_loss + weight_decay
 				else:
-					self.loss = self.loss_val
+					self.loss = mean_loss
 		return
 
 	def build_train_step_node(self, model, optimizer):

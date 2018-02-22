@@ -18,7 +18,7 @@ import training_utils
 
 from validate import validate
 
-DEBUG=False
+DEBUG=True
 # Note : debug sans summarize, qui pollue le tableau de variables
 SUMMARIZE=False
 ANALYSIS=False

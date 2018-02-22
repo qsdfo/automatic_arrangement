@@ -78,22 +78,22 @@ class Standard_trainer(object):
 				temp = tf.zeros_like(loss_val_)
 				self.sparse_loss_mean = tf.reduce_mean(temp)
 
-
+			# Note: don't reduce_mean the validation loss, we need to have the per-sample value
 			if parameters['mask_orch']:
 				with tf.name_scope('mask_orch'):
 					loss_masked = tf.where(mask_orch_ph==1, loss_val_, tf.zeros_like(loss_val_))
-					self.loss_val = tf.reduce_mean(loss_masked, name="loss_val")
+					self.loss_val = loss_masked
 			else:
-				self.loss_val = tf.reduce_mean(loss_val_, name="loss_val")
+				self.loss_val = loss_val_
 		
+			mean_loss = tf.reduce_mean(self.loss_val)
 			if model.weight_decay_coeff != 0:
 				with tf.name_scope('weight_decay'):
-				# Weight decay
-					weight_decay = self.build_weight_decay(model)
+					weight_decay = Standard_trainer.build_weight_decay(self, model)
 					# Keras weight decay does not work...
-					self.loss = self.loss_val + weight_decay
+					self.loss = mean_loss + weight_decay
 			else:
-				self.loss = self.loss_val
+				self.loss = mean_loss
 		return
 		
 	def build_train_step_node(self, model, optimizer):

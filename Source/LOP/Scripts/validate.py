@@ -19,6 +19,7 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 	true_accuracy = []
 	f_score = []
 	Xent = []
+
 	if DEBUG:
 		preds = []
 		truth = []
@@ -69,14 +70,14 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 
 			loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch)
 			
-			val_loss += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
 			Xent_batch = binary_cross_entropy(orch_t, preds_batch)
 			accuracy_batch = accuracy_measure(orch_t, preds_batch)
 			precision_batch = precision_measure(orch_t, preds_batch)
 			recall_batch = recall_measure(orch_t, preds_batch)
 			true_accuracy_batch = true_accuracy_measure(orch_t, preds_batch)
 			f_score_batch = f_measure(orch_t, preds_batch)
-		
+			
+			val_loss.extend(loss_batch)
 			accuracy.extend(accuracy_batch)
 			precision.extend(precision_batch)
 			recall.extend(recall_batch)
@@ -130,7 +131,6 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 				orch_gen[:, t, :] = prediction_sampled
 
 				# Compute performances measures
-				val_loss_long_range += [loss_batch] * len(batch_index) # Multiply by size of batch for mean : HACKY
 				Xent_batch = binary_cross_entropy(orch_t, preds_batch)
 				accuracy_batch = accuracy_measure(orch_t, preds_batch)
 				precision_batch = precision_measure(orch_t, preds_batch)
@@ -138,6 +138,7 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 				true_accuracy_batch = true_accuracy_measure(orch_t, preds_batch)
 				f_score_batch = f_measure(orch_t, preds_batch)
 
+				val_loss_long_range.extend(loss_batch)
 				accuracy_long_range.extend(accuracy_batch)
 				precision_long_range.extend(precision_batch)
 				recall_long_range.extend(recall_batch)

@@ -47,6 +47,9 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 	elif which_trainer == 'NADE_trainer':
 		from LOP.Scripts.NADE_learning.NADE_trainer import NADE_trainer as Trainer
 		kwargs_trainer = {'temporal_order': model.temporal_order, 'num_ordering': model.num_ordering}
+	elif which_trainer == 'NADE_trainer_0':
+		from LOP.Scripts.NADE_learning.NADE_trainer_0 import NADE_trainer_0 as Trainer
+		kwargs_trainer = {'temporal_order': model.temporal_order, 'num_ordering': model.num_ordering}
 	else:
 		raise Exception("Undefined trainer")
 

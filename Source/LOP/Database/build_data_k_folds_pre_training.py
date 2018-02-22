@@ -32,7 +32,7 @@ import gc
 from guppy import hpy; hp = hpy()
 import sys
 
-DEBUG = False
+DEBUG = True
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization):
     logging.info(folder_path)
@@ -278,6 +278,24 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
     N_orchestra = temp['N_orchestra']
     N_piano = instru_mapping['Piano']['index_max']
 
+
+    # Build the pitch and instru indicator vectors
+    # We use integer to identigy pitches and instrument
+    # Used for NADE rule-based masking, not for reconstruction
+    pitch_orch = np.zeros((N_orchestra), dtype="int8")-1
+    instru_orch = np.zeros((N_orchestra), dtype="int8")-1
+    counter = 0
+    for k, v in instru_mapping.iteritems():
+        if k == "Piano":
+            continue
+        pitch_orch[v['index_min']:v['index_max']] = np.arange(v['pitch_min'], v['pitch_max']) % 12
+        instru_orch[v['index_min']:v['index_max']] = counter
+        counter += 1
+    pitch_piano = np.arange(instru_mapping['Piano']['pitch_min'], instru_mapping['Piano']['pitch_max'], dtype='int8') % 12
+    np.save(store_folder + '/pitch_orch.npy', pitch_orch)
+    np.save(store_folder + '/instru_orch.npy', instru_orch)
+    np.save(store_folder + '/pitch_piano.npy', pitch_piano)
+
     ###################################################################################################
     # Pre-training matrices
     for counter_split, (T_pretraining_split, folder_paths_pretraining_split) in folder_paths_pretraining_splits.iteritems():
@@ -415,7 +433,7 @@ if __name__ == '__main__':
     DATABASE_PATH_PRETRAINING = config.database_pretraining_root()
     
     if DEBUG:
-        DATABASE_NAMES = ["debug"] #, "imslp"]
+        DATABASE_NAMES = [DATABASE_PATH + "/debug"] #, "imslp"]
     else:
         DATABASE_NAMES = [
             DATABASE_PATH + "/bouliane", 
@@ -425,7 +443,7 @@ if __name__ == '__main__':
         ]
     
     if DEBUG:
-        DATABASE_NAMES_PRETRAINING = ["debug"]
+        DATABASE_NAMES_PRETRAINING = [DATABASE_PATH_PRETRAINING + "/debug"]
     else:
         DATABASE_NAMES_PRETRAINING = [
             # DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 

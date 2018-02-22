@@ -21,7 +21,7 @@ from LOP.Utils.data_statistics import get_activation_ratio, get_mean_number_unit
 from load_matrices import load_matrices
 
 # MODEL
-# from LOP.Models.Real_time.Baseline.repeat import Repeat as Model
+# from LOP.Models.Real_time.Baseline.random import Random as Model
 # from LOP.Models.Real_time.Baseline.mlp import MLP as Model
 # from LOP.Models.Real_time.Baseline.mlp_K import MLP_K as Model
 from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
@@ -222,7 +222,7 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 						 save_model=True, logger=logger_config)    
 
 		for K_fold_ind, K_fold in enumerate(K_folds):
-			parameters['pretrained_model'] = os.path.join(config_folder, 'pretraining', '0', 'model_acc', 'model')
+			parameters['pretrained_model'] = os.path.join(config_folder, 'pretraining', '0', 'model_accuracy')
 			train_wrapper(parameters, model_params, dimensions, config_folder, 
 						 (K_fold_ind, K_fold),
 						 valid_names[K_fold_ind], test_names[K_fold_ind], track_paths_generation, 

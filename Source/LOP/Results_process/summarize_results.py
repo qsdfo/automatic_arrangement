@@ -142,13 +142,7 @@ def main(config_folder, measure_name, avoid_folds):
     return
 
 if __name__ == '__main__':
-    config_folders = [
-        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Baseline_Random"
-        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Baseline_Repeat"
-        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_All_tempGran8",
-        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_Discard0_tempGran8",
-        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_Discard1_tempGran8",
-        "/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/LOO_Lstm/What_train_valid_files/Data_Discard2_tempGran8"]
+    config_folders = ["/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/NADE/AA"]
     # aaa="/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_fuly_trained"
     # bbb="/Users/leo/Recherche/GitHub_Aciditeam/automatic_arrangement/Experiments/Measure/qualitative_evaluation_different_training_criterion/fully_trained/Xent_tn_static_bias_fully_trained"
     # config_folders = [

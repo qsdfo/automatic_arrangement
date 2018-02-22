@@ -7,6 +7,8 @@ Created on Thu Nov 30 17:07:52 2017
 @author: leo
 """
 
+import matplotlib as mpl
+mpl.use('Agg')
 from matplotlib import pyplot as plt
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches

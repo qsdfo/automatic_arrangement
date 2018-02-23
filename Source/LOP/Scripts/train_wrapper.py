@@ -146,9 +146,15 @@ if __name__ == '__main__':
 	track_paths_generation = pickle.load(open(context_folder + "/track_paths_generation.pkl","rb"))
 	save_model = pickle.load(open(context_folder + "/save_model.pkl","rb"))
 	generate_bool = pickle.load(open(context_folder + "/generate_bool.pkl","rb"))
-	logger = pickle.load(open(context_folder + "/logger.pkl","rb"))
+
+	import logging
+	formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
+	logger_config = logging.getLogger(config_folder)
+	hdlr = logging.FileHandler(log_file_path)
+	hdlr.setFormatter(formatter)
+	logger_config.addHandler(hdlr)
 
 	train_wrapper(parameters, model_params, model_name, 
 		dimensions, config_folder_fold, K_fold,
 		test_names, valid_names, track_paths_generation, 
-		save_model, generate_bool, logger)
+		save_model, generate_bool, logger_config)

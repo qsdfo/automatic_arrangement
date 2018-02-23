@@ -26,7 +26,6 @@ DEFINED_CONFIG=True  # HYPERPARAM ?
 # For reproducibility
 RANDOM_SEED_FOLDS=1234 # This is useful to use always the same fold split
 RANDOM_SEED=None
-LOCAL=True
 
 def main():
 	Model = import_model.get_model(MODEL_NAME)
@@ -352,7 +351,7 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names, valid_names,
 	track_paths_generation, save_model, logger):
 	
-	if LOCAL:
+	if config.local():
 		train_wrapper.train_wrapper(parameters, model_params, MODEL_NAME, dimensions, config_folder_fold,
 				  K_fold,
 				  test_names, valid_names, track_paths_generation, 
@@ -362,17 +361,16 @@ def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold,
 		os.mkdir(context_folder)
 
 		# Save all the arguments of the wrapper script
-		pkl.dump(parameters, open(context_folder + "/parameters.pkl")) 
-		pkl.dump(model_params, open(context_folder + '/model_params.pkl'))
-		pkl.dump(MODEL_NAME, open(context_folder + '/model_name.pkl'))
-		pkl.dump(dimensions , open(context_folder + '/dimensions.pkl'))
-		pkl.dump(K_fold, open(context_folder + '/K_fold.pkl'))
-		pkl.dump(test_names, open(context_folder + '/test_names.pkl'))
-		pkl.dump(valid_names , open(context_folder + '/valid_names.pkl'))
-		pkl.dump(track_paths_generation, open(context_folder + '/track_paths_generation.pkl'))
-		pkl.dump(save_model , open(context_folder + '/save_model.pkl'))
-		pkl.dump(GENERATE , open(context_folder + '/generate_bool.pkl'))
-		pkl.dump(logger, open(context_folder + '/logger.pkl'))
+		pkl.dump(parameters, open(context_folder + "/parameters.pkl", 'wb')) 
+		pkl.dump(model_params, open(context_folder + '/model_params.pkl', 'wb'))
+		pkl.dump(MODEL_NAME, open(context_folder + '/model_name.pkl', 'wb'))
+		pkl.dump(dimensions , open(context_folder + '/dimensions.pkl', 'wb'))
+		pkl.dump(K_fold, open(context_folder + '/K_fold.pkl', 'wb'))
+		pkl.dump(test_names, open(context_folder + '/test_names.pkl', 'wb'))
+		pkl.dump(valid_names , open(context_folder + '/valid_names.pkl', 'wb'))
+		pkl.dump(track_paths_generation, open(context_folder + '/track_paths_generation.pkl', 'wb'))
+		pkl.dump(save_model , open(context_folder + '/save_model.pkl', 'wb'))
+		pkl.dump(GENERATE , open(context_folder + '/generate_bool.pkl', 'wb'))
 		
 		# Write pbs script
 		file_pbs = context_folder + '/submit.pbs'

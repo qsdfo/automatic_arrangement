@@ -28,11 +28,9 @@ import avoid_tracks
 
 # memory issues
 import gc
-# gc.collect()
-from guppy import hpy; hp = hpy()
 import sys
 
-DEBUG = True
+DEBUG = False
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization):
     logging.info(folder_path)
@@ -446,10 +444,10 @@ if __name__ == '__main__':
         DATABASE_NAMES_PRETRAINING = [DATABASE_PATH_PRETRAINING + "/debug"]
     else:
         DATABASE_NAMES_PRETRAINING = [
-            # DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
-            # DATABASE_PATH_PRETRAINING + "/Musicalion", 
-            # DATABASE_PATH_PRETRAINING + "/Mutopia", 
-            # DATABASE_PATH_PRETRAINING + "/OpenMusicScores"
+            DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
+            DATABASE_PATH_PRETRAINING + "/Musicalion", 
+            DATABASE_PATH_PRETRAINING + "/Mutopia", 
+            DATABASE_PATH_PRETRAINING + "/OpenMusicScores"
         ]
 
     data_folder = '../../../Data/Data'

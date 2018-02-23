@@ -384,6 +384,7 @@ def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold,
 
 module load foss/2015b
 module load Tensorflow/1.0.0-Python-2.7.12
+source ~/Virtualenvs/lop/bin/activate
 
 SRC=/home/crestel/automatic_arrangement/Source/LOP/Scripts
 cd $SRC

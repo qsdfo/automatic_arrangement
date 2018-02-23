@@ -41,6 +41,8 @@ def compare(x, name_measure_A, y, name_measure_B, result_folder):
 
 	fig,ax = plt.subplots()
 	sc = plt.scatter(x, y, c="b", alpha=0.5)
+	plt.xlabel(name_measure_A)
+	plt.ylabel(name_measure_B)
 	
 	annot = ax.annotate("", xy=(0,0), xytext=(20,20),textcoords="offset points",
 					bbox=dict(boxstyle="round", fc="w"),
@@ -109,5 +111,5 @@ if __name__ == '__main__':
 		shutil.rmtree(result_folder)
 	os.mkdir(result_folder)
 
-	plot_preds_truth(config_folders[0])
-	process_measure(config_folders, "val_loss", "Xent", result_folder)
+	# plot_preds_truth(config_folders[0])
+	process_measure(config_folders, "accuracy", "val_loss", result_folder)

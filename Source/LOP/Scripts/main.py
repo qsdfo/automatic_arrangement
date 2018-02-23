@@ -2,6 +2,7 @@
 # -*- coding: utf8 -*-
 
 import cPickle as pkl
+import subprocess
 import random
 import logging
 import glob
@@ -21,7 +22,7 @@ from load_matrices import load_matrices
 
 MODEL_NAME="LSTM_plugged_base"
 GENERATE=True
-SAVE=True
+SAVE=False
 DEFINED_CONFIG=True  # HYPERPARAM ?
 # For reproducibility
 RANDOM_SEED_FOLDS=1234 # This is useful to use always the same fold split
@@ -381,7 +382,7 @@ def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold,
 
 #PBS -l nodes=1:ppn=2:gpus=1
 #PBS -l pmem=4000m
-#PBS -l walltime=""" + str(train_param['walltime']) + """:00:00
+#PBS -l walltime=""" + str(parameters['walltime']) + """:00:00
 
 module load foss/2015b
 module load Tensorflow/1.0.0-Python-2.7.12

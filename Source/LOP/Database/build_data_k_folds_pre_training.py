@@ -28,8 +28,6 @@ import avoid_tracks
 
 # memory issues
 import gc
-# gc.collect()
-from guppy import hpy; hp = hpy()
 import sys
 
 DEBUG = True

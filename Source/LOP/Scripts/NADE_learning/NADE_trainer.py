@@ -11,6 +11,7 @@ from keras import backend as K
 
 from LOP.Utils.build_batch import build_batch
 from LOP.Scripts.standard_learning.standard_trainer import Standard_trainer
+from LOP.Utils.training_error import bin_Xent_NO_MEAN_tf
 
 class NADE_trainer(Standard_trainer):
 	
@@ -31,11 +32,18 @@ class NADE_trainer(Standard_trainer):
 		# Prediction
 		self.preds, self.embedding_concat = model.predict(inputs_ph, self.orch_pred, self.mask_input)
 		return
+
+	def build_distance(self, model, parameters):
+		# Cannot use a mean distance for NADE, because of masking process
+		distance =  bin_Xent_NO_MEAN_tf(self.orch_t_ph, self.preds)
+		return distance
 	
 	def build_loss_nodes(self, model, parameters):
 		with tf.name_scope('loss'):
 			with tf.name_scope('distance'):
-				distance = Standard_trainer.build_distance(self, model, parameters)
+				distance = self.build_distance(model, parameters)
+
+			# self.aaa = distance
 		
 			if model.sparsity_coeff != 0:
 				with tf.name_scope('sparse_output_constraint'):
@@ -56,17 +64,19 @@ class NADE_trainer(Standard_trainer):
 				# LEQUEL ??
 				##################################################
 				##################################################
+				# Mean along pitch axis
+				loss_val_masked_mean = tf.reduce_mean(loss_val_masked_, axis=1)
 				# Normalization
 				norm_nade = model.orch_dim / (model.orch_dim - tf.reduce_sum(self.mask_input, axis=1) + 1)
-				loss_val_masked = model.orch_dim
+				loss_val_masked = loss_val_masked_mean / norm_nade
 
 			# Note: don't reduce_mean the validation loss, we need to have the per-sample value
 			if parameters['mask_orch']:
 				with tf.name_scope('mask_orch'):
-					loss_masked = tf.where(mask_orch_ph==1, loss_val_, tf.zeros_like(loss_val_))
-					self.loss_val = loss_masked
+					aaa = tf.where(mask_orch_ph==1, loss_val_masked, tf.zeros_like(loss_val_masked))
+					self.loss_val = aaa
 			else:
-				self.loss_val = loss_val_
+				self.loss_val = loss_val_masked
 		
 			mean_loss = tf.reduce_mean(self.loss_val)
 			with tf.name_scope('weight_decay'):
@@ -109,6 +119,22 @@ class NADE_trainer(Standard_trainer):
 			# Indices
 			ind = np.random.random_integers(0, orch_dim-1, (d,))
 			mask[batch_ind, ind] = 1
+
+
+		#############################################
+		#############################################
+		#############################################
+		# Compute test Jacobian, to check that gradients are set to zero : Test passed !
+		# mask_deb = np.zeros_like(orch_t)
+		# mask_deb[:,:20] = 1
+		# feed_dict[self.mask_input] = mask_deb
+		# feed_dict[self.orch_pred] = orch_t
+		# grads = tf.gradients(self.loss, self.aaa)
+		# dydx, = sess.run(grads, feed_dict)
+		# import pdb; pdb.set_trace()
+		#############################################
+		#############################################
+		#############################################
 		
 		feed_dict[self.mask_input] = mask
 		# No need to mask orch_t here, its done in the tensorflow graph
@@ -127,7 +153,7 @@ class NADE_trainer(Standard_trainer):
 
 		return loss_batch, preds_batch, debug_outputs, summary
 
-	def generate_mean_ordering(self, sess, feed_dict, orch_t):
+	def generate_mean_ordering(self, sess, feed_dict, orch_t, PLOTING_FOLDER=None):
 		
 		batch_size, orch_dim = orch_t.shape
 		loss_batch_list = []
@@ -145,7 +171,6 @@ class NADE_trainer(Standard_trainer):
 		orch_pred = np.zeros_like(new_orch_t)
 		mask = np.zeros_like(new_orch_t)
 
-		# TODO (izy) : possibility to use a fixed precomputed orderings
 		# Build the orderings (use the same ordering for all elems in batch)
 		orderings = []
 		for ordering_ind in range(self.num_ordering):
@@ -164,6 +189,16 @@ class NADE_trainer(Standard_trainer):
 			loss_batch, preds_batch = sess.run([self.loss_val, self.preds], feed_dict)
 
 			loss_batch_list.append(loss_batch)
+
+			##############################
+			##############################
+			# DEBUG
+			# Plot the predictions
+			if PLOTING_FOLDER:
+				np.save(PLOTING_FOLDER + '/' str(d) + '.npy')
+			##############################
+			##############################
+
 			
 			# Update matrices
 			for ordering_ind in range(self.num_ordering):
@@ -175,6 +210,16 @@ class NADE_trainer(Standard_trainer):
 				# Do we sample or not ??????
 				orch_pred[batch_begin:batch_end, orderings[ordering_ind][d]] = np.random.binomial(1, preds_batch[batch_begin:batch_end, orderings[ordering_ind][d]])
 				##################################################
+
+		##############################
+		##############################
+		# DEBUG
+		# Plot the ordering
+		if PLOTING_FOLDER:
+				np.save(PLOTING_FOLDER + '/' str(d) + '.npy')
+
+		##############################
+		##############################
 
 		# Mean over the different generations (Comb filter output)
 		preds_mean_over_ordering = np.zeros((batch_size, orch_dim))

@@ -51,7 +51,8 @@ class Odnade_mlp(Model_lop):
 		return True
 	@staticmethod
 	def trainer():
-		return "NADE_trainer_0"
+		return "NADE_trainer"
+		# return "NADE_trainer_0"
 
 	@staticmethod
 	def get_hp_space():

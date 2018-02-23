@@ -36,11 +36,11 @@ class Standard_trainer(object):
 		return
 	
 	def build_distance(self, model, parameters):
-		# distance = keras.losses.binary_crossentropy(self.orch_t_ph, self.preds)
+		distance = keras.losses.binary_crossentropy(self.orch_t_ph, self.preds)
 		# distance = Xent_tf(orch_t_ph, self.preds)
 		# distance = bin_Xen_weighted_0_tf(orch_t_ph, self.preds, parameters['activation_ratio'])
 		# distance = bin_Xen_weighted_1_tf(self.orch_t_ph, self.preds, model.tn_weight)
-		distance = accuracy_tf(self.orch_t_ph, self.preds)
+		# distance = accuracy_tf(self.orch_t_ph, self.preds)
 		# distance = accuracy_low_TN_tf(orch_t_ph, self.preds, weight=model.tn_weight)
 		return distance
 	

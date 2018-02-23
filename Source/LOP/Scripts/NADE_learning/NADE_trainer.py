@@ -195,7 +195,7 @@ class NADE_trainer(Standard_trainer):
 			# DEBUG
 			# Plot the predictions
 			if PLOTING_FOLDER:
-				np.save(PLOTING_FOLDER + '/' str(d) + '.npy')
+				np.save(PLOTING_FOLDER + '/' + str(d) + '.npy')
 			##############################
 			##############################
 
@@ -216,7 +216,7 @@ class NADE_trainer(Standard_trainer):
 		# DEBUG
 		# Plot the ordering
 		if PLOTING_FOLDER:
-				np.save(PLOTING_FOLDER + '/' str(d) + '.npy')
+				np.save(PLOTING_FOLDER + '/' + str(d) + '.npy')
 
 		##############################
 		##############################

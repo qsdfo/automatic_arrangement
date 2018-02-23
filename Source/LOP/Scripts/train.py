@@ -57,7 +57,6 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 	model_optimize = model.optimize()
 	trainer = Trainer(**kwargs_trainer)
 
-
 	if parameters['pretrained_model'] is None:
 		logger_train.info((u'#### Graph'))
 		start_time_building_graph = time.time()

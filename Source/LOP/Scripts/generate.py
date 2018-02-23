@@ -23,7 +23,7 @@ def generate(trainer, piano, silence_ind, path_to_config, model_name='model', or
     # Paths
     path_to_model = os.path.join(path_to_config, model_name)
     dimensions = pkl.load(open(path_to_config + '/../dimensions.pkl', 'rb'))
-    is_keras = pkl.load(open(path_to_config + '/../is_keras.pkl', 'rb'))
+    is_keras = pkl.load(open(path_to_config + '/is_keras.pkl', 'rb'))
 
     # Get dimensions
     orch_dim = dimensions['orch_dim']

@@ -74,8 +74,8 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
 
     ########################
     # Load config and model
-    parameters = pkl.load(open(config_folder + '/../script_parameters.pkl', 'rb'))
-    model_parameters = pkl.load(open(config_folder + '/../model_params.pkl', 'rb'))
+    parameters = pkl.load(open(config_folder + '/script_parameters.pkl', 'rb'))
+    model_parameters = pkl.load(open(config_folder + '/model_params.pkl', 'rb'))
     # Set a minimum seed size, because for very short models you don't event see the beginning
     seed_size = max(model_parameters['temporal_order'], 10) - 1
     quantization = parameters['quantization']

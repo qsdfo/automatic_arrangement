@@ -13,33 +13,24 @@ import numpy as np
 import hyperopt
 import copy
 
-from train import train
-from generate_midi import generate_midi
+import import_model
+import train_wrapper
 import config
 from LOP.Database.load_data_k_folds import build_folds
-from LOP.Utils.data_statistics import get_activation_ratio, get_mean_number_units_on
 from load_matrices import load_matrices
 
-# MODEL
-# from LOP.Models.Real_time.Baseline.random import Random as Model
-# from LOP.Models.Real_time.Baseline.mlp import MLP as Model
-# from LOP.Models.Real_time.Baseline.mlp_K import MLP_K as Model
-from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
-# from LOP.Models.Real_time.LSTM_static_bias import LSTM_static_bias as Model
-# from LOP.Models.Future_past_piano.Conv_recurrent.conv_recurrent_embedding_0 import Conv_recurrent_embedding_0 as Model
-# from LOP.Models.NADE.odnade_mlp import Odnade_mlp as Model
-
-# NORMALIZER
-from LOP.Utils.Normalization.no_normalization import no_normalization as Normalizer
-
+MODEL_NAME="LSTM_plugged_base"
 GENERATE=True
-SAVE=False
+SAVE=True
 DEFINED_CONFIG=True  # HYPERPARAM ?
 # For reproducibility
 RANDOM_SEED_FOLDS=1234 # This is useful to use always the same fold split
 RANDOM_SEED=None
+LOCAL=True
 
 def main():
+	Model = import_model.get_model(MODEL_NAME)
+
 	# DATABASE
 	DATABASE = config.data_name()
 	DATABASE_PATH = config.data_root() + "/" + DATABASE
@@ -129,25 +120,10 @@ def main():
 	if DEFINED_CONFIG:
 		for config_id, model_parameters in configs.iteritems():
 			config_folder = parameters['result_folder'] + '/' + config_id
-			if not os.path.isdir(config_folder):
-				os.mkdir(config_folder)
-			else:
-				# continue
-				user_input = raw_input(config_folder + " folder already exists. Type y to overwrite : ")
-				if user_input == 'y':
-					# Clean
-					# Only delete the files in the top folder and folds, but not the pretrained model
-					for thing in os.listdir(config_folder):
-						path_thing = os.path.join(config_folder, thing)
-						if os.path.isfile(path_thing):
-							os.remove(path_thing)
-						elif thing != "pretraining":
-							shutil.rmtree(path_thing)
-					if not os.path.isdir(config_folder):    
-						os.mkdir(config_folder) 
-				else:
-					raise Exception("Config not overwritten")
-			config_loop(config_folder, model_parameters, parameters, DATABASE_PATH, track_paths_generation)
+			if os.path.isdir(config_folder):
+				shutil.rmtree(config_folder)
+			os.mkdir(config_folder)
+			config_loop(Model, config_folder, model_parameters, parameters, DATABASE_PATH, track_paths_generation)
 	else:
 		# Already tested configs
 		list_config_folders = glob.glob(result_folder + '/*')
@@ -165,13 +141,14 @@ def main():
 			# Sample model parameters from hyperparam space
 			model_parameters = hyperopt.pyll.stochastic.sample(model_parameters_space)
 
-			config_loop(config_folder, model_parameters, parameters, DATABASE_PATH, track_paths_generation)
+			config_loop(Model, config_folder, model_parameters, parameters, DATABASE_PATH, track_paths_generation)
 
 			# Update folder list
 			list_config_folders.append(config_folder)
+	return
 
 
-def config_loop(config_folder, model_params, parameters, database_path, track_paths_generation):
+def config_loop(Model, config_folder, model_params, parameters, database_path, track_paths_generation):
 	# New logger
 	log_file_path = config_folder + '/' + 'log.txt'
 	with open(log_file_path, 'wb') as f:
@@ -205,28 +182,46 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 		####################
 		# 1/
 		# Pre-training then training on small db
-		config_folder_pretraining = os.path.join(config_folder, 'pretraining')
-		existing_pretrained_model = os.path.isdir(config_folder_pretraining)
-		answer = ''
-		if existing_pretrained_model:
-			answer = raw_input("An existing pretrained model has been found. Press y if you want to pretrain it again : ")
-			if answer=='y':
-				shutil.rmtree(config_folder_pretraining)
-		if (answer=='y') or (not existing_pretrained_model):
-			os.makedirs(config_folder_pretraining)
-			parameters['pretrained_model'] = None
-			K_fold_ind = 0   # Only pretrain on the first K_fold
-			train_wrapper(parameters, model_params, dimensions, config_folder_pretraining, 
-						 (K_fold_ind, K_folds_pretraining[K_fold_ind]),
-						 valid_names_pretraining[K_fold_ind], test_names_pretraining[K_fold_ind], track_paths_generation=[],
-						 save_model=True, logger=logger_config)    
+
+
+
+		####    P   B   B  M
+
+		# ###########
+		# config_folder_pretraining = os.path.join(config_folder, 'pretraining')
+		# existing_pretrained_model = os.path.isdir(config_folder_pretraining)
+		# answer = ''
+		# # if existing_pretrained_model:
+		# # 	shutil.rmtree(config_folder_pretraining)
+		# os.makedirs(config_folder_pretraining)
+		# parameters['pretrained_model'] = None
+		# ###########
+
+		# #######
+		# # This is gonna be a problem for Guillimin. Main will have to wait for the end of the pretraining worker
+		# # Write pbs script
+		# submit_job(config_folder_pretraining, parameters, model_params, dimensions, K_fold, test_names, valid_names,
+			# track_paths_generation, True, logger_config)
+		# # train_wrapper(parameters, model_params, dimensions, config_folder_pretraining, 
+		# # 			 (K_fold_ind, K_folds_pretraining[K_fold_ind]),
+		# # 			 valid_names_pretraining[K_fold_ind], test_names_pretraining[K_fold_ind], track_paths_generation=[],
+		# # 			 save_model=True, logger=logger_config)
+		# #######
 
 		for K_fold_ind, K_fold in enumerate(K_folds):
 			parameters['pretrained_model'] = os.path.join(config_folder, 'pretraining', '0', 'model_accuracy')
-			train_wrapper(parameters, model_params, dimensions, config_folder, 
-						 (K_fold_ind, K_fold),
-						 valid_names[K_fold_ind], test_names[K_fold_ind], track_paths_generation, 
-						 save_model=SAVE, logger=logger_config)
+			# Create fold folder
+			config_folder_fold = config_folder + "/" + str(K_fold_ind)
+			if os.path.isdir(config_folder_fold):
+				shutil.rmtree(config_folder_fold)
+			os.mkdir(config_folder_fold)
+			# Submit workers
+			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names[K_fold_ind], valid_names[K_fold_ind],
+				track_paths_generation, SAVE, logger_config)
+			# train_wrapper(parameters, model_params, dimensions, config_folder, 
+			# 			 (K_fold_ind, K_fold),
+			# 			 valid_names[K_fold_ind], test_names[K_fold_ind], track_paths_generation, 
+			# 			 save_model=SAVE, logger=logger_config)
 		####################
 
 	elif parameters['training_mode'] == 1:
@@ -243,10 +238,18 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 					# Note that valid_names and test_names don't change
 			else:
 				new_K_fold = K_fold
-			train_wrapper(parameters, model_params, dimensions, config_folder,
-						  (K_fold_ind, new_K_fold),
-						  valid_names[K_fold_ind], test_names[K_fold_ind], track_paths_generation, 
-						  save_model=SAVE, logger=logger_config)
+			# Create fold folder
+			config_folder_fold = config_folder + "/" + str(K_fold_ind)
+			if os.path.isdir(config_folder_fold):
+				shutil.rmtree(config_folder_fold)
+			os.mkdir(config_folder_fold)
+			# Submit worker
+			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names[K_fold_ind], valid_names[K_fold_ind],
+				track_paths_generation, SAVE, logger_config)
+			# train_wrapper(parameters, model_params, dimensions, config_folder,
+			# 			  (K_fold_ind, new_K_fold),
+			# 			  valid_names[K_fold_ind], test_names[K_fold_ind], track_paths_generation, 
+			# 			  save_model=SAVE, logger=logger_config)
 		####################
 		
 	elif parameters['training_mode'] == 2:
@@ -256,10 +259,18 @@ def config_loop(config_folder, model_params, parameters, database_path, track_pa
 		# Used as a comparison, because the pretraining database is supposed to be "cleaner" than the "real one"
 		parameters['pretrained_model'] = None
 		for K_fold_ind, K_fold in enumerate(K_folds_pretraining):
-			train_wrapper(parameters, model_params, dimensions, config_folder,
-						(K_fold_ind, K_fold),
-						valid_names_pretraining[K_fold_ind], test_names_pretraining[K_fold_ind], track_paths_generation,
-						save_model=SAVE, logger=logger_config)
+			# Create fold folder
+			config_folder_fold = config_folder + "/" + str(K_fold_ind)
+			if os.path.isdir(config_folder_fold):
+				shutil.rmtree(config_folder_fold)
+			os.mkdir(config_folder_fold)
+			# Submit worker
+			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names[K_fold_ind], valid_names[K_fold_ind],
+				track_paths_generation, SAVE, logger_config)
+			# train_wrapper(parameters, model_params, dimensions, config_folder,
+			# 			(K_fold_ind, K_fold),
+			# 			valid_names_pretraining[K_fold_ind], test_names_pretraining[K_fold_ind], track_paths_generation,
+			# 			save_model=SAVE, logger=logger_config)
 		####################
 	else:
 		raise Exception("Not a training mode")
@@ -338,125 +349,53 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 	return K_folds, valid_names, test_names, dimensions
 
 
-def train_wrapper(parameters, model_params, dimensions, config_folder, 
-				  K_fold_pair,
+def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names, valid_names,
+	track_paths_generation, save_model, logger):
+	
+	if LOCAL:
+		train_wrapper.train_wrapper(parameters, model_params, MODEL_NAME, dimensions, config_folder_fold,
+				  K_fold,
 				  test_names, valid_names, track_paths_generation, 
-				  save_model, logger):
-	################################################################################
-	################################################################################
-	# TEST
-	# percentage_training_set = model_params['percentage_training_set']
-	# last_index = int(math.floor((percentage_training_set / float(100)) * len(train_folds)))
-	# train_folds = train_folds[:last_index]
-	################################################################################
-	################################################################################
-	K_fold_ind, K_fold = K_fold_pair
-	train_folds = K_fold['train']
-	valid_folds = K_fold['valid']
-	valid_long_range_folds = K_fold['valid_long_range']
+				  save_model, GENERATE, logger)
+	else:
+		context_folder = config_folder_fold + '/context'
+		os.mkdir(context_folder)
 
-	config_folder_fold = config_folder + '/' + str(K_fold_ind)
-	os.makedirs(config_folder_fold)
-	# Write filenames of this split
-	with open(os.path.join(config_folder_fold, "test_names.txt"), "wb") as f:
-		for filename in test_names:
-			f.write(filename + "\n")
-	with open(os.path.join(config_folder_fold, "valid_names.txt"), "wb") as f:
-		for filename in valid_names:
-			f.write(filename + "\n")
-	
-	# Instanciate a normalizer for the input
-	# normalizer = Normalizer(train_folds, n_components=20, whiten=True, parameters=parameters)
-	# normalizer = Normalizer(train_folds, parameters)
-	normalizer = Normalizer(dimensions)
-	pkl.dump(normalizer, open(os.path.join(config_folder_fold, 'normalizer.pkl'), 'wb'))
-	dimensions['piano_transformed_dim'] = normalizer.transformed_dim
+		# Save all the arguments of the wrapper script
+		pkl.dump(parameters, open(context_folder + "/parameters.pkl")) 
+		pkl.dump(model_params, open(context_folder + '/model_params.pkl'))
+		pkl.dump(MODEL_NAME, open(context_folder + '/model_name.pkl'))
+		pkl.dump(dimensions , open(context_folder + '/dimensions.pkl'))
+		pkl.dump(K_fold, open(context_folder + '/K_fold.pkl'))
+		pkl.dump(test_names, open(context_folder + '/test_names.pkl'))
+		pkl.dump(valid_names , open(context_folder + '/valid_names.pkl'))
+		pkl.dump(track_paths_generation, open(context_folder + '/track_paths_generation.pkl'))
+		pkl.dump(save_model , open(context_folder + '/save_model.pkl'))
+		pkl.dump(GENERATE , open(context_folder + '/generate_bool.pkl'))
+		pkl.dump(logger, open(context_folder + '/logger.pkl'))
+		
+		# Write pbs script
+		file_pbs = context_folder + '/submit.pbs'
 
-	# Compute training data's statistics for improving learning (e.g. weighted Xent)
-	activation_ratio = get_activation_ratio(train_folds, dimensions['orch_dim'], parameters)
-	mean_number_units_on = get_mean_number_units_on(train_folds, parameters)
-	# It's okay to add this value to the parameters now because we don't need it for persistency, 
-	# this is only training regularization
-	model_params['activation_ratio'] = activation_ratio
-	parameters['activation_ratio'] = activation_ratio
-	model_params['mean_number_units_on'] = mean_number_units_on
-	
-	########################################################
-	# Persistency
-	pkl.dump(model_params, open(config_folder + '/model_params.pkl', 'wb'))
-	pkl.dump(Model.is_keras(), open(config_folder + '/is_keras.pkl', 'wb'))
-	pkl.dump(parameters, open(config_folder + '/script_parameters.pkl', 'wb'))
+		text_pbs = """#!/bin/bash
 
-	############################################################
-	# Update train_param and model_param dicts with new information from load data
-	############################################################
-	def count_number_batch(fold):
-		counter = 0
-		for batches in fold.values():
-			counter += len(batches)
-		return counter
-	n_train_batches = count_number_batch(train_folds)
-	n_val_batches = count_number_batch(valid_folds)
-	n_val_long_range_batches = count_number_batch(valid_long_range_folds)
+#PBS -l nodes=1:ppn=2:gpus=1
+#PBS -l pmem=4000m
+#PBS -l walltime=""" + str(train_param['walltime']) + """:00:00
 
-	logger.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
-	logger.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
-	logger.info((u'# n_val_long_range_batch :  {}'.format(n_val_long_range_batches)).encode('utf8'))
+module load foss/2015b
+module load Tensorflow/1.0.0-Python-2.7.12
 
-	parameters['n_train_batches'] = n_train_batches
-	parameters['n_val_batches'] = n_val_batches
-	parameters['n_val_long_range_batches'] = n_val_long_range_batches
+SRC=/home/crestel/automatic_arrangement/Source/LOP/Scripts
+cd $SRC
+python train_wrapper.py '""" + config_folder_fold + "'"
 
-	############################################################
-	# Instanciate model and save folder
-	############################################################
-	model = Model(model_params, dimensions)
-	for measure_name in parameters["save_measures"]:
-		os.mkdir(config_folder_fold + '/model_' + measure_name)
-	
-	############################################################
-	# Train
-	############################################################
-	time_train_0 = time.time()
-	valid_tabs, best_epoch, valid_tabs_LR, best_epoch_LR = train(model, train_folds, valid_folds, valid_long_range_folds, normalizer, parameters, config_folder_fold, time_train_0, logger)
-	time_train_1 = time.time()
-	training_time = time_train_1-time_train_0
-	logger.info('TTT : Training data took {} seconds'.format(training_time))
-	logger.info((u'# Best loss obtained at epoch :  {}'.format(best_epoch['loss'])).encode('utf8'))
-	logger.info((u'# Loss :  {}'.format(valid_tabs['loss'][best_epoch['loss']])).encode('utf8'))
-	logger.info((u'# Accuracy :  {}'.format(valid_tabs['accuracy'][best_epoch['accuracy']])).encode('utf8'))
-	logger.info((u'###################\n').encode('utf8'))
+		with open(file_pbs, 'wb') as f:
+			f.write(text_pbs)
 
-	############################################################
-	# Write result in a txt file
-	############################################################
-	os.mkdir(os.path.join(config_folder_fold, 'results_short_range'))
-	os.mkdir(os.path.join(config_folder_fold, 'results_long_range'))
-	
-	# Short range
-	for measure_name, measure_curve in valid_tabs.iteritems():
-		np.savetxt(os.path.join(config_folder_fold, 'results_short_range', measure_name + '.txt'), measure_curve, fmt='%.6f')
-		with open(os.path.join(config_folder_fold, 'results_short_range', measure_name + '_best_epoch.txt'), 'wb') as f:
-			f.write("{:d}".format(best_epoch[measure_name]))
-	# Long range
-	for measure_name, measure_curve in valid_tabs_LR.iteritems():
-		np.savetxt(os.path.join(config_folder_fold, 'results_long_range', measure_name + '.txt'), measure_curve, fmt='%.6f')
-		with open(os.path.join(config_folder_fold, 'results_long_range', measure_name + '_best_epoch.txt'), 'wb') as f:
-			f.write("{:d}".format(best_epoch[measure_name]))
-
-	# Generating
-	if GENERATE:
-		generate_wrapper(config_folder_fold, track_paths_generation, logger)
-	if not save_model:
-		for measure_name in parameters['save_measures']:
-			shutil.rmtree(config_folder_fold + '/model_' + measure_name)
-		########################################################
-	return
-
-def generate_wrapper(config_folder, track_paths_generation, logger):
-	for score_source in track_paths_generation:
-			generate_midi(config_folder, score_source, number_of_version=3, duration_gen=100, rhythmic_reconstruction=False, logger_generate=logger)
-	return
+		# Launch script
+		subprocess.call('qsub ' + file_pbs, shell=True)
+		return
 
 if __name__ == '__main__':
 	main()

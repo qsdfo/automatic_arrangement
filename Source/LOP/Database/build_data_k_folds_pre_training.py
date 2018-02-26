@@ -38,10 +38,10 @@ def update_instru_mapping(folder_path, instru_mapping, T, quantization):
         return instru_mapping, T
     
     # Is there an original piano score or do we have to create it ?
-    num_midi = len(glob.glob(folder_path + '/*.mid'))
-    if num_midi == 2:
+    num_music_file = max(len(glob.glob(folder_path + '/*.mid')), len(glob.glob(folder_path + '/*.xml')))
+    if num_music_file == 2:
         is_piano = True
-    elif num_midi == 1:
+    elif num_music_file == 1:
         is_piano = False
     else:
         raise Exception("CAVAVAVAMAVAL")
@@ -193,10 +193,10 @@ def build_training_matrix(folder_paths, instru_mapping,
             continue
 
         # Is there an original piano score or do we have to create it ?
-        num_midi = len(glob.glob(folder_path + '/*.mid'))
-        if num_midi == 2:
+        num_music_file = max(len(glob.glob(folder_path + '/*.mid')), len(glob.glob(folder_path + '/*.xml')))
+        if num_music_file == 2:
             is_piano = True
-        elif num_midi == 1:
+        elif num_music_file == 1:
             is_piano = False
         else:
             raise Exception("CAVAVAVAMAVAL")

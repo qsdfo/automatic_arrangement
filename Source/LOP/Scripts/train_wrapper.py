@@ -137,21 +137,21 @@ if __name__ == '__main__':
 	context_folder = config_folder_fold + "/context"
 	
 	# Get parameters
-	parameters =  pickle.load(open(context_folder + "/parameters.pkl","rb"))
-	model_params = pickle.load(open(context_folder + "/model_params.pkl","rb"))
-	model_name = pickle.load(open(context_folder + "/model_name.pkl","rb"))
-	dimensions = pickle.load(open(context_folder + "/dimensions.pkl","rb")) 
-	K_fold = pickle.load(open(context_folder + "/K_fold.pkl","rb"))
-	test_names = pickle.load(open(context_folder + "/test_names.pkl","rb"))
-	valid_names = pickle.load(open(context_folder + "/valid_names.pkl","rb")) 
-	track_paths_generation = pickle.load(open(context_folder + "/track_paths_generation.pkl","rb"))
-	save_model = pickle.load(open(context_folder + "/save_model.pkl","rb"))
-	generate_bool = pickle.load(open(context_folder + "/generate_bool.pkl","rb"))
+	parameters =  pkl.load(open(context_folder + "/parameters.pkl","rb"))
+	model_params = pkl.load(open(context_folder + "/model_params.pkl","rb"))
+	model_name = pkl.load(open(context_folder + "/model_name.pkl","rb"))
+	dimensions = pkl.load(open(context_folder + "/dimensions.pkl","rb")) 
+	K_fold = pkl.load(open(context_folder + "/K_fold.pkl","rb"))
+	test_names = pkl.load(open(context_folder + "/test_names.pkl","rb"))
+	valid_names = pkl.load(open(context_folder + "/valid_names.pkl","rb")) 
+	track_paths_generation = pkl.load(open(context_folder + "/track_paths_generation.pkl","rb"))
+	save_model = pkl.load(open(context_folder + "/save_model.pkl","rb"))
+	generate_bool = pkl.load(open(context_folder + "/generate_bool.pkl","rb"))
 
 	import logging
 	formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
-	logger_config = logging.getLogger(config_folder)
-	hdlr = logging.FileHandler(log_file_path)
+	logger_config = logging.getLogger("worker")
+	hdlr = logging.FileHandler(context_folder + '/log')
 	hdlr.setFormatter(formatter)
 	logger_config.addHandler(hdlr)
 

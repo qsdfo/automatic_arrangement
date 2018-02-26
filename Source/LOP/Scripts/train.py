@@ -19,16 +19,14 @@ import training_utils
 
 from validate import validate
 
-DEBUG={
-	"save_measures": True,
-	"plot_nade_ordering_preds": True,
-}
 # Note : debug sans summarize, qui pollue le tableau de variables
 SUMMARIZE=False
 ANALYSIS=False
 
 def train(model, train_splits_batches, valid_splits_batches, valid_long_range_splits_batches, normalizer,
 		  parameters, config_folder, start_time_train, logger_train):
+	
+	DEBUG = config.debug()
 	
 	# Build DEBUG dict
 	if DEBUG["save_measures"]:

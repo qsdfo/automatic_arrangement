@@ -174,7 +174,6 @@ class NADE_trainer(Standard_trainer):
 
 		# Loop over the length of the orderings
 		for d in range(orch_dim):
-
 			# Generate step
 			feed_dict[self.orch_pred] = orch_pred
 			feed_dict[self.mask_input] = mask
@@ -186,7 +185,12 @@ class NADE_trainer(Standard_trainer):
 			# DEBUG
 			# Plot the predictions
 			if PLOTING_FOLDER:
-				np.save(PLOTING_FOLDER + '/' + str(d) + '.npy')
+				for ordering_ind in range(self.num_ordering):
+					batch_begin = batch_size * ordering_ind
+					batch_end = batch_size * (ordering_ind+1)
+					np.save(PLOTING_FOLDER + '/' + str(d) + '_' + str(ordering_ind) + '.npy', preds_batch[batch_begin:batch_end,:])
+				mean_pred_batch = self.mean_parallel_prediction(batch_size, preds_batch)
+				np.save(PLOTING_FOLDER + '/' + str(d) + '_mean.npy', mean_pred_batch)
 			##############################
 			##############################
 			
@@ -195,35 +199,31 @@ class NADE_trainer(Standard_trainer):
 				batch_begin = batch_size * ordering_ind
 				batch_end = batch_size * (ordering_ind+1)
 				mask[batch_begin:batch_end, orderings[ordering_ind][d]] = 1
-
 				##################################################
 				# Do we sample or not ??????
 				orch_pred[batch_begin:batch_end, orderings[ordering_ind][d]] = np.random.binomial(1, preds_batch[batch_begin:batch_end, orderings[ordering_ind][d]])
 				##################################################
-
-		##############################
-		##############################
-		# DEBUG
-		# Plot the ordering
-		if PLOTING_FOLDER:
-				np.save(PLOTING_FOLDER + '/' + str(d) + '.npy')
-		##############################
-		##############################
-
-		# Mean over the different generations (Comb filter output)
-		preds_mean_over_ordering = np.zeros((batch_size, orch_dim))
-		loss_batch_mean = np.zeros((batch_size,))						# The last loss is actually the loss of the complete vector generated
-		ind_orderings = np.asarray([e*batch_size for e in range(self.num_ordering)])
-		for ind_batch in range(batch_size):
-			preds_mean_over_ordering[ind_batch, :] = np.mean(orch_pred[ind_orderings, :], axis=0)
-			loss_batch_mean[ind_batch] = np.mean(loss_batch[ind_orderings], axis=0)
-			ind_orderings += 1
-
+			
+			preds_mean_over_ordering = self.mean_parallel_prediction(batch_size, orch_pred)
+			loss_batch_mean = self.mean_parallel_prediction(batch_size, loss_batch)
 		return loss_batch_mean, preds_mean_over_ordering
 
-	def valid_step(self, sess, batch_index, piano, orch, mask_orch):
+	def mean_parallel_prediction(self, batch_size, matrix):
+		# Mean over the different generations (Comb filter output)
+		if len(matrix.shape) > 1:
+			dim_1 = matrix.shape[1]
+			mean_over_ordering = np.zeros((batch_size, dim_1))
+		else:
+			mean_over_ordering = np.zeros((batch_size,))
+		ind_orderings = np.asarray([e*batch_size for e in range(self.num_ordering)])
+		for ind_batch in range(batch_size):
+			mean_over_ordering[ind_batch] = np.mean(matrix[ind_orderings], axis=0)
+			ind_orderings += 1
+		return mean_over_ordering
+
+	def valid_step(self, sess, batch_index, piano, orch, mask_orch, PLOTING_FOLDER):
 		feed_dict, orch_t = Standard_trainer.build_feed_dict(self, batch_index, piano, orch, mask_orch)
-		loss_batch, preds_batch = self.generate_mean_ordering(sess, feed_dict, orch_t)
+		loss_batch, preds_batch = self.generate_mean_ordering(sess, feed_dict, orch_t, PLOTING_FOLDER)
 		return loss_batch, preds_batch, orch_t
 
 	def valid_long_range_step(self, sess, t, piano_extracted, orch_extracted, orch_gen):

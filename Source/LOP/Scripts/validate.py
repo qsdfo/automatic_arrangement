@@ -2,9 +2,11 @@
 # -*- coding: utf8 -*-
 
 import time
+import os
 from multiprocessing.pool import ThreadPool
 import numpy as np
 
+import config
 from LOP.Scripts.asynchronous_load_mat import async_load_mat
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure, binary_cross_entropy
 
@@ -20,7 +22,7 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 	f_score = []
 	Xent = []
 
-	if DEBUG:
+	if DEBUG["save_measures"]:
 		preds = []
 		truth = []
 	else:
@@ -67,8 +69,17 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 		# Loop for short-term validation
 		#######################################
 		for batch_counter, batch_index in enumerate(valid_index):
-
-			loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch)
+			if DEBUG["plot_nade_ordering_preds"]:
+				if batch_counter == len(valid_index)-1:
+					if os.path.isdir(DEBUG["plot_nade_ordering_preds"]):
+						shutil.rmtree(DEBUG["plot_nade_ordering_preds"])
+					os.makedirs(DEBUG["plot_nade_ordering_preds"])
+					loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch, PLOTING_FOLDER=DEBUG["plot_nade_ordering_preds"])
+				else:
+					loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch, PLOTING_FOLDER=None)
+			else:
+				loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch, PLOTING_FOLDER=None)
+				
 			
 			Xent_batch = binary_cross_entropy(orch_t, preds_batch)
 			accuracy_batch = accuracy_measure(orch_t, preds_batch)
@@ -85,7 +96,7 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 			f_score.extend(f_score_batch)
 			Xent.extend(Xent_batch)
 
-			if DEBUG:
+			if DEBUG["save_measures"]:
 				# No need to store all the training points
 				preds.extend(preds_batch)
 				truth.extend(orch_t)

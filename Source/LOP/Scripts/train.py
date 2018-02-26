@@ -7,6 +7,7 @@ from keras import backend as K
 import numpy as np
 import time
 import os
+import shutil
 from multiprocessing.pool import ThreadPool
 # from multiprocessing.pool import Pool
 
@@ -18,13 +19,20 @@ import training_utils
 
 from validate import validate
 
-DEBUG=True
+DEBUG={
+	"save_measures": True,
+	"plot_nade_ordering_preds": True,
+}
 # Note : debug sans summarize, qui pollue le tableau de variables
 SUMMARIZE=False
 ANALYSIS=False
 
 def train(model, train_splits_batches, valid_splits_batches, valid_long_range_splits_batches, normalizer,
 		  parameters, config_folder, start_time_train, logger_train):
+	
+	# Build DEBUG dict
+	if DEBUG["save_measures"]:
+		DEBUG["save_measures"]=config_folder+"/save_measures"
 
 	# Time information used
 	time_limit = parameters['walltime'] * 3600 - 30*60  # walltime - 30 minutes in seconds
@@ -73,10 +81,6 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 		trainer.load_pretrained_model(parameters['pretrained_model'])
 		time_building_graph = time.time() - start_time_building_graph
 		logger_train.info("TTT : Loading pretrained model took {0:.2f}s".format(time_building_graph))
-
-	if model_optimize:
-		embedding_concat = trainer.embedding_concat
-		sparse_loss_node = trainer.sparse_loss_mean
 
 	if SUMMARIZE:
 		tf.summary.scalar('loss', trainer.loss)
@@ -278,6 +282,8 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			#######################################
 			valid_time = time.time()
 			init_matrices_validation = async_valid.get()
+			if DEBUG["plot_nade_ordering_preds"]:
+				DEBUG["plot_nade_ordering_preds"]=config_folder+"/preds_nade/"+str(epoch)
 			valid_results, valid_long_range_results, preds_val, truth_val = \
 				validate(trainer, sess, 
 					init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, 
@@ -339,11 +345,14 @@ Sparse_loss : {:.3f}'
 				#######################################
 				# DEBUG
 				# Save numpy arrays of measures values
-				if DEBUG:
+				if DEBUG["save_measures"]:
+					if os.path.isdir(DEBUG["save_measures"]):
+						shutil.rmtree(DEBUG["save_measures"])
+					os.makedirs(DEBUG["save_measures"])
 					for measure_name, measure_tab in valid_results.iteritems():
-						np.save(os.path.join(config_folder, measure_name + '.npy'), measure_tab[:2000])
-					np.save(os.path.join(config_folder, 'preds.npy'), np.asarray(preds_val[:2000]))
-					np.save(os.path.join(config_folder, 'truth.npy'), np.asarray(truth_val[:2000]))
+						np.save(os.path.join(DEBUG["save_measures"], measure_name + '.npy'), measure_tab[:2000])
+					np.save(os.path.join(DEBUG["save_measures"], 'preds.npy'), np.asarray(preds_val[:2000]))
+					np.save(os.path.join(DEBUG["save_measures"], 'truth.npy'), np.asarray(truth_val[:2000]))
 				#######################################
 	   
 			end_time_saving = time.time()

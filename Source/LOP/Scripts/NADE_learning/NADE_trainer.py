@@ -56,17 +56,11 @@ class NADE_trainer(Standard_trainer):
 				self.sparse_loss_mean = tf.reduce_mean(temp)
 
 			with tf.name_scope("NADE_mask_input"):
-				##################################################
-				##################################################
 				# Masked gradients are the values known in the input : so 1 - mask are used for gradient 
-				# loss_val_masked = tf.boolean_mask(self.mask_input==1, loss_val_, tf.zeros_like(loss_val_))
 				loss_val_masked_ = tf.stop_gradient(self.mask_input*loss_val_) + (1-self.mask_input)*loss_val_
-				# LEQUEL ??
-				##################################################
-				##################################################
 				# Mean along pitch axis
 				loss_val_masked_mean = tf.reduce_mean(loss_val_masked_, axis=1)
-				# Normalization
+				# NADE Normalization
 				norm_nade = model.orch_dim / (model.orch_dim - tf.reduce_sum(self.mask_input, axis=1) + 1)
 				loss_val_masked = loss_val_masked_mean / norm_nade
 
@@ -156,7 +150,6 @@ class NADE_trainer(Standard_trainer):
 	def generate_mean_ordering(self, sess, feed_dict, orch_t, PLOTING_FOLDER=None):
 		
 		batch_size, orch_dim = orch_t.shape
-		loss_batch_list = []
 
 		# Generate the orderings in parallel -> duplicate the matrices along batch dim
 		for k, v in feed_dict.iteritems():
@@ -188,8 +181,6 @@ class NADE_trainer(Standard_trainer):
 			
 			loss_batch, preds_batch = sess.run([self.loss_val, self.preds], feed_dict)
 
-			loss_batch_list.append(loss_batch)
-
 			##############################
 			##############################
 			# DEBUG
@@ -198,7 +189,6 @@ class NADE_trainer(Standard_trainer):
 				np.save(PLOTING_FOLDER + '/' + str(d) + '.npy')
 			##############################
 			##############################
-
 			
 			# Update matrices
 			for ordering_ind in range(self.num_ordering):
@@ -217,19 +207,17 @@ class NADE_trainer(Standard_trainer):
 		# Plot the ordering
 		if PLOTING_FOLDER:
 				np.save(PLOTING_FOLDER + '/' + str(d) + '.npy')
-
 		##############################
 		##############################
 
 		# Mean over the different generations (Comb filter output)
 		preds_mean_over_ordering = np.zeros((batch_size, orch_dim))
+		loss_batch_mean = np.zeros((batch_size,))						# The last loss is actually the loss of the complete vector generated
 		ind_orderings = np.asarray([e*batch_size for e in range(self.num_ordering)])
 		for ind_batch in range(batch_size):
 			preds_mean_over_ordering[ind_batch, :] = np.mean(orch_pred[ind_orderings, :], axis=0)
+			loss_batch_mean[ind_batch] = np.mean(loss_batch[ind_orderings], axis=0)
 			ind_orderings += 1
-
-		# Ca c'est n'importe quoi
-		loss_batch_mean = np.mean(loss_batch_list)
 
 		return loss_batch_mean, preds_mean_over_ordering
 
@@ -242,7 +230,7 @@ class NADE_trainer(Standard_trainer):
 		# This takes way too much time in the case of NADE, so just remove it
 		feed_dict, orch_t = Standard_trainer.build_feed_dict_long_range(self, t, piano_extracted, orch_extracted, orch_gen)
 		# loss_batch, preds_batch  = self.generate_mean_ordering(sess, feed_dict, orch_t)
-		loss_batch = 0.
+		loss_batch = [0.]
 		preds_batch = np.zeros_like(orch_t)
 		return loss_batch, preds_batch, orch_t
 

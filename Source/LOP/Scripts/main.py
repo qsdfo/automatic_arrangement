@@ -20,8 +20,8 @@ import config
 from LOP.Database.load_data_k_folds import build_folds
 from load_matrices import load_matrices
 
-MODEL_NAME="LSTM_plugged_base"
-GENERATE=True
+MODEL_NAME="Odnade_mlp"
+GENERATE=False
 SAVE=False
 DEFINED_CONFIG=True  # HYPERPARAM ?
 # For reproducibility
@@ -182,19 +182,16 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 		####################
 		# 0/
 		# Pre-training then training on small db
-		config_folder_pretraining = os.path.join(config_folder, 'pretraining')
-		if os.path.isdir(config_folder_pretraining):
-			shutil.rmtree(config_folder_pretraining)
-		os.makedirs(config_folder_pretraining)
-		parameters['pretrained_model'] = None
-
-		# This is gonna be a problem for Guillimin. Main will have to wait for the end of the pretraining worker
-		# Write pbs script
-		submit_job(config_folder_pretraining, parameters, model_params, dimensions, K_folds_pretraining[0], test_names_pretraining[0], valid_names_pretraining[0],
-			track_paths_generation, True, logger_config)
+		if parameters['pretrained_model'] is None:
+			config_folder_pretraining = os.path.join(config_folder, 'pretraining')
+			os.makedirs(config_folder_pretraining)
+			# This is gonna be a problem for Guillimin. Main will have to wait for the end of the pretraining worker
+			# Write pbs script
+			submit_job(config_folder_pretraining, parameters, model_params, dimensions, K_folds_pretraining[0], test_names_pretraining[0], valid_names_pretraining[0],
+				track_paths_generation, True, logger_config)
+			parameters['pretrained_model'] = os.path.join(config_folder, 'pretraining', 'model_accuracy')
 
 		for K_fold_ind, K_fold in enumerate(K_folds):
-			parameters['pretrained_model'] = os.path.join(config_folder, 'pretraining', '0', 'model_accuracy')
 			# Create fold folder
 			config_folder_fold = config_folder + "/" + str(K_fold_ind)
 			if os.path.isdir(config_folder_fold):

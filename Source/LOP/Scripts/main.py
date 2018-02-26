@@ -180,33 +180,18 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 	# Three options : pre-training then training or just concatenate everything
 	if parameters['training_mode'] == 0:
 		####################
-		# 1/
+		# 0/
 		# Pre-training then training on small db
+		config_folder_pretraining = os.path.join(config_folder, 'pretraining')
+		if os.path.isdir(config_folder_pretraining):
+			shutil.rmtree(config_folder_pretraining)
+		os.makedirs(config_folder_pretraining)
+		parameters['pretrained_model'] = None
 
-
-
-		####    P   B   B  M
-
-		# ###########
-		# config_folder_pretraining = os.path.join(config_folder, 'pretraining')
-		# existing_pretrained_model = os.path.isdir(config_folder_pretraining)
-		# answer = ''
-		# # if existing_pretrained_model:
-		# # 	shutil.rmtree(config_folder_pretraining)
-		# os.makedirs(config_folder_pretraining)
-		# parameters['pretrained_model'] = None
-		# ###########
-
-		# #######
-		# # This is gonna be a problem for Guillimin. Main will have to wait for the end of the pretraining worker
-		# # Write pbs script
-		# submit_job(config_folder_pretraining, parameters, model_params, dimensions, K_fold, test_names, valid_names,
-			# track_paths_generation, True, logger_config)
-		# # train_wrapper(parameters, model_params, dimensions, config_folder_pretraining, 
-		# # 			 (K_fold_ind, K_folds_pretraining[K_fold_ind]),
-		# # 			 valid_names_pretraining[K_fold_ind], test_names_pretraining[K_fold_ind], track_paths_generation=[],
-		# # 			 save_model=True, logger=logger_config)
-		# #######
+		# This is gonna be a problem for Guillimin. Main will have to wait for the end of the pretraining worker
+		# Write pbs script
+		submit_job(config_folder_pretraining, parameters, model_params, dimensions, K_folds_pretraining[0], test_names_pretraining[0], valid_names_pretraining[0],
+			track_paths_generation, True, logger_config)
 
 		for K_fold_ind, K_fold in enumerate(K_folds):
 			parameters['pretrained_model'] = os.path.join(config_folder, 'pretraining', '0', 'model_accuracy')
@@ -226,7 +211,7 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 
 	elif parameters['training_mode'] == 1:
 		####################    
-		# 2/ Append pretraining matrix (both train, valid and test parts) to the training data
+		# 1/ Append pretraining matrix (both train, valid and test parts) to the training data
 		for K_fold_ind, K_fold in enumerate(K_folds):
 			parameters['pretrained_model'] = None
 			if pretraining_bool:
@@ -254,7 +239,7 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 		
 	elif parameters['training_mode'] == 2:
 		####################
-		# 3/
+		# 2/
 		# Full training only on the pretraining db
 		# Used as a comparison, because the pretraining database is supposed to be "cleaner" than the "real one"
 		parameters['pretrained_model'] = None

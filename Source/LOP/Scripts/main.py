@@ -14,7 +14,7 @@ import numpy as np
 import hyperopt
 import copy
 
-import import_model
+from import_functions import import_model
 import train_wrapper
 import config
 from LOP.Database.load_data_k_folds import build_folds
@@ -29,7 +29,7 @@ RANDOM_SEED_FOLDS=1234 # This is useful to use always the same fold split
 RANDOM_SEED=None
 
 def main():
-	Model = import_model.get_model(MODEL_NAME)
+	Model = import_model.import_model(MODEL_NAME)
 
 	# DATABASE
 	DATABASE = config.data_name()

@@ -10,20 +10,17 @@ import time
 import shutil
 import numpy as np
 import cPickle as pkl
-import import_model
+from import_functions import import_model, import_normalizer
 from train import train
 from generate_midi import generate_midi
 from LOP.Utils.data_statistics import get_activation_ratio, get_mean_number_units_on
-
-# NORMALIZER
-from LOP.Utils.Normalization.no_normalization import no_normalization as Normalizer
 
 def train_wrapper(parameters, model_params, model_name,
 	dimensions, config_folder_fold, K_fold,
 	test_names, valid_names, track_paths_generation, 
 	save_model, generate_bool, logger):
 	
-	Model = import_model.get_model(model_name)
+	Model = import_model.import_model(model_name)
 
 	train_folds = K_fold['train']
 	valid_folds = K_fold['valid']
@@ -40,6 +37,7 @@ def train_wrapper(parameters, model_params, model_name,
 	# Instanciate a normalizer for the input
 	# normalizer = Normalizer(train_folds, n_components=20, whiten=True, parameters=parameters)
 	# normalizer = Normalizer(train_folds, parameters)
+	Normalizer = import_normalizer.import_normalizer(parameters["normalizer"])
 	normalizer = Normalizer(dimensions)
 	pkl.dump(normalizer, open(os.path.join(config_folder_fold, 'normalizer.pkl'), 'wb'))
 	dimensions['piano_transformed_dim'] = normalizer.transformed_dim

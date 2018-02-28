@@ -480,8 +480,6 @@ if __name__ == '__main__':
         for path in DATABASE_NAMES_PRETRAINING:
             folder_paths_pretraining += build_filepaths_list(path)
 
-    import pdb; pdb.set_trace()
-
     # Remove garbage tracks
     avoid_tracks_list = avoid_tracks.avoid_tracks()
     folder_paths = [e for e in folder_paths if e not in avoid_tracks_list]

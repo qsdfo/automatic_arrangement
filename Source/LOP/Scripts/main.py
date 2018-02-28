@@ -178,6 +178,8 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 	pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
 	
 	# Three options : pre-training then training or just concatenate everything
+	wait_for_pretrain = False # This is default behavior, only set to True when pretraining in mode 0
+	pretraining_job_id = 0
 	if parameters['training_mode'] == 0:
 		####################
 		# 0/
@@ -187,9 +189,10 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 			os.makedirs(config_folder_pretraining)
 			# This is gonna be a problem for Guillimin. Main will have to wait for the end of the pretraining worker
 			# Write pbs script
-			submit_job(config_folder_pretraining, parameters, model_params, dimensions, K_folds_pretraining[0], test_names_pretraining[0], valid_names_pretraining[0],
-				track_paths_generation, True, logger_config)
+			pretraining_job_id = submit_job(config_folder_pretraining, parameters, model_params, dimensions, K_folds_pretraining[0], test_names_pretraining[0], valid_names_pretraining[0],
+				track_paths_generation, True, wait_for_pretrain, pretraining_job_id, logger_config)
 			parameters['pretrained_model'] = os.path.join(config_folder, 'pretraining', 'model_accuracy')
+			wait_for_pretrain = True
 
 		for K_fold_ind, K_fold in enumerate(K_folds):
 			# Create fold folder
@@ -199,7 +202,7 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 			os.mkdir(config_folder_fold)
 			# Submit workers
 			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names[K_fold_ind], valid_names[K_fold_ind],
-				track_paths_generation, SAVE, logger_config)
+				track_paths_generation, SAVE, wait_for_pretrain, pretraining_job_id, logger_config)
 			# train_wrapper(parameters, model_params, dimensions, config_folder, 
 			# 			 (K_fold_ind, K_fold),
 			# 			 valid_names[K_fold_ind], test_names[K_fold_ind], track_paths_generation, 
@@ -227,7 +230,7 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 			os.mkdir(config_folder_fold)
 			# Submit worker
 			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names[K_fold_ind], valid_names[K_fold_ind],
-				track_paths_generation, SAVE, logger_config)
+				track_paths_generation, SAVE, wait_for_pretrain, pretraining_job_id, logger_config)
 			# train_wrapper(parameters, model_params, dimensions, config_folder,
 			# 			  (K_fold_ind, new_K_fold),
 			# 			  valid_names[K_fold_ind], test_names[K_fold_ind], track_paths_generation, 
@@ -248,7 +251,7 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 			os.mkdir(config_folder_fold)
 			# Submit worker
 			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names[K_fold_ind], valid_names[K_fold_ind],
-				track_paths_generation, SAVE, logger_config)
+				track_paths_generation, SAVE, wait_for_pretrain, pretraining_job_id, logger_config)
 			# train_wrapper(parameters, model_params, dimensions, config_folder,
 			# 			(K_fold_ind, K_fold),
 			# 			valid_names_pretraining[K_fold_ind], test_names_pretraining[K_fold_ind], track_paths_generation,
@@ -332,7 +335,7 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 
 
 def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names, valid_names,
-	track_paths_generation, save_model, logger):
+	track_paths_generation, save_model, wait_for_pretrain, pretraining_job_id, logger):
 	
 	if config.local():
 		train_wrapper.train_wrapper(parameters, model_params, MODEL_NAME, dimensions, config_folder_fold,
@@ -358,10 +361,13 @@ def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold,
 		# Write pbs script
 		file_pbs = context_folder + '/submit.pbs'
 
+		split_config_folder_fold = re.split('/', config_folder_fold)
+		script_name = split_config_folder_fold[-4] + "__" + split_config_folder_fold[-3] + "__" + split_config_folder_fold[-2] + "__" + split_config_folder_fold[-1]
+
 		text_pbs = """#!/bin/bash
 
+#PBS -N """ + script_name + """
 #PBS -l nodes=1:ppn=2:gpus=1
-#PBS -l pmem=4000m
 #PBS -l walltime=""" + str(parameters['walltime']) + """:00:00
 
 module load foss/2015b
@@ -375,9 +381,15 @@ python train_wrapper.py '""" + config_folder_fold + "'"
 		with open(file_pbs, 'wb') as f:
 			f.write(text_pbs)
 
+		import pdb; pdb.set_trace()
 		# Launch script
-		subprocess.call('qsub ' + file_pbs, shell=True)
-		return
+		if wait_for_pretrain:
+			job_id = subprocess.check_output('qsub -W depend=afterok:' + job_id + ' ' + file_pbs, shell=True)
+		else:
+			job_id = subprocess.check_output('qsub ' + file_pbs, shell=True)
+		
+		# subprocess.call('PRETRAIN_JOB=$(qsub ' + file_pbs + ')', shell=True)
+		return job_id
 
 if __name__ == '__main__':
 	main()

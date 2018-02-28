@@ -478,7 +478,9 @@ if __name__ == '__main__':
     
     if pretraining_bool:
         for path in DATABASE_NAMES_PRETRAINING:
-            folder_paths_pretraining = build_filepaths_list(path)
+            folder_paths_pretraining += build_filepaths_list(path)
+
+    import pdb; pdb.set_trace()
 
     # Remove garbage tracks
     avoid_tracks_list = avoid_tracks.avoid_tracks()

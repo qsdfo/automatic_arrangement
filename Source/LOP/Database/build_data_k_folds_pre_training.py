@@ -424,7 +424,7 @@ if __name__ == '__main__':
     # because train is data augmented but not test and validate
     temporal_granularity = 'event_level'
     quantization = 8
-    pretraining_bool = False
+    pretraining_bool = True
 
     # Database have to be built jointly so that the ranges match
     DATABASE_PATH = config.database_root()
@@ -450,7 +450,7 @@ if __name__ == '__main__':
             DATABASE_PATH_PRETRAINING + "/OpenMusicScores"
         ]
 
-    data_folder = '../../../Data/Data'
+    data_folder = config.data_root() + '/Data'
     if DEBUG:
         data_folder += '_DEBUG'
     if pretraining_bool:

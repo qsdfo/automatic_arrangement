@@ -17,7 +17,7 @@ import numpy as np
 from LOP_database.visualization.numpy_array.visualize_numpy import visualize_mat
 
 
-def plot_weights(model_name, path_config, path_plots):
+def restore_and_plot(model_name, path_config, path_plots):
     # Paths
     path_model = os.path.join(path_config, model_name)
     is_keras = pkl.load(open(path_config + '/../is_keras.pkl', 'rb'))
@@ -26,57 +26,60 @@ def plot_weights(model_name, path_config, path_plots):
     tf.reset_default_graph() # First clear graph to avoid memory overflow when running training and generation in the same process
     saver = tf.train.import_meta_graph(path_model + '/model.meta')
     
-    with tf.Session() as sess:            
+    with tf.Session() as sess:
         if is_keras:
             K.set_session(sess)    
         saver.restore(sess, path_model + '/model')
-
-        # Plot weights with D3.js
         weight_folder = os.path.join(path_config, 'weights')
-        if os.path.isdir(weight_folder):
-            shutil.rmtree(weight_folder)
-        os.mkdir(weight_folder)
-        for trainable_parameter in tf.trainable_variables():
-            name = trainable_parameter.name
-            name = re.sub(':', '_', name)
-            split_name = re.split('/', name)
-            new_path = "/".join(split_name[:-1])
-            new_path = os.path.join(weight_folder, new_path)
-            new_name = split_name[-1]
-            trainable_parameter_value = trainable_parameter.eval()
-            tp_shape = trainable_parameter_value.shape
-            num_param = 1            
+
+def plot_weights(sess, weight_folder):
+    # Plot weights with D3.js
+    if os.path.isdir(weight_folder):
+        shutil.rmtree(weight_folder)
+    os.mkdir(weight_folder)
+    for trainable_parameter in tf.trainable_variables():
+        name = trainable_parameter.name
+        name = re.sub(':', '_', name)
+        split_name = re.split('/', name)
+        new_path = "/".join(split_name[:-1])
+        new_path = os.path.join(weight_folder, new_path)
+        new_name = split_name[-1]
+        trainable_parameter_value = trainable_parameter.eval()
+        tp_shape = trainable_parameter_value.shape
+        num_param = 1            
+        
+        for dim in tp_shape:
+            num_param *= dim
+
+        # D3.js
+        # if num_param < (500*500):
+        #     visualize_mat(trainable_parameter_value.T, new_path, new_name)
+
+        # Stats
+        paramean = trainable_parameter_value.mean()
+        paramin = trainable_parameter_value.min()
+        paramax = trainable_parameter_value.max()
+        parastd = np.std(trainable_parameter_value)
+        parasum = np.sum(trainable_parameter_value)
+                    
+        # Always plot a matplotlib, it does not cost much            
+        if not os.path.isdir(new_path):
+            os.makedirs(new_path)
+        plt.clf()
+
+        if len(tp_shape) > 1:            
+            plt.imshow(trainable_parameter_value, cmap='hot')
+            plt.colorbar()
+            plt.xlabel('out')
+            plt.ylabel('in')
+        else:
+            plt.bar(range(tp_shape[0]), trainable_parameter_value)
+            plt.xlabel('output')
             
-            for dim in tp_shape:
-                num_param *= dim
-            if num_param < (500*500):
-                visualize_mat(trainable_parameter_value.T, new_path, new_name)
-
-            # Stats
-            paramean = trainable_parameter_value.mean()
-            paramin = trainable_parameter_value.min()
-            paramax = trainable_parameter_value.max()
-            parastd = np.std(trainable_parameter_value)
-            parasum = np.sum(trainable_parameter_value)
-                        
-            # Always plot a matplotlib, it does not cost much            
-            if not os.path.isdir(new_path):
-                os.makedirs(new_path)
-            plt.clf()
-
-            if len(tp_shape) > 1:            
-                plt.imshow(trainable_parameter_value, cmap='hot')
-                plt.colorbar()
-                plt.xlabel('out')
-                plt.ylabel('in')
-            else:
-                plt.bar(range(tp_shape[0]), trainable_parameter_value)
-                plt.xlabel('output')
-                
-            title = "Mean : {:.4f}, Min : {:.4f}, Max : {:.4f} \n Std : {:.4f}, Sum : {:.4f}"\
-                .format(paramean, paramin, paramax, parastd, parasum)
-            plt.title(title)
-            plt.savefig(os.path.join(new_path, new_name + '.pdf'))
+        title = "Mean : {:.4f}, Min : {:.4f}, Max : {:.4f} \n Std : {:.4f}, Sum : {:.4f}"\
+            .format(paramean, paramin, paramax, parastd, parasum)
+        plt.title(title)
+        plt.savefig(os.path.join(new_path, new_name + '.pdf'))
             
 if __name__ == '__main__':
      model_name = "model_acc"

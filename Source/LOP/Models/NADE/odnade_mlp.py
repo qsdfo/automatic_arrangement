@@ -69,14 +69,15 @@ class Odnade_mlp(Model_lop):
 		piano_t, _, _, orch_past, _ = inputs_ph
 		
 		# Build input
-		orch_past_flat = tf.reshape(orch_past, [-1, (self.temporal_order-1) * self.orch_dim])
-		masked_orch_t = tf.multiply(orch_pred, mask)
-		x = tf.concat([piano_t, orch_past_flat, masked_orch_t, mask], axis=1)
+		with tf.name_scope("build_input"):
+			orch_past_flat = tf.reshape(orch_past, [-1, (self.temporal_order-1) * self.orch_dim])
+			masked_orch_t = tf.multiply(orch_pred, mask)
+			x = tf.concat([piano_t, orch_past_flat, masked_orch_t, mask], axis=1)
 
 		# Propagate as in a normal network
 		for i, l in enumerate(self.layers):
 			with tf.name_scope("layer_" + str(i)):
-				dense = Dense(l, activation='relu', kernel_regularizer=regularizers.l2(self.weight_decay_coeff))
+				dense = Dense(l, activation='relu')
 				x = dense(x)
 				keras_layer_summary(dense)
 				x = Dropout(self.dropout_probability)(x)

@@ -49,6 +49,9 @@ class MLP_K(Model_lop):
 	@staticmethod
 	def optimize():
 		return True
+	@staticmethod
+	def trainer():
+		return "standard_trainer"
 
 	@staticmethod
 	def get_hp_space():

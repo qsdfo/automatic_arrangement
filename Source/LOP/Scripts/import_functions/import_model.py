@@ -1,5 +1,7 @@
 def import_model(name):
-	if name=="LSTM_plugged_base":
+	if name=="mlp_K":
+		from LOP.Models.Real_time.Baseline.mlp_K import MLP_K as Model
+	elif name=="LSTM_plugged_base":
 		from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
 	elif name=="Odnade_mlp":
 		from LOP.Models.NADE.odnade_mlp import Odnade_mlp as Model

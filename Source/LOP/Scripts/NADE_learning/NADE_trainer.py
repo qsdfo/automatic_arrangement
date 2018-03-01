@@ -57,20 +57,21 @@ class NADE_trainer(Standard_trainer):
 
 			with tf.name_scope("NADE_mask_input"):
 				# Masked gradients are the values known in the input : so 1 - mask are used for gradient 
-				loss_val_masked_ = tf.stop_gradient(self.mask_input*loss_val_) + (1-self.mask_input)*loss_val_
+				loss_val_masked_ = (1-self.mask_input)*loss_val_
 				# Mean along pitch axis
 				loss_val_masked_mean = tf.reduce_mean(loss_val_masked_, axis=1)
 				# NADE Normalization
-				norm_nade = model.orch_dim / (model.orch_dim - tf.reduce_sum(self.mask_input, axis=1) + 1)
-				loss_val_masked = loss_val_masked_mean / norm_nade
+				nombre_unit_masked_in = tf.reduce_sum(self.mask_input, axis=1)
+				norm_nade = model.orch_dim / (model.orch_dim - nombre_unit_masked_in + 1)
+				loss_val_masked = norm_nade * loss_val_masked_mean
 
 			# Note: don't reduce_mean the validation loss, we need to have the per-sample value
-			if parameters['mask_orch']:
-				with tf.name_scope('mask_orch'):
-					aaa = tf.where(mask_orch_ph==1, loss_val_masked, tf.zeros_like(loss_val_masked))
-					self.loss_val = aaa
-			else:
-				self.loss_val = loss_val_masked
+			# if parameters['mask_orch']:
+			# 	with tf.name_scope('mask_orch'):
+			# 		self.loss_val = tf.where(mask_orch_ph==1, loss_val_masked, tf.zeros_like(loss_val_masked))
+			# else:
+			# 	self.loss_val = loss_val_masked
+			self.loss_val = loss_val_masked
 		
 			mean_loss = tf.reduce_mean(self.loss_val)
 			with tf.name_scope('weight_decay'):
@@ -123,8 +124,11 @@ class NADE_trainer(Standard_trainer):
 		# mask_deb[:,:20] = 1
 		# feed_dict[self.mask_input] = mask_deb
 		# feed_dict[self.orch_pred] = orch_t
-		# grads = tf.gradients(self.loss, self.aaa)
-		# dydx, = sess.run(grads, feed_dict)
+		# for trainable_parameter in tf.trainable_variables():
+		# 	if trainable_parameter.name == "dense_3/bias:0":
+		# 		AAA = trainable_parameter
+		# grads = tf.gradients(self.loss, AAA)
+		# loss_batch, dydx = sess.run([self.loss, grads], feed_dict)
 		# import pdb; pdb.set_trace()
 		#############################################
 		#############################################

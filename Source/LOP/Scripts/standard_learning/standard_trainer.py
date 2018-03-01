@@ -178,6 +178,20 @@ class Standard_trainer(object):
 
 		SUMMARIZE = summarize_dict['bool']
 		merged_node = summarize_dict['merged_node']
+
+		#############################################
+		#############################################
+		#############################################
+		# Compute test Jacobian, to check that gradients are set to zero : Test passed !
+		for trainable_parameter in tf.trainable_variables():
+			if trainable_parameter.name == "dense_3/bias:0":
+				AAA = trainable_parameter
+		grads = tf.gradients(self.loss, AAA)
+		loss_batch, dydx = sess.run([self.loss, grads], feed_dict)
+		import pdb; pdb.set_trace()
+		#############################################
+		#############################################
+		#############################################
 		
 		if SUMMARIZE:
 			_, loss_batch, preds_batch, sparse_loss_batch, summary = sess.run([self.train_step, self.loss, self.preds, self.sparse_loss_mean, merged_node], feed_dict)
@@ -189,7 +203,7 @@ class Standard_trainer(object):
 
 		return loss_batch, preds_batch, debug_outputs, summary
 
-	def valid_step(self, sess, batch_index, piano, orch, mask_orch):
+	def valid_step(self, sess, batch_index, piano, orch, mask_orch, PLOTING_FOLDER):
 		# Almost the same function as training_step here,  but in the case of NADE learning for instance, it might be ver different.
 		feed_dict, orch_t = self.build_feed_dict(batch_index, piano, orch, mask_orch)
 		feed_dict[self.keras_learning_phase] = False

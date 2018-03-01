@@ -17,10 +17,12 @@ import LOP.Utils.model_statistics as model_statistics
 from LOP.Scripts.asynchronous_load_mat import async_load_mat
 import training_utils
 
+import LOP.Results_process.plot_weights as plot_weights
+
 from validate import validate
 
 # Note : debug sans summarize, qui pollue le tableau de variables
-SUMMARIZE=False
+SUMMARIZE=True
 ANALYSIS=False
 
 def train(model, train_splits_batches, valid_splits_batches, valid_long_range_splits_batches, normalizer,
@@ -180,7 +182,6 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 			trainer.saver.restore(sess, parameters['pretrained_model'])
 		else:
 			sess.run(tf.global_variables_initializer())
-			
 
 		# if DEBUG:
 		# 	sess = tf_debug.LocalCLIDebugWrapperSession(sess)
@@ -248,12 +249,14 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 				# Train
 				#######################################
 				for batch_index in train_index:
+					
 					loss_batch, _, debug_outputs, summary = trainer.training_step(sess, batch_index, piano_transformed, orch, mask_orch, summarize_dict)
 
 					# Keep track of cost
 					train_cost_epoch.append(loss_batch)
 					sparse_loss_batch = debug_outputs[0]
 					sparse_loss_epoch.append(sparse_loss_batch)
+
 				#######################################
 				# New matrices from thread
 				#######################################
@@ -261,6 +264,14 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 				matrices_from_thread = async_train.get()
 			train_time = time.time() - train_time
 			logger_train.info("Training time : {}".format(train_time))
+
+			### 
+			# DEBUG
+			# weight_folder="DEBUG/weights" 
+			# plot_weights.plot_weights(sess, weight_folder)
+			# import pdb; pdb.set_trace()
+			#
+			###
 
 			# WARNING : first validation matrix is not necessarily the same as the first train matrix
 			# So now that it's here, parallelization is absolutely useless....

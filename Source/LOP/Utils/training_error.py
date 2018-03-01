@@ -61,7 +61,7 @@ def bin_Xent_NO_MEAN_tf(true_frame, pred_frame):
     """
     epsilon = 1e-20
     cross_entr_dot = tf.multiply(true_frame, tf.log(pred_frame+epsilon)) + tf.multiply((1-true_frame), tf.log((1-pred_frame+epsilon)))
-    return cross_entr_dot
+    return -cross_entr_dot
 
 
 def bin_Xen_weighted_0_tf(true_frame, pred_frame, activation_ratio):

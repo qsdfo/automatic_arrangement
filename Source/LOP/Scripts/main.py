@@ -21,7 +21,7 @@ from LOP.Database.load_data_k_folds import build_folds
 from load_matrices import load_matrices
 
 MODEL_NAME="Odnade_mlp"
-GENERATE=False
+GENERATE=True
 SAVE=False
 DEFINED_CONFIG=True  # HYPERPARAM ?
 # For reproducibility
@@ -381,7 +381,6 @@ python train_wrapper.py '""" + config_folder_fold + "'"
 		with open(file_pbs, 'wb') as f:
 			f.write(text_pbs)
 
-		import pdb; pdb.set_trace()
 		# Launch script
 		if wait_for_pretrain:
 			job_id = subprocess.check_output('qsub -W depend=afterok:' + job_id + ' ' + file_pbs, shell=True)

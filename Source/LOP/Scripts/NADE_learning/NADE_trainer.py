@@ -240,5 +240,5 @@ class NADE_trainer(Standard_trainer):
 
 	def generation_step(self, sess, batch_index, piano, orch_gen, mask_orch):
 		# Exactly the same as the valid_step
-		loss_batch, preds_batch, orch_t = self.valid_step(sess, batch_index, piano, orch_gen, mask_orch)
+		loss_batch, preds_batch, orch_t = self.valid_step(sess, batch_index, piano, orch_gen, mask_orch, None)
 		return preds_batch

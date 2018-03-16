@@ -23,8 +23,8 @@ class NADE_trainer(Standard_trainer):
 
 	def build_variables_nodes(self, model, parameters):
 		Standard_trainer.build_variables_nodes(self, model, parameters)
-		self.mask_input = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="mask_input")		
-		self.orch_pred = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="orch_pred")		
+		self.mask_input = tf.placeholder(tf.float16, shape=(None, model.orch_dim), name="mask_input")		
+		self.orch_pred = tf.placeholder(tf.float16, shape=(None, model.orch_dim), name="orch_pred")		
 		return
 
 	def build_preds_nodes(self, model):
@@ -240,5 +240,5 @@ class NADE_trainer(Standard_trainer):
 
 	def generation_step(self, sess, batch_index, piano, orch_gen, mask_orch):
 		# Exactly the same as the valid_step
-		loss_batch, preds_batch, orch_t = self.valid_step(sess, batch_index, piano, orch_gen, mask_orch)
+		loss_batch, preds_batch, orch_t = self.valid_step(sess, batch_index, piano, orch_gen, mask_orch, None)
 		return preds_batch

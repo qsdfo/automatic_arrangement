@@ -28,8 +28,8 @@ class NADE_trainer_0(Standard_trainer):
 
 	def build_variables_nodes(self, model, parameters):
 		Standard_trainer.build_variables_nodes(self, model, parameters)
-		self.mask_input = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="mask_input")		
-		self.orch_pred = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="orch_pred")		
+		self.mask_input = tf.placeholder(tf.float16, shape=(None, model.orch_dim), name="mask_input")		
+		self.orch_pred = tf.placeholder(tf.float16, shape=(None, model.orch_dim), name="orch_pred")		
 		return
 
 	def build_preds_nodes(self, model):

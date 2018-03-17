@@ -62,8 +62,8 @@ def train_wrapper(parameters, model_params, model_name,
 	############################################################
 	def count_number_batch(fold):
 		counter = 0
-		for batches in fold.values():
-			counter += len(batches)
+		for chunk in fold:
+			counter += len(chunk["batches"])
 		return counter
 	n_train_batches = count_number_batch(train_folds)
 	n_val_batches = count_number_batch(valid_folds)

@@ -183,12 +183,12 @@ class Standard_trainer(object):
 		#############################################
 		#############################################
 		# Compute test Jacobian, to check that gradients are set to zero : Test passed !
-		for trainable_parameter in tf.trainable_variables():
-			if trainable_parameter.name == "dense_3/bias:0":
-				AAA = trainable_parameter
-		grads = tf.gradients(self.loss, AAA)
-		loss_batch, dydx = sess.run([self.loss, grads], feed_dict)
-		import pdb; pdb.set_trace()
+		# for trainable_parameter in tf.trainable_variables():
+		# 	if trainable_parameter.name == "dense_3/bias:0":
+		# 		AAA = trainable_parameter
+		# grads = tf.gradients(self.loss, AAA)
+		# loss_batch, dydx = sess.run([self.loss, grads], feed_dict)
+		# import pdb; pdb.set_trace()
 		#############################################
 		#############################################
 		#############################################

@@ -18,9 +18,8 @@ from import_functions import import_model
 import train_wrapper
 import config
 from LOP.Database.load_data_k_folds import build_folds
-from load_matrices import load_matrices
 
-MODEL_NAME="Odnade_mlp"
+MODEL_NAME="LSTM_plugged_base"
 GENERATE=False
 SAVE=False
 DEFINED_CONFIG=True  # HYPERPARAM ?
@@ -271,65 +270,25 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 	
 	# Load data and build K_folds
 	time_load_0 = time.time()
-
-	## Load the matrices
-	piano_files = glob.glob(database_path + '/piano' + suffix + '_[0-9]*.npy')
 	
-	# K_folds[fold_index]['train','test' or 'valid'][matrix_path]
-	K_fold = [
-			{'train': [],
-			'test': [],
-			'valid': [],
-			'valid_long_range': []}
-		]
-	K_folds = []
-	valid_names = []
-	test_names = []
-	init_folds = True
-
-	for counter_split, piano_file in enumerate(piano_files):
-
-		piano, orch, duration_piano, mask_orch, tracks_start_end = load_matrices(piano_file, parameters)
-
-		################################################################################
-		################################################################################
-		################################################################################
-		# Could be the weight for the weighted binary cross-entropy ???
-		# stat_for_Xent_weight = orch.shape[0]*orch.shape[1]/orch.sum()
-		################################################################################
-		################################################################################
-		################################################################################
-
-		if num_k_folds == 0:
-			this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, 10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
-			this_K_folds = [K_folds[0]]
-			this_valid_names = [this_valid_names[0]]
-			this_test_names = [this_test_names[0]]
-		elif num_k_folds == -1:
-			this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, -1, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
-		else:
-			this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, num_k_folds, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
-		
-		for k_ind, fold in enumerate(this_K_folds):
-			if init_folds:
-				K_folds.append({'train' : {}, 'test': {}, 'valid': {}, 'valid_long_range': {}})
-				valid_names.append([])
-				test_names.append([])
-			for split_name, batches in fold.iteritems():
-				K_folds[k_ind][split_name][piano_file] = batches
-			valid_names[k_ind].extend(this_valid_names[k_ind])
-			test_names[k_ind].extend(this_test_names[k_ind])
-		
-		init_folds = False
+	# K_folds[fold_index]['train','test' or 'valid'][index split]['batches' : [[0,10,14..],[..],[..]], 'matrices_path':[path_0,path_1,..]]
+	if num_k_folds == 0:
+		# this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, 10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
+		K_folds, valid_names, test_names = build_folds(database_path, 10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
+		K_folds = [K_folds[0]]
+		valid_names = [valid_names[0]]
+		test_names = [test_names[0]]
+	elif num_k_folds == -1:
+		K_folds, valid_names, test_names = build_folds(database_path, -1, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
+	else:
+		K_folds, valid_names, test_names = build_folds(database_path, num_k_folds, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
 
 	time_load = time.time() - time_load_0
 
 	## Get dimensions of batches (will be the same for pretraining)
-	piano_dim = piano.shape[1]
-	orch_dim = orch.shape[1]
 	dimensions = {'temporal_order': model_params['temporal_order'],
-				  'piano_dim': piano_dim,
-				  'orch_dim': orch_dim}
+				  'piano_dim': parameters["N_piano"],
+				  'orch_dim': parameters['N_orchestra']}
 	logger.info('TTT : Building folds took {} seconds'.format(time_load))
 	return K_folds, valid_names, test_names, dimensions
 
@@ -381,7 +340,6 @@ python train_wrapper.py '""" + config_folder_fold + "'"
 		with open(file_pbs, 'wb') as f:
 			f.write(text_pbs)
 
-		import pdb; pdb.set_trace()
 		# Launch script
 		if wait_for_pretrain:
 			job_id = subprocess.check_output('qsub -W depend=afterok:' + job_id + ' ' + file_pbs, shell=True)

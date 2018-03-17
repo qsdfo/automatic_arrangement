@@ -22,7 +22,7 @@ import LOP.Results_process.plot_weights as plot_weights
 from validate import validate
 
 # Note : debug sans summarize, qui pollue le tableau de variables
-SUMMARIZE=True
+SUMMARIZE=False
 ANALYSIS=False
 
 def train(model, train_splits_batches, valid_splits_batches, valid_long_range_splits_batches, normalizer,
@@ -190,14 +190,13 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 		#######################################
 		# Load first matrix
 		#######################################
-		path_piano_matrices_train = train_splits_batches.keys()
-		N_matrix_files = len(path_piano_matrices_train)
+		N_matrix_files = len(train_splits_batches)
 
 		global_time_start = time.time()
 		
 		load_data_start = time.time()
 		pool = ThreadPool(processes=1)
-		async_train = pool.apply_async(async_load_mat, (normalizer, path_piano_matrices_train[0], parameters))
+		async_train = pool.apply_async(async_load_mat, (normalizer, train_splits_batches[0]['chunks_folders'], parameters))
 		matrices_from_thread = async_train.get()
 		load_data_time = time.time() - load_data_start
 		logger_train.info("Load the first matrix time : " + str(load_data_time))
@@ -205,7 +204,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 		# For dumb baseline models like random or repeat which don't need training step optimization
 		if model_optimize == False:
 			# WARNING : first validation matrix is not necessarily the same as the first train matrix
-			async_valid = pool.apply_async(async_load_mat, (normalizer, valid_splits_batches.keys()[0], parameters))
+			async_valid = pool.apply_async(async_load_mat, (normalizer, valid_splits_batches[0]['chunks_folders'], parameters))
 			init_matrices_validation = async_valid.get()
 			valid_results, valid_long_range_results, _, _ = validate(trainer, sess, 
 					init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, 
@@ -232,16 +231,15 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 				# Get indices and matrices to load
 				#######################################
 				# We train on the current matrix
-				path_piano_matrix_CURRENT = path_piano_matrices_train[file_ind_CURRENT]
-				train_index = train_splits_batches[path_piano_matrix_CURRENT]
+				train_index = train_splits_batches[file_ind_CURRENT]['batches']
 				# But load the one next one
 				file_ind_NEXT = (file_ind_CURRENT+1) % N_matrix_files
-				path_piano_matrix_NEXT = path_piano_matrices_train[file_ind_NEXT]
+				next_chunks = train_splits_batches[file_ind_NEXT]['chunks_folders']
 
 				#######################################
 				# Load matrix thread
 				#######################################
-				async_train = pool.apply_async(async_load_mat, (normalizer, path_piano_matrix_NEXT, parameters))
+				async_train = pool.apply_async(async_load_mat, (normalizer, next_chunks, parameters))
 
 				piano_transformed, orch, duration_piano, mask_orch = matrices_from_thread
 
@@ -275,7 +273,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 
 			# WARNING : first validation matrix is not necessarily the same as the first train matrix
 			# So now that it's here, parallelization is absolutely useless....
-			async_valid = pool.apply_async(async_load_mat, (normalizer, valid_splits_batches.keys()[0], parameters))
+			async_valid = pool.apply_async(async_load_mat, (normalizer, valid_splits_batches[0]['chunks_folders'], parameters))
 
 			if SUMMARIZE:
 				if (epoch<5) or (epoch%10==0):

@@ -54,6 +54,8 @@ def no_valid_tracks():
 		os.path.join(config.database_root(), "imslp/45"),
 		os.path.join(config.database_root(), "imslp/50"),
 		os.path.join(config.database_root(), "imslp/64"),
+		os.path.join(config.database_root(), "debug/1"),
+		os.path.join(config.database_root(), "debug/2"),
 	] 
 
 	# All IMSLP files

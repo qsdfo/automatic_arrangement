@@ -87,6 +87,7 @@ def from_block_list_to_folds(list_blocks, temporal_order, batch_size, long_range
                 this_dict["batches_lr"] = build_batches(this_list_of_valid_indices_lr, batch_size)
             blocks.append(this_dict)
             counter = 0
+            time = 0
             this_list_of_path = []
             this_list_of_valid_indices = []
             this_list_of_valid_indices_lr = []

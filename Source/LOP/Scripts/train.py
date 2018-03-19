@@ -248,10 +248,7 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 				#######################################
 				for batch_index in train_index:
 					
-					AAA=time.time()
 					loss_batch, _, debug_outputs, summary = trainer.training_step(sess, batch_index, piano_transformed, orch, mask_orch, summarize_dict)
-					BBB=time.time()-AAA
-					print(BBB)
 
 					# Keep track of cost
 					train_cost_epoch.append(loss_batch)
@@ -262,9 +259,7 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 				# New matrices from thread
 				#######################################
 				del(matrices_from_thread)
-				import pdb; pdb.set_trace()
 				matrices_from_thread = async_train.get()
-				import pdb; pdb.set_trace()
 			train_time = time.time() - train_time
 			logger_train.info("Training time : {}".format(train_time))
 

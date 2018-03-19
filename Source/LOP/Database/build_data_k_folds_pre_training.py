@@ -29,7 +29,7 @@ import avoid_tracks
 import gc
 import sys
 
-DEBUG = False
+DEBUG = True
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization):
 	logging.info(folder_path)
@@ -217,11 +217,11 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 			end_index = min(start_index + chunk_size, last_index)
 		
 			section = pr_piano[start_index: end_index]
-			section_cast = section.astype(config.numpy_float_prec())
+			section_cast = section.astype(np.float32)
 			np.save(this_split_folder + '/pr_piano.npy', section_cast)
 
 			section = pr_orch[start_index: end_index]
-			section_cast = section.astype(config.numpy_float_prec())
+			section_cast = section.astype(np.float32)
 			np.save(this_split_folder + '/pr_orch.npy', section_cast)
 
 			section = new_duration_piano[start_index: end_index]
@@ -362,7 +362,7 @@ if __name__ == '__main__':
 			DATABASE_PATH_PRETRAINING + "/OpenMusicScores"
 		]
 
-	data_folder = config.data_root() + '/Data_32'
+	data_folder = config.data_root() + '/Data'
 	if DEBUG:
 		data_folder += '_DEBUG'
 	if pretraining_bool:

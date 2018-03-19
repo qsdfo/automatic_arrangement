@@ -29,7 +29,7 @@ import avoid_tracks
 import gc
 import sys
 
-DEBUG = True
+DEBUG = False
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization):
 	logging.info(folder_path)
@@ -362,7 +362,7 @@ if __name__ == '__main__':
 			DATABASE_PATH_PRETRAINING + "/OpenMusicScores"
 		]
 
-	data_folder = config.data_root() + '/Data'
+	data_folder = config.data_root() + '/Data_32'
 	if DEBUG:
 		data_folder += '_DEBUG'
 	if pretraining_bool:

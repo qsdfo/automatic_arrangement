@@ -248,9 +248,10 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 				#######################################
 				for batch_index in train_index:
 					
+					AAA=time.time()
 					loss_batch, _, debug_outputs, summary = trainer.training_step(sess, batch_index, piano_transformed, orch, mask_orch, summarize_dict)
-
-					print("yo")
+					BBB=time.time()-AAA
+					print(BBB)
 
 					# Keep track of cost
 					train_cost_epoch.append(loss_batch)

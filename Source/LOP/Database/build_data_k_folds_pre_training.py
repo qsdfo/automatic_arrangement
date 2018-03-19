@@ -217,11 +217,11 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 			end_index = min(start_index + chunk_size, last_index)
 		
 			section = pr_piano[start_index: end_index]
-			section_cast = section.astype(np.float16)
+			section_cast = section.astype(config.numpy_float_prec())
 			np.save(this_split_folder + '/pr_piano.npy', section_cast)
 
 			section = pr_orch[start_index: end_index]
-			section_cast = section.astype(np.float16)
+			section_cast = section.astype(config.numpy_float_prec())
 			np.save(this_split_folder + '/pr_orch.npy', section_cast)
 
 			section = new_duration_piano[start_index: end_index]

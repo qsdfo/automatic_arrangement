@@ -6,6 +6,7 @@ import numpy as np
 import keras
 from keras import backend as K
 
+import LOP.Scripts.config as config
 from LOP.Utils.training_error import accuracy_low_TN_tf, bin_Xent_tf, bin_Xen_weighted_0_tf, accuracy_tf, sparsity_penalty_l1, sparsity_penalty_l2, bin_Xen_weighted_1_tf
 from LOP.Utils.build_batch import build_batch
 
@@ -18,15 +19,15 @@ class Standard_trainer(object):
 	def build_variables_nodes(self, model, parameters):
 		# Build nodes
 		# Inputs
-		self.piano_t_ph = tf.placeholder(tf.float16, shape=(None, model.piano_transformed_dim), name="piano_t")
-		self.piano_past_ph = tf.placeholder(tf.float16, shape=(None, self.temporal_order-1, model.piano_transformed_dim), name="piano_past")
-		self.piano_future_ph = tf.placeholder(tf.float16, shape=(None, self.temporal_order-1, model.piano_transformed_dim), name="piano_future")
+		self.piano_t_ph = tf.placeholder(config.tf_float_prec(), shape=(None, model.piano_transformed_dim), name="piano_t")
+		self.piano_past_ph = tf.placeholder(config.tf_float_prec(), shape=(None, self.temporal_order-1, model.piano_transformed_dim), name="piano_past")
+		self.piano_future_ph = tf.placeholder(config.tf_float_prec(), shape=(None, self.temporal_order-1, model.piano_transformed_dim), name="piano_future")
 		#
-		self.orch_t_ph = tf.placeholder(tf.float16, shape=(None, model.orch_dim), name="orch_t")
-		self.orch_past_ph = tf.placeholder(tf.float16, shape=(None, self.temporal_order-1, model.orch_dim), name="orch_past")
-		self.orch_future_ph = tf.placeholder(tf.float16, shape=(None, self.temporal_order-1, model.orch_dim), name="orch_past")
+		self.orch_t_ph = tf.placeholder(config.tf_float_prec(), shape=(None, model.orch_dim), name="orch_t")
+		self.orch_past_ph = tf.placeholder(config.tf_float_prec(), shape=(None, self.temporal_order-1, model.orch_dim), name="orch_past")
+		self.orch_future_ph = tf.placeholder(config.tf_float_prec(), shape=(None, self.temporal_order-1, model.orch_dim), name="orch_past")
 		# Orchestral mask
-		self.mask_orch_ph = tf.placeholder(tf.float16, shape=(None, model.orch_dim), name="mask_orch")
+		self.mask_orch_ph = tf.placeholder(config.tf_float_prec(), shape=(None, model.orch_dim), name="mask_orch")
 		return
 
 	def build_preds_nodes(self, model):

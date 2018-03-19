@@ -7,62 +7,94 @@ import LOP.Scripts.config
 import avoid_tracks
 import cPickle as pkl
 
-def build_folds(store_folder, k_folds=10, temporal_order=20, batch_size=100, long_range_pred=1, num_max_contiguous_blocks=100,
+def build_folds(store_folder, k_folds=10, temporal_order=20, batch_size=100, long_range_pred=1, training_mode=0, num_max_contiguous_blocks=100,
     random_seed=None, logger_load=None):
 
     # Load files lists
     train_and_valid_files = pkl.load(open(store_folder + '/train_and_valid_files.pkl', 'rb'))
     train_only_files = pkl.load(open(store_folder + '/train_only_files.pkl', 'rb'))
     
+    # Pretraining files
+    pre_train_and_valid_files = pkl.load(open(store_folder + '/train_and_valid_files_pretraining.pkl', 'rb'))
+    pre_train_only_files = pkl.load(open(store_folder + '/train_only_files_pretraining.pkl', 'rb'))
+    
     list_files_valid = train_and_valid_files.keys()
     list_files_train_only = train_only_files.keys()
+    pre_list_files_valid = pre_train_and_valid_files.keys()
+    pre_list_files_train_only = pre_train_only_files.keys()
 
     # Folds are built on files, not directly the indices
     # By doing so, we prevent the same file being spread over train, test and validate sets
     random.seed(random_seed)
     random.shuffle(list_files_valid)
     random.shuffle(list_files_train_only)
+    random.shuffle(pre_list_files_valid)
+    random.shuffle(pre_list_files_train_only)
 
     if k_folds == -1:
         k_folds = len(list_files_valid)
 
     folds = []
+    pretraining_folds = []
     valid_names = []
     test_names = []
 
-    # 1 Build the list of split_matrices
-    for k in range(k_folds):
-        # For each folds, build a list of train, valid, test blocks
-        split_matrices_train=[]
-        split_matrices_test=[]
-        split_matrices_valid=[]
-        # Keep track of files used for validating and testing
-        this_valid_names=[]
-        this_test_names=[]
-            
-        for counter, filename in enumerate(list_files_valid):
-            counter_fold = counter + k
-            if (counter_fold % k_folds) < k_folds-2:
-                split_matrices_train.extend(train_and_valid_files[filename])
-            elif (counter_fold % k_folds) == k_folds-2:
-                this_valid_names.append(filename)
-                split_matrices_valid.extend(train_and_valid_files[filename])
-            elif (counter_fold % k_folds) == k_folds-1:
-                this_test_names.append(filename)
-                split_matrices_test.extend(train_and_valid_files[filename])
+    if training_mode==0:
+        # Pre-train then train
+        pretraining_fold, _, _ = build_one_fold(0, k_folds, pre_list_files_valid, pre_list_files_train_only, 
+            pre_train_and_valid_files, pre_train_only_files, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks)
+        pretraining_folds = [pretraining_fold]
+    elif training_mode==1:
+        # Pretraining files are adding only to the training set of files
+        train_only_files.update(pre_train_and_valid_files)
+        train_only_files.update(pre_train_only_files)
+        list_files_train_only = train_only_files.keys()
+        # Reshuffle
+        random.shuffle(list_files_train_only)
 
-        for filename in list_files_train_only:
-            split_matrices_train.extend(train_only_files[filename])
+    # Build the list of split_matrices
+    for k in range(k_folds):
+        if training_mode==0:
+            one_fold, this_valid_names, this_test_names = build_one_fold(k, k_folds, list_files_valid, list_files_train_only, 
+                train_and_valid_files, train_only_files, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks)
+        elif training_mode==1:
+            one_fold, this_valid_names, this_test_names = build_one_fold(k, k_folds, list_files_valid, list_files_train_only, 
+                train_and_valid_files, train_only_files, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks)
         
-        folds.append(
-            {"train": from_block_list_to_folds(split_matrices_train, temporal_order, batch_size, None, num_max_contiguous_blocks),
-            "valid": from_block_list_to_folds(split_matrices_valid, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks),
-            "test": from_block_list_to_folds(split_matrices_test, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks)}
-        )
+        folds.append(one_fold)
         valid_names.append(this_valid_names)
         test_names.append(this_test_names)
 
-    return folds, valid_names, test_names
+    return folds, pretraining_folds, valid_names, test_names
+
+
+def build_one_fold(k, k_folds, list_files_valid, list_files_train_only, train_and_valid_files, train_only_files, 
+    temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks):
+    split_matrices_train=[]
+    split_matrices_test=[]
+    split_matrices_valid=[]
+    # Keep track of files used for validating and testing
+    this_valid_names=[]
+    this_test_names=[]
+        
+    for counter, filename in enumerate(list_files_valid):
+        counter_fold = counter + k
+        if (counter_fold % k_folds) < k_folds-2:
+            split_matrices_train.extend(train_and_valid_files[filename])
+        elif (counter_fold % k_folds) == k_folds-2:
+            this_valid_names.append(filename)
+            split_matrices_valid.extend(train_and_valid_files[filename])
+        elif (counter_fold % k_folds) == k_folds-1:
+            this_test_names.append(filename)
+            split_matrices_test.extend(train_and_valid_files[filename])
+
+    for filename in list_files_train_only:
+        split_matrices_train.extend(train_only_files[filename])
+    
+    this_fold = {"train": from_block_list_to_folds(split_matrices_train, temporal_order, batch_size, None, num_max_contiguous_blocks),
+        "valid": from_block_list_to_folds(split_matrices_valid, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks),
+        "test": from_block_list_to_folds(split_matrices_test, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks)}
+    return this_fold, this_valid_names, this_test_names
 
 
 def from_block_list_to_folds(list_blocks, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks):

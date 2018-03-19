@@ -168,16 +168,17 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 	
 	# Get tvt splits. Dictionnary form :
 	# K_folds[fold_index]['train','test' or 'valid'][split_matrix_index]
-	K_folds, valid_names, test_names, dimensions = \
-		get_folds(database_path, parameters['k_folds'], parameters, model_params, suffix="", logger=logger_config)
-	pretraining_bool = re.search ("_pretraining", config.data_name())
-	if pretraining_bool:
-		K_folds_pretraining, valid_names_pretraining, test_names_pretraining, _ = \
-			get_folds(database_path, parameters['k_folds'], parameters, model_params, suffix="_pretraining", logger=logger_config)
+	K_folds, K_folds_pretraining, valid_names, test_names = \
+		get_folds(database_path, parameters['k_folds'], parameters, model_params, logger=logger_config)	
+
+	# Get dimensions of batches (will be the same for pretraining)
+	dimensions = {'temporal_order': model_params['temporal_order'],
+				  'piano_dim': parameters["N_piano"],
+				  'orch_dim': parameters['N_orchestra']}
 	pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
 	
 	# Three options : pre-training then training or just concatenate everything
-	wait_for_pretrain = False # This is default behavior, only set to True when pretraining in mode 0
+	wait_for_pretraing = False # This is default behavior, only set to True when pretraining in mode 0
 	pretraining_job_id = 0
 	if parameters['training_mode'] == 0:
 		####################
@@ -188,10 +189,10 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 			os.makedirs(config_folder_pretraining)
 			# This is gonna be a problem for Guillimin. Main will have to wait for the end of the pretraining worker
 			# Write pbs script
-			pretraining_job_id = submit_job(config_folder_pretraining, parameters, model_params, dimensions, K_folds_pretraining[0], test_names_pretraining[0], valid_names_pretraining[0],
-				track_paths_generation, True, wait_for_pretrain, pretraining_job_id, logger_config)
+			pretraining_job_id = submit_job(config_folder_pretraining, parameters, model_params, dimensions, K_folds_pretraining[0], [], [],
+				track_paths_generation, True, wait_for_pretraing, pretraining_job_id, logger_config)
 			parameters['pretrained_model'] = os.path.join(config_folder, 'pretraining', 'model_accuracy')
-			wait_for_pretrain = True
+			wait_for_pretraing = True
 
 		for K_fold_ind, K_fold in enumerate(K_folds):
 			# Create fold folder
@@ -201,27 +202,16 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 			os.mkdir(config_folder_fold)
 			# Submit workers
 			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names[K_fold_ind], valid_names[K_fold_ind],
-				track_paths_generation, SAVE, wait_for_pretrain, pretraining_job_id, logger_config)
+				track_paths_generation, SAVE, wait_for_pretraing, pretraining_job_id, logger_config)
 			# train_wrapper(parameters, model_params, dimensions, config_folder, 
 			# 			 (K_fold_ind, K_fold),
 			# 			 valid_names[K_fold_ind], test_names[K_fold_ind], track_paths_generation, 
 			# 			 save_model=SAVE, logger=logger_config)
 		####################
-
 	elif parameters['training_mode'] == 1:
 		####################    
 		# 1/ Append pretraining matrix (both train, valid and test parts) to the training data
 		for K_fold_ind, K_fold in enumerate(K_folds):
-			parameters['pretrained_model'] = None
-			if pretraining_bool:
-				new_K_fold = copy.deepcopy(K_fold)
-				paths_pretraining_matrices = K_folds_pretraining[0]['train'].keys()
-				for paths_pretraining_matrix in paths_pretraining_matrices:
-					indices_from_pretraining = K_folds_pretraining[0]['train'][paths_pretraining_matrix] + K_folds_pretraining[0]['test'][paths_pretraining_matrix] + K_folds_pretraining[0]['valid'][paths_pretraining_matrix]
-					new_K_fold['train'][paths_pretraining_matrix] = indices_from_pretraining
-					# Note that valid_names and test_names don't change
-			else:
-				new_K_fold = K_fold
 			# Create fold folder
 			config_folder_fold = config_folder + "/" + str(K_fold_ind)
 			if os.path.isdir(config_folder_fold):
@@ -229,7 +219,7 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 			os.mkdir(config_folder_fold)
 			# Submit worker
 			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names[K_fold_ind], valid_names[K_fold_ind],
-				track_paths_generation, SAVE, wait_for_pretrain, pretraining_job_id, logger_config)
+				track_paths_generation, SAVE, wait_for_pretraing, pretraining_job_id, logger_config)
 			# train_wrapper(parameters, model_params, dimensions, config_folder,
 			# 			  (K_fold_ind, new_K_fold),
 			# 			  valid_names[K_fold_ind], test_names[K_fold_ind], track_paths_generation, 
@@ -250,7 +240,7 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 			os.mkdir(config_folder_fold)
 			# Submit worker
 			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names[K_fold_ind], valid_names[K_fold_ind],
-				track_paths_generation, SAVE, wait_for_pretrain, pretraining_job_id, logger_config)
+				track_paths_generation, SAVE, wait_for_pretraing, pretraining_job_id, logger_config)
 			# train_wrapper(parameters, model_params, dimensions, config_folder,
 			# 			(K_fold_ind, K_fold),
 			# 			valid_names_pretraining[K_fold_ind], test_names_pretraining[K_fold_ind], track_paths_generation,
@@ -274,30 +264,26 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 	# K_folds[fold_index]['train','test' or 'valid'][index split]['batches' : [[0,10,14..],[..],[..]], 'matrices_path':[path_0,path_1,..]]
 	if num_k_folds == 0:
 		# this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, 10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
-		K_folds, valid_names, test_names = build_folds(database_path, 10, model_params["temporal_order"], parameters["batch_size"], 
-			parameters["long_range"], parameters["num_max_contiguous_blocks"], RANDOM_SEED_FOLDS, logger_load=None)
+		K_folds, K_folds_pretraining, valid_names, test_names = build_folds(database_path, 10, model_params["temporal_order"], parameters["batch_size"], 
+			parameters["long_range"], parameters["training_mode"], parameters["num_max_contiguous_blocks"], RANDOM_SEED_FOLDS, logger_load=None)
 		K_folds = [K_folds[0]]
 		valid_names = [valid_names[0]]
 		test_names = [test_names[0]]
 	elif num_k_folds == -1:
-		K_folds, valid_names, test_names = build_folds(database_path, -1, model_params["temporal_order"], parameters["batch_size"], 
-			parameters["long_range"], parameters["num_max_contiguous_blocks"], RANDOM_SEED_FOLDS, logger_load=None)
+		K_folds, K_folds_pretraining, valid_names, test_names = build_folds(database_path, -1, model_params["temporal_order"], parameters["batch_size"], 
+			parameters["long_range"], parameters["training_mode"], parameters["num_max_contiguous_blocks"], RANDOM_SEED_FOLDS, logger_load=None)
 	else:
-		K_folds, valid_names, test_names = build_folds(database_path, num_k_folds, model_params["temporal_order"], parameters["batch_size"], 
-			parameters["long_range"], parameters["num_max_contiguous_blocks"], RANDOM_SEED_FOLDS, logger_load=None)
+		K_folds, K_folds_pretraining, valid_names, test_names = build_folds(database_path, num_k_folds, model_params["temporal_order"], parameters["batch_size"], 
+			parameters["long_range"], parameters["training_mode"], parameters["num_max_contiguous_blocks"], RANDOM_SEED_FOLDS, logger_load=None)
 
 	time_load = time.time() - time_load_0
 
-	## Get dimensions of batches (will be the same for pretraining)
-	dimensions = {'temporal_order': model_params['temporal_order'],
-				  'piano_dim': parameters["N_piano"],
-				  'orch_dim': parameters['N_orchestra']}
 	logger.info('TTT : Building folds took {} seconds'.format(time_load))
-	return K_folds, valid_names, test_names, dimensions
+	return K_folds, K_folds_pretraining, valid_names, test_names
 
 
 def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names, valid_names,
-	track_paths_generation, save_model, wait_for_pretrain, pretraining_job_id, logger):
+	track_paths_generation, save_model, wait_for_pretraing, pretraining_job_id, logger):
 	
 	if config.local():
 		train_wrapper.train_wrapper(parameters, model_params, MODEL_NAME, dimensions, config_folder_fold,
@@ -344,7 +330,7 @@ python train_wrapper.py '""" + config_folder_fold + "'"
 			f.write(text_pbs)
 
 		# Launch script
-		if wait_for_pretrain:
+		if wait_for_pretraing:
 			job_id = subprocess.check_output('qsub -W depend=afterok:' + job_id + ' ' + file_pbs, shell=True)
 		else:
 			job_id = subprocess.check_output('qsub ' + file_pbs, shell=True)

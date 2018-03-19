@@ -7,9 +7,8 @@ import LOP.Scripts.config
 import avoid_tracks
 import cPickle as pkl
 
-def build_folds(store_folder, k_folds=10, temporal_order=20, batch_size=100, long_range_pred=1, random_seed=None, logger_load=None):
-
-    num_max_contiguous_blocks = 50
+def build_folds(store_folder, k_folds=10, temporal_order=20, batch_size=100, long_range_pred=1, num_max_contiguous_blocks=100,
+    random_seed=None, logger_load=None):
 
     # Load files lists
     train_and_valid_files = pkl.load(open(store_folder + '/train_and_valid_files.pkl', 'rb'))

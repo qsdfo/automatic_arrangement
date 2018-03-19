@@ -29,6 +29,8 @@ import avoid_tracks
 import gc
 import sys
 
+import LOP.Scripts.config as config
+
 DEBUG = True
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization):
@@ -283,7 +285,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 
 	###################################################################################################
 	# Build matrices
-	chunk_size = 500
+	chunk_size = config.parameters(None)["chunk_size"]
 	training_split_folder = os.path.join(store_folder, "split_matrices")
 	os.mkdir(training_split_folder)
 	pretraining_split_folder = os.path.join(store_folder, "split_matrices_pretraining")

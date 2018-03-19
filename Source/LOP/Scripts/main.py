@@ -274,14 +274,17 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 	# K_folds[fold_index]['train','test' or 'valid'][index split]['batches' : [[0,10,14..],[..],[..]], 'matrices_path':[path_0,path_1,..]]
 	if num_k_folds == 0:
 		# this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, 10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
-		K_folds, valid_names, test_names = build_folds(database_path, 10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
+		K_folds, valid_names, test_names = build_folds(database_path, 10, model_params["temporal_order"], parameters["batch_size"], 
+			parameters["long_range"], parameters["num_max_contiguous_blocks"], RANDOM_SEED_FOLDS, logger_load=None)
 		K_folds = [K_folds[0]]
 		valid_names = [valid_names[0]]
 		test_names = [test_names[0]]
 	elif num_k_folds == -1:
-		K_folds, valid_names, test_names = build_folds(database_path, -1, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
+		K_folds, valid_names, test_names = build_folds(database_path, -1, model_params["temporal_order"], parameters["batch_size"], 
+			parameters["long_range"], parameters["num_max_contiguous_blocks"], RANDOM_SEED_FOLDS, logger_load=None)
 	else:
-		K_folds, valid_names, test_names = build_folds(database_path, num_k_folds, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
+		K_folds, valid_names, test_names = build_folds(database_path, num_k_folds, model_params["temporal_order"], parameters["batch_size"], 
+			parameters["long_range"], parameters["num_max_contiguous_blocks"], RANDOM_SEED_FOLDS, logger_load=None)
 
 	time_load = time.time() - time_load_0
 

@@ -29,7 +29,7 @@ import avoid_tracks
 import gc
 import sys
 
-DEBUG = False
+DEBUG = True
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization):
 	logging.info(folder_path)

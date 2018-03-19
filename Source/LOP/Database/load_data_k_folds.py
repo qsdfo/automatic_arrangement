@@ -57,9 +57,8 @@ def build_folds(store_folder, k_folds=10, temporal_order=20, batch_size=100, lon
         
         folds.append(
             {"train": from_block_list_to_folds(split_matrices_train, temporal_order, batch_size, None, num_max_contiguous_blocks),
-            "valid": from_block_list_to_folds(split_matrices_valid, temporal_order, batch_size, None, num_max_contiguous_blocks),
-            "valid_long_range": from_block_list_to_folds(split_matrices_valid, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks),
-            "test": from_block_list_to_folds(split_matrices_test, temporal_order, batch_size, None, num_max_contiguous_blocks)}
+            "valid": from_block_list_to_folds(split_matrices_valid, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks),
+            "test": from_block_list_to_folds(split_matrices_test, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks)}
         )
         valid_names.append(this_valid_names)
         test_names.append(this_test_names)
@@ -77,15 +76,20 @@ def from_block_list_to_folds(list_blocks, temporal_order, batch_size, long_range
     time = 0
     this_list_of_path = []
     this_list_of_valid_indices = []
+    this_list_of_valid_indices_lr = []
     for block_folder in list_blocks:
         if counter > num_max_contiguous_blocks:
-            blocks.append({
+            this_dict = {       
                 "batches": build_batches(this_list_of_valid_indices, batch_size),
                 "chunks_folders": this_list_of_path
-                })
+                }
+            if long_range_pred:
+                this_dict["batches_lr"] = build_batches(this_list_of_valid_indices_lr, batch_size)
+            blocks.append(this_dict)
             counter = 0
             this_list_of_path = []
             this_list_of_valid_indices = []
+            this_list_of_valid_indices_lr = []
         counter+=1
         
         # Update list of chunks
@@ -95,20 +99,26 @@ def from_block_list_to_folds(list_blocks, temporal_order, batch_size, long_range
         pr_piano, pr_orch, _ = load_matrices.load_matrix_NO_PROCESSING(block_folder, duration_piano_bool=False)
         duration = len(pr_piano)
         start_valid_ind = temporal_order - 1
-        if long_range_pred:
-            end_valid_ind = duration - temporal_order - long_range_pred + 1
-        else:
-            end_valid_ind = duration - temporal_order + 1
+        end_valid_ind = duration - temporal_order + 1
         this_indices = remove_silences(range(start_valid_ind, end_valid_ind), pr_piano, pr_orch)
         this_indices = [e+time for e in this_indices]
         this_list_of_valid_indices.extend(this_indices)
+        if long_range_pred:
+            end_valid_ind_lr = duration - temporal_order - long_range_pred + 1
+            this_indices_lr = remove_silences(range(start_valid_ind, end_valid_ind_lr), pr_piano, pr_orch)
+            this_indices_lr = [e+time for e in this_indices_lr]
+            this_list_of_valid_indices_lr.extend(this_indices_lr)
         time += duration
     
     # Don't forget the last one !
-    blocks.append(
-        {"batches": build_batches(this_list_of_valid_indices, batch_size),
-        "chunks_folders": this_list_of_path}
-        )
+    this_dict = {       
+        "batches": build_batches(this_list_of_valid_indices, batch_size),
+        "chunks_folders": this_list_of_path
+        }
+    if long_range_pred:
+        this_dict["batches_lr"] = build_batches(this_list_of_valid_indices_lr, batch_size)
+    blocks.append(this_dict)
+
     return blocks
 
 def build_batches(ind, batch_size):
@@ -133,8 +143,8 @@ def remove_silences(indices, piano, orch):
     """ Remove silences from a set of indices. Remove both from piano and orchestra
     
     """
-    flat_piano = piano.sum(axis=1)
-    flat_orch = orch.sum(axis=1)
+    flat_piano = piano.sum(axis=1)>0
+    flat_orch = orch.sum(axis=1)>0
     flat_pr = flat_piano * flat_orch
     return [e for e in indices if (flat_pr[e] != 0)]
 

@@ -25,7 +25,7 @@ from validate import validate
 SUMMARIZE=False
 ANALYSIS=False
 
-def train(model, train_splits_batches, valid_splits_batches, valid_long_range_splits_batches, normalizer,
+def train(model, train_splits_batches, valid_splits_batches, test_splits_batches, normalizer,
 		  parameters, config_folder, start_time_train, logger_train):
 	
 	DEBUG = config.debug()
@@ -204,14 +204,14 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 		# For dumb baseline models like random or repeat which don't need training step optimization
 		if model_optimize == False:
 			# WARNING : first validation matrix is not necessarily the same as the first train matrix
-			async_valid = pool.apply_async(async_load_mat, (normalizer, valid_splits_batches[0]['chunks_folders'], parameters))
-			init_matrices_validation = async_valid.get()
-			valid_results, valid_long_range_results, _, _ = validate(trainer, sess, 
-					init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, 
+			async_test = pool.apply_async(async_load_mat, (normalizer, test_splits_batches[0]['chunks_folders'], parameters))
+			init_matrices_test = async_test.get()
+			test_results, test_long_range_results, _, _ = validate(trainer, sess, 
+					init_matrices_test, test_splits_batches, 
 					normalizer, parameters,
 					logger_train, DEBUG)
-			training_utils.mean_and_store_results(valid_results, valid_tabs, 0)
-			training_utils.mean_and_store_results(valid_long_range_results, valid_tabs_LR, 0)
+			training_utils.mean_and_store_results(test_results, valid_tabs, 0)
+			training_utils.mean_and_store_results(test_long_range_results, valid_tabs_LR, 0)
 			return training_utils.remove_tail_training_curves(valid_tabs, 1), best_epoch, \
 				training_utils.remove_tail_training_curves(valid_tabs_LR, 1), best_epoch_LR
 
@@ -250,6 +250,8 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 					
 					loss_batch, _, debug_outputs, summary = trainer.training_step(sess, batch_index, piano_transformed, orch, mask_orch, summarize_dict)
 
+					print("yo")
+
 					# Keep track of cost
 					train_cost_epoch.append(loss_batch)
 					sparse_loss_batch = debug_outputs[0]
@@ -259,7 +261,9 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 				# New matrices from thread
 				#######################################
 				del(matrices_from_thread)
+				import pdb; pdb.set_trace()
 				matrices_from_thread = async_train.get()
+				import pdb; pdb.set_trace()
 			train_time = time.time() - train_time
 			logger_train.info("Training time : {}".format(train_time))
 
@@ -293,7 +297,7 @@ def train(model, train_splits_batches, valid_splits_batches, valid_long_range_sp
 				DEBUG["plot_nade_ordering_preds"]=config_folder+"/preds_nade/"+str(epoch)
 			valid_results, valid_long_range_results, preds_val, truth_val = \
 				validate(trainer, sess, 
-					init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, 
+					init_matrices_validation, valid_splits_batches,
 					normalizer, parameters,
 					logger_train, DEBUG)
 			valid_time = time.time() - valid_time
@@ -377,6 +381,24 @@ Sparse_loss : {:.3f}'
 			#######################################
 			epoch += 1
 
+		#######################################
+		# Test
+		#######################################
+		test_time = time.time()
+		async_test = pool.apply_async(async_load_mat, (normalizer, test_splits_batches[0]['chunks_folders'], parameters))
+		init_matrices_test = async_test.get()
+		test_results, test_long_range_results, preds_test, truth_test = \
+			validate(trainer, sess, 
+				init_matrices_test, test_splits_batches,
+				normalizer, parameters,
+				logger_train, DEBUG)
+		test_time = time.time() - test_time
+		logger_train.info("Test time : {}".format(test_time))
+		import pdb; pdb.set_trace()
+
+		#######################################
+		# Close workers' pool
+		#######################################
 		pool.close()
 		pool.join()
 	

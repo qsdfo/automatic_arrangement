@@ -24,7 +24,7 @@ def train_wrapper(parameters, model_params, model_name,
 
 	train_folds = K_fold['train']
 	valid_folds = K_fold['valid']
-	valid_long_range_folds = K_fold['valid_long_range']
+	test_folds = K_fold['test']
 	
 	# Write filenames of this split
 	with open(os.path.join(config_folder_fold, "test_names.txt"), "wb") as f:
@@ -67,15 +67,15 @@ def train_wrapper(parameters, model_params, model_name,
 		return counter
 	n_train_batches = count_number_batch(train_folds)
 	n_val_batches = count_number_batch(valid_folds)
-	n_val_long_range_batches = count_number_batch(valid_long_range_folds)
+	n_test_batches = count_number_batch(test_folds)
 
 	logger.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
 	logger.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
-	logger.info((u'# n_val_long_range_batch :  {}'.format(n_val_long_range_batches)).encode('utf8'))
+	logger.info((u'# n_test_batch :  {}'.format(n_test_batches)).encode('utf8'))
 
 	parameters['n_train_batches'] = n_train_batches
 	parameters['n_val_batches'] = n_val_batches
-	parameters['n_val_long_range_batches'] = n_val_long_range_batches
+	parameters['n_test_batches'] = n_test_batches
 
 	############################################################
 	# Instanciate model and save folder
@@ -88,7 +88,7 @@ def train_wrapper(parameters, model_params, model_name,
 	# Train
 	############################################################
 	time_train_0 = time.time()
-	valid_tabs, best_epoch, valid_tabs_LR, best_epoch_LR = train(model, train_folds, valid_folds, valid_long_range_folds, normalizer, parameters, config_folder_fold, time_train_0, logger)
+	valid_tabs, best_epoch, valid_tabs_LR, best_epoch_LR = train(model, train_folds, valid_folds, test_folds, normalizer, parameters, config_folder_fold, time_train_0, logger)
 	time_train_1 = time.time()
 	training_time = time_train_1-time_train_0
 	logger.info('TTT : Training data took {} seconds'.format(training_time))

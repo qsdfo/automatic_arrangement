@@ -10,7 +10,7 @@ import config
 from LOP.Scripts.asynchronous_load_mat import async_load_mat
 from LOP.Utils.measure import accuracy_measure, precision_measure, recall_measure, true_accuracy_measure, f_measure, binary_cross_entropy
 
-def validate(trainer, sess, init_matrices_validation, valid_splits_batches, valid_long_range_splits_batches, normalizer, parameters, logger, DEBUG):
+def validate(trainer, sess, init_matrices_validation, valid_splits_batches, normalizer, parameters, logger, DEBUG):
 
 	temporal_order = trainer.temporal_order
 
@@ -47,6 +47,7 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 		#######################################
 		# We train on the current matrix
 		valid_index = valid_splits_batches[file_ind_CURRENT]['batches']
+		valid_long_range_index = valid_splits_batches[file_ind_CURRENT]['batches_lr']
 		# But load the one next one
 		file_ind_NEXT = (file_ind_CURRENT+1) % N_matrix_files
 		next_chunks = valid_splits_batches[file_ind_NEXT]['chunks_folders']
@@ -104,50 +105,50 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, vali
 		#       orch[temporal_order:
 		#            temporal_order+parameters["long_range"]]
 		#######################################
-		# for batch_index in valid_long_range_index:
-		# 	# Init
-		# 	# Extract from piano and orchestra the matrices required for the task
-		# 	seq_len = (temporal_order-1) * 2 + parameters["long_range"]
-		# 	piano_dim = piano_transformed.shape[1]
-		# 	orch_dim = orch.shape[1]
-		# 	piano_extracted = np.zeros((len(batch_index), seq_len, piano_dim))
-		# 	orch_extracted = np.zeros((len(batch_index), seq_len, orch_dim))
-		# 	orch_gen = np.zeros((len(batch_index), seq_len, orch_dim))
-		# 	for ind_b, this_batch_ind in enumerate(batch_index):
-		# 		start_ind = this_batch_ind-temporal_order+1
-		# 		end_ind = start_ind + seq_len
-		# 		piano_extracted[ind_b] = piano_transformed[start_ind:end_ind,:]
-		# 		orch_extracted[ind_b] = orch[start_ind:end_ind,:]
+		for batch_index in valid_long_range_index:
+			# Init
+			# Extract from piano and orchestra the matrices required for the task
+			seq_len = (temporal_order-1) * 2 + parameters["long_range"]
+			piano_dim = piano_transformed.shape[1]
+			orch_dim = orch.shape[1]
+			piano_extracted = np.zeros((len(batch_index), seq_len, piano_dim))
+			orch_extracted = np.zeros((len(batch_index), seq_len, orch_dim))
+			orch_gen = np.zeros((len(batch_index), seq_len, orch_dim))
+			for ind_b, this_batch_ind in enumerate(batch_index):
+				start_ind = this_batch_ind-temporal_order+1
+				end_ind = start_ind + seq_len
+				piano_extracted[ind_b] = piano_transformed[start_ind:end_ind,:]
+				orch_extracted[ind_b] = orch[start_ind:end_ind,:]
 			
-		# 	# We know the past orchestration at the beginning...
-		# 	orch_gen[:, :temporal_order-1, :] = orch_extracted[:, :temporal_order-1, :]
-		# 	# and the future orchestration at the end
-		# 	orch_gen[:, -temporal_order+1:, :] = orch_extracted[:, -temporal_order+1:, :]
-		# 	# check we didn't gave the correct information
-		# 	assert orch_gen[:, temporal_order-1:(temporal_order-1)+parameters["long_range"], :].sum()==0, "The gap to fill in orch_gen contains values !"
+			# We know the past orchestration at the beginning...
+			orch_gen[:, :temporal_order-1, :] = orch_extracted[:, :temporal_order-1, :]
+			# and the future orchestration at the end
+			orch_gen[:, -temporal_order+1:, :] = orch_extracted[:, -temporal_order+1:, :]
+			# check we didn't gave the correct information
+			assert orch_gen[:, temporal_order-1:(temporal_order-1)+parameters["long_range"], :].sum()==0, "The gap to fill in orch_gen contains values !"
 
-		# 	for t in range(temporal_order-1, temporal_order-1+parameters["long_range"]):
+			for t in range(temporal_order-1, temporal_order-1+parameters["long_range"]):
 
-		# 		loss_batch, preds_batch, orch_t = trainer.valid_long_range_step(sess, t, piano_extracted, orch_extracted, orch_gen)
+				loss_batch, preds_batch, orch_t = trainer.valid_long_range_step(sess, t, piano_extracted, orch_extracted, orch_gen)
 				
-		# 		prediction_sampled = np.random.binomial(1, preds_batch)
-		# 		orch_gen[:, t, :] = prediction_sampled
+				prediction_sampled = np.random.binomial(1, preds_batch)
+				orch_gen[:, t, :] = prediction_sampled
 
-		# 		# Compute performances measures
-		# 		Xent_batch = binary_cross_entropy(orch_t, preds_batch)
-		# 		accuracy_batch = accuracy_measure(orch_t, preds_batch)
-		# 		precision_batch = precision_measure(orch_t, preds_batch)
-		# 		recall_batch = recall_measure(orch_t, preds_batch)
-		# 		true_accuracy_batch = true_accuracy_measure(orch_t, preds_batch)
-		# 		f_score_batch = f_measure(orch_t, preds_batch)
+				# Compute performances measures
+				Xent_batch = binary_cross_entropy(orch_t, preds_batch)
+				accuracy_batch = accuracy_measure(orch_t, preds_batch)
+				precision_batch = precision_measure(orch_t, preds_batch)
+				recall_batch = recall_measure(orch_t, preds_batch)
+				true_accuracy_batch = true_accuracy_measure(orch_t, preds_batch)
+				f_score_batch = f_measure(orch_t, preds_batch)
 
-		# 		val_loss_long_range.extend(loss_batch)
-		# 		accuracy_long_range.extend(accuracy_batch)
-		# 		precision_long_range.extend(precision_batch)
-		# 		recall_long_range.extend(recall_batch)
-		# 		true_accuracy_long_range.extend(true_accuracy_batch)
-		# 		f_score_long_range.extend(f_score_batch)
-		# 		Xent_long_range.extend(Xent_batch)
+				val_loss_long_range.extend(loss_batch)
+				accuracy_long_range.extend(accuracy_batch)
+				precision_long_range.extend(precision_batch)
+				recall_long_range.extend(recall_batch)
+				true_accuracy_long_range.extend(true_accuracy_batch)
+				f_score_long_range.extend(f_score_batch)
+				Xent_long_range.extend(Xent_batch)
 
 		del(matrices_from_thread)
 		matrices_from_thread = async_valid.get()

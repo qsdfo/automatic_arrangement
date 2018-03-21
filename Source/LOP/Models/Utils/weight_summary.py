@@ -23,7 +23,7 @@ def variable_summary(var, plot_bool=False):
                 if len(var.shape)==2:
                     shape_var=var.get_shape()
                     reshape_var = tf.reshape(var, [1, shape_var[0], shape_var[1], 1])
-                elif:
+                else:
                     import pdb; pdb.set_trace()
                 tf.summary.image('im_weights', reshape_var, 1)
     return

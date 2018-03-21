@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""Script for plotting D3.js weights of a trained model
+"""Script for plotting D3.js and pdf (matplotlib) weights of a trained model
 Created on Mon Dec 11 16:41:03 2017
 
 @author: leo

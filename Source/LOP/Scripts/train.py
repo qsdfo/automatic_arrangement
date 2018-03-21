@@ -21,18 +21,15 @@ import LOP.Results_process.plot_weights as plot_weights
 
 from validate import validate
 
-# Note : debug sans summarize, qui pollue le tableau de variables
-SUMMARIZE=False
-ANALYSIS=False
-
 def train(model, train_splits_batches, valid_splits_batches, test_splits_batches, normalizer,
 		  parameters, config_folder, start_time_train, logger_train):
 	
 	DEBUG = config.debug()
+	SUMMARIZE=DEBUG["summarize"]
 	
 	# Build DEBUG dict
 	if DEBUG["save_measures"]:
-		DEBUG["save_measures"]=config_folder+"/save_measures"
+		DEBUG["save_measures"] = config_folder+"/save_measures"
 
 	# Time information used
 	time_limit = parameters['walltime'] * 3600 - 30*60  # walltime - 30 minutes in seconds
@@ -128,7 +125,6 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 		'f_score': 0, 
 		'Xent': 0
 	}
-	
 	# Long-term validation error
 	valid_tabs_LR = {
 		'loss': np.zeros(max(1, parameters['max_iter'])), 
@@ -265,9 +261,10 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 
 			### 
 			# DEBUG
-			# weight_folder="DEBUG/weights" 
-			# plot_weights.plot_weights(sess, weight_folder)
-			# import pdb; pdb.set_trace()
+			if DEBUG["plot_weights"]:
+				# weight_folder=config_folder+"/weights/"+str(epoch)
+				weight_folder=config_folder+"/weights"
+				plot_weights.plot_weights(sess, weight_folder)
 			#
 			###
 
@@ -287,6 +284,7 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 			#######################################
 			# Validate
 			#######################################
+			import pdb; pdb.set_trace()
 			valid_time = time.time()
 			init_matrices_validation = async_valid.get()
 			if DEBUG["plot_nade_ordering_preds"]:

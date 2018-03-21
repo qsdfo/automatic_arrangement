@@ -31,7 +31,7 @@ import sys
 
 import LOP.Scripts.config as config
 
-DEBUG = True
+DEBUG = False
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization):
 	logging.info(folder_path)

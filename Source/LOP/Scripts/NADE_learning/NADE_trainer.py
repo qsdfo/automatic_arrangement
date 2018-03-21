@@ -23,8 +23,8 @@ class NADE_trainer(Standard_trainer):
 
 	def build_variables_nodes(self, model, parameters):
 		Standard_trainer.build_variables_nodes(self, model, parameters)
-		self.mask_input = tf.placeholder(tf.float16, shape=(None, model.orch_dim), name="mask_input")		
-		self.orch_pred = tf.placeholder(tf.float16, shape=(None, model.orch_dim), name="orch_pred")		
+		self.mask_input = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="mask_input")		
+		self.orch_pred = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="orch_pred")		
 		return
 
 	def build_preds_nodes(self, model):
@@ -115,11 +115,11 @@ class NADE_trainer(Standard_trainer):
 			ind = np.random.random_integers(0, orch_dim-1, (d,))
 			mask[batch_ind, ind] = 1
 
-
 		#############################################
 		#############################################
 		#############################################
-		# Compute test Jacobian, to check that gradients are set to zero : Test passed !
+		# import pdb; pdb.set_trace()
+		# # Compute test Jacobian, to check that gradients are set to zero : Test passed !
 		# mask_deb = np.zeros_like(orch_t)
 		# mask_deb[:,:20] = 1
 		# feed_dict[self.mask_input] = mask_deb
@@ -129,7 +129,6 @@ class NADE_trainer(Standard_trainer):
 		# 		AAA = trainable_parameter
 		# grads = tf.gradients(self.loss, AAA)
 		# loss_batch, dydx = sess.run([self.loss, grads], feed_dict)
-		# import pdb; pdb.set_trace()
 		#############################################
 		#############################################
 		#############################################

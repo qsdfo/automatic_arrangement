@@ -12,8 +12,12 @@ import shutil
 import cPickle as pkl
 from keras import backend as K
 import tensorflow as tf
-import matplotlib.pyplot as plt
 import numpy as np
+
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+
 from LOP_database.visualization.numpy_array.visualize_numpy import visualize_mat
 
 
@@ -36,7 +40,7 @@ def plot_weights(sess, weight_folder):
     # Plot weights with D3.js
     if os.path.isdir(weight_folder):
         shutil.rmtree(weight_folder)
-    os.mkdir(weight_folder)
+    os.makedirs(weight_folder)
     for trainable_parameter in tf.trainable_variables():
         name = trainable_parameter.name
         name = re.sub(':', '_', name)

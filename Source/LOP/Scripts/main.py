@@ -19,8 +19,8 @@ import train_wrapper
 import config
 from LOP.Database.load_data_k_folds import build_folds
 
-MODEL_NAME="LSTM_plugged_base"
-GENERATE=False
+MODEL_NAME="Odnade_mlp"
+GENERATE=True
 SAVE=False
 DEFINED_CONFIG=True  # HYPERPARAM ?
 # For reproducibility

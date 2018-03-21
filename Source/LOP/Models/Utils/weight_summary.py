@@ -4,7 +4,7 @@
 import tensorflow as tf
 import re
 
-def variable_summary(var):
+def variable_summary(var, plot_bool=False):
     """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
     with tf.name_scope('summaries'):
         name_var = re.split('/', var.name)[-1]
@@ -18,9 +18,17 @@ def variable_summary(var):
             tf.summary.scalar('max', tf.reduce_max(var))
             tf.summary.scalar('min', tf.reduce_min(var))
             tf.summary.histogram('histogram', var)
+            if plot_bool:
+                # Reshape to fit the summay.image shape constraints
+                if len(var.shape)==2:
+                    shape_var=var.get_shape()
+                    reshape_var = tf.reshape(var, [1, shape_var[0], shape_var[1], 1])
+                elif:
+                    import pdb; pdb.set_trace()
+                tf.summary.image('im_weights', reshape_var, 1)
     return
 
-def keras_layer_summary(layer):
+def keras_layer_summary(layer, plot_bool=False):
     for var in layer.trainable_weights:
-        variable_summary(var)
+        variable_summary(var, plot_bool)
     return

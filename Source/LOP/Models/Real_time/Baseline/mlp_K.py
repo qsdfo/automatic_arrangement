@@ -76,6 +76,9 @@ class MLP_K(Model_lop):
 				keras_layer_summary(dense)
 				x = Dropout(self.dropout_probability)(x)
 
-		orch_prediction = Dense(self.orch_dim, activation='sigmoid')(x)
+		with tf.name_scope("predictive_layer"):
+			dense = Dense(self.orch_dim, activation='sigmoid')
+			orch_prediction = dense(x)
+			keras_layer_summary(dense)
 
 		return orch_prediction, None

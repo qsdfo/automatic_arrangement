@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import shutil
+import csv
 import numpy as np
 import cPickle as pkl
 from import_functions import import_model, import_normalizer
@@ -88,7 +89,7 @@ def train_wrapper(parameters, model_params, model_name,
 	# Train
 	############################################################
 	time_train_0 = time.time()
-	valid_tabs, best_epoch, valid_tabs_LR, best_epoch_LR = train(model, train_folds, valid_folds, test_folds, normalizer, parameters, config_folder_fold, time_train_0, logger)
+	valid_tabs, test_score, best_epoch, valid_tabs_LR, test_score_LR, best_epoch_LR = train(model, train_folds, valid_folds, test_folds, normalizer, parameters, config_folder_fold, time_train_0, logger)
 	time_train_1 = time.time()
 	training_time = time_train_1-time_train_0
 	logger.info('TTT : Training data took {} seconds'.format(training_time))
@@ -108,11 +109,24 @@ def train_wrapper(parameters, model_params, model_name,
 		np.savetxt(os.path.join(config_folder_fold, 'results_short_range', measure_name + '.txt'), measure_curve, fmt='%.6f')
 		with open(os.path.join(config_folder_fold, 'results_short_range', measure_name + '_best_epoch.txt'), 'wb') as f:
 			f.write("{:d}".format(best_epoch[measure_name]))
+
 	# Long range
 	for measure_name, measure_curve in valid_tabs_LR.iteritems():
 		np.savetxt(os.path.join(config_folder_fold, 'results_long_range', measure_name + '.txt'), measure_curve, fmt='%.6f')
 		with open(os.path.join(config_folder_fold, 'results_long_range', measure_name + '_best_epoch.txt'), 'wb') as f:
 			f.write("{:d}".format(best_epoch[measure_name]))
+
+	# Test scores
+	with open(os.path.join(config_folder_fold, 'test_score.csv'), 'wb') as csvfile:
+		fieldnames = test_score.keys()
+		writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=";")
+		writer.writeheader()
+		writer.writerow(test_score)
+	with open(os.path.join(config_folder_fold, 'test_score_LR.csv'), 'wb') as csvfile:
+		fieldnames = test_score_LR.keys()
+		writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=";")
+		writer.writeheader()
+		writer.writerow(test_score_LR)
 
 	# Generating
 	if generate_bool:

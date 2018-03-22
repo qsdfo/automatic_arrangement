@@ -284,7 +284,6 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 			#######################################
 			# Validate
 			#######################################
-			import pdb; pdb.set_trace()
 			valid_time = time.time()
 			init_matrices_validation = async_valid.get()
 			if DEBUG["plot_nade_ordering_preds"]:
@@ -296,6 +295,7 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 					logger_train, DEBUG)
 			valid_time = time.time() - valid_time
 			logger_train.info("Validation time : {}".format(valid_time))
+			import pdb; pdb.set_trace()
 
 			training_utils.mean_and_store_results(valid_results, valid_tabs, epoch)
 			training_utils.mean_and_store_results(valid_long_range_results, valid_tabs_LR, epoch)
@@ -388,7 +388,25 @@ Sparse_loss : {:.3f}'
 				logger_train, DEBUG)
 		test_time = time.time() - test_time
 		logger_train.info("Test time : {}".format(test_time))
-		import pdb; pdb.set_trace()
+		
+		test_tab={}
+		test_tab_LR={}
+		training_utils.mean_and_store_results(test_results, test_tab, None)
+		training_utils.mean_and_store_results(test_long_range_results, test_tab_LR, None)
+
+		logger_train.info("############################################################")
+		logger_train.info(("""## Test Scores
+Loss : {}
+Validation accuracy : {:.3f} %, precision : {:.3f} %, recall : {:.3f} %
+True_accuracy : {:.3f} %, f_score : {:.3f} %, Xent : {:.6f}"""
+		.format(
+			test_tab['loss'], test_tab['accuracy'], test_tab['precision'],
+			test_tab['recall'], test_tab['true_accuracy'], test_tab['f_score'], test_tab['Xent'])
+		.encode('utf8')))
+		logger_train.info(('Time : {}'
+						  .format(test_time))
+						  .encode('utf8'))
+
 
 		#######################################
 		# Close workers' pool
@@ -396,8 +414,8 @@ Sparse_loss : {:.3f}'
 		pool.close()
 		pool.join()
 	
-	return training_utils.remove_tail_training_curves(valid_tabs, epoch), best_epoch, \
-		training_utils.remove_tail_training_curves(valid_tabs_LR, epoch), best_epoch_LR
+	return training_utils.remove_tail_training_curves(valid_tabs, epoch), test_tab, best_epoch, \
+		training_utils.remove_tail_training_curves(valid_tabs_LR, epoch), test_tab_LR, best_epoch_LR
 
 # bias=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/bias:0"][0]
 # kernel=[v.eval() for v in tf.global_variables() if v.name == "top_layer_prediction/orch_pred/kernel:0"][0]

@@ -31,7 +31,8 @@ import sys
 
 import LOP.Scripts.config as config
 
-DEBUG = False
+DEBUG=False
+
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization):
 	logging.info(folder_path)
@@ -285,7 +286,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 
 	###################################################################################################
 	# Build matrices
-	chunk_size = config.parameters(None)["chunk_size"]
+	chunk_size = config.build_parameters()["chunk_size"]
 	training_split_folder = os.path.join(store_folder, "split_matrices")
 	os.mkdir(training_split_folder)
 	pretraining_split_folder = os.path.join(store_folder, "split_matrices_pretraining")
@@ -338,7 +339,7 @@ if __name__ == '__main__':
 	# because train is data augmented but not test and validate
 	temporal_granularity='event_level'
 	quantization=8
-	pretraining_bool=False
+	pretraining_bool=True
 
 	# Database have to be built jointly so that the ranges match
 	DATABASE_PATH = config.database_root()

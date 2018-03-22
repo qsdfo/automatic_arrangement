@@ -63,14 +63,11 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, norm
 		# Loop for short-term validation
 		#######################################
 		for batch_counter, batch_index in enumerate(valid_index):
-			if DEBUG["plot_nade_ordering_preds"]:
-				if batch_counter == len(valid_index)-1:
-					if os.path.isdir(DEBUG["plot_nade_ordering_preds"]):
-						shutil.rmtree(DEBUG["plot_nade_ordering_preds"])
-					os.makedirs(DEBUG["plot_nade_ordering_preds"])
-					loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch, PLOTING_FOLDER=DEBUG["plot_nade_ordering_preds"])
-				else:
-					loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch, PLOTING_FOLDER=None)
+			if DEBUG["plot_nade_ordering_preds"] and (batch_counter == len(valid_index)-1):
+				if os.path.isdir(DEBUG["plot_nade_ordering_preds"]):
+					shutil.rmtree(DEBUG["plot_nade_ordering_preds"])
+				os.makedirs(DEBUG["plot_nade_ordering_preds"])
+				loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch, PLOTING_FOLDER=DEBUG["plot_nade_ordering_preds"])
 			else:
 				loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch, PLOTING_FOLDER=None)
 				
@@ -160,7 +157,7 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, norm
 		'accuracy': np.asarray(accuracy), 
 		'precision': np.asarray(precision), 
 		'recall': np.asarray(recall), 
-		'val_loss': np.asarray(val_loss), 
+		'loss': np.asarray(val_loss), 
 		'true_accuracy': np.asarray(true_accuracy), 
 		'f_score': np.asarray(f_score), 
 		'Xent': np.asarray(Xent)
@@ -169,7 +166,7 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, norm
 		'accuracy': np.asarray(accuracy_long_range),
 		'precision': np.asarray(precision_long_range), 
 		'recall': np.asarray(recall_long_range),
-		'val_loss': np.asarray(val_loss_long_range), 
+		'loss': np.asarray(val_loss_long_range), 
 		'true_accuracy': np.asarray(true_accuracy_long_range), 
 		'f_score': np.asarray(f_score_long_range), 
 		'Xent': np.asarray(Xent_long_range)

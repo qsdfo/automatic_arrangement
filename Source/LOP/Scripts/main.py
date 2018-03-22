@@ -19,6 +19,7 @@ import train_wrapper
 import config
 from LOP.Database.load_data_k_folds import build_folds
 
+# MODEL_NAME="mlp_K"
 MODEL_NAME="Odnade_mlp"
 GENERATE=True
 SAVE=False
@@ -203,10 +204,6 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 			# Submit workers
 			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names[K_fold_ind], valid_names[K_fold_ind],
 				track_paths_generation, SAVE, wait_for_pretraing, pretraining_job_id, logger_config)
-			# train_wrapper(parameters, model_params, dimensions, config_folder, 
-			# 			 (K_fold_ind, K_fold),
-			# 			 valid_names[K_fold_ind], test_names[K_fold_ind], track_paths_generation, 
-			# 			 save_model=SAVE, logger=logger_config)
 		####################
 	elif parameters['training_mode'] == 1:
 		####################    
@@ -220,10 +217,6 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 			# Submit worker
 			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names[K_fold_ind], valid_names[K_fold_ind],
 				track_paths_generation, SAVE, wait_for_pretraing, pretraining_job_id, logger_config)
-			# train_wrapper(parameters, model_params, dimensions, config_folder,
-			# 			  (K_fold_ind, new_K_fold),
-			# 			  valid_names[K_fold_ind], test_names[K_fold_ind], track_paths_generation, 
-			# 			  save_model=SAVE, logger=logger_config)
 		####################
 		
 	elif parameters['training_mode'] == 2:
@@ -241,10 +234,6 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 			# Submit worker
 			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names[K_fold_ind], valid_names[K_fold_ind],
 				track_paths_generation, SAVE, wait_for_pretraing, pretraining_job_id, logger_config)
-			# train_wrapper(parameters, model_params, dimensions, config_folder,
-			# 			(K_fold_ind, K_fold),
-			# 			valid_names_pretraining[K_fold_ind], test_names_pretraining[K_fold_ind], track_paths_generation,
-			# 			save_model=SAVE, logger=logger_config)
 		####################
 	else:
 		raise Exception("Not a training mode")

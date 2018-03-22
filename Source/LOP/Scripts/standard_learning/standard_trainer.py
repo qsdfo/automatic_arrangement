@@ -219,5 +219,5 @@ class Standard_trainer(object):
 
 	def generation_step(self, sess, batch_index, piano, orch_gen, mask_orch):
 		# Exactly the same as the valid_step in the case of the standard_learner
-		loss_batch, preds_batch, orch_t = self.valid_step(sess, batch_index, piano, orch_gen, mask_orch)
+		loss_batch, preds_batch, orch_t = self.valid_step(sess, batch_index, piano, orch_gen, mask_orch, None)
 		return preds_batch

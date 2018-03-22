@@ -7,7 +7,7 @@ import LOP.Scripts.config
 import avoid_tracks
 import cPickle as pkl
 
-def build_folds(store_folder, k_folds=10, temporal_order=20, batch_size=100, long_range_pred=1, training_mode=0, num_max_contiguous_blocks=100,
+def build_folds(store_folder, k_folds=10, temporal_order=20, train_batch_size=100, long_range_pred=1, training_mode=0, num_max_contiguous_blocks=100,
     random_seed=None, logger_load=None):
 
     # Load files lists
@@ -42,10 +42,10 @@ def build_folds(store_folder, k_folds=10, temporal_order=20, batch_size=100, lon
     if training_mode==0:
         # Pre-train then train
         pretraining_fold, _, _ = build_one_fold(0, k_folds, pre_list_files_valid, pre_list_files_train_only, 
-            pre_train_and_valid_files, pre_train_only_files, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks)
+            pre_train_and_valid_files, pre_train_only_files, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks)
         pretraining_folds = [pretraining_fold]
     elif training_mode==1:
-        # Pretraining files are adding only to the training set of files
+        # Pretraining files are added only to the training set of files
         train_only_files.update(pre_train_and_valid_files)
         train_only_files.update(pre_train_only_files)
         list_files_train_only = train_only_files.keys()
@@ -56,10 +56,10 @@ def build_folds(store_folder, k_folds=10, temporal_order=20, batch_size=100, lon
     for k in range(k_folds):
         if training_mode==0:
             one_fold, this_valid_names, this_test_names = build_one_fold(k, k_folds, list_files_valid, list_files_train_only, 
-                train_and_valid_files, train_only_files, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks)
+                train_and_valid_files, train_only_files, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks)
         elif training_mode==1:
             one_fold, this_valid_names, this_test_names = build_one_fold(k, k_folds, list_files_valid, list_files_train_only, 
-                train_and_valid_files, train_only_files, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks)
+                train_and_valid_files, train_only_files, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks)
         
         folds.append(one_fold)
         valid_names.append(this_valid_names)
@@ -69,7 +69,7 @@ def build_folds(store_folder, k_folds=10, temporal_order=20, batch_size=100, lon
 
 
 def build_one_fold(k, k_folds, list_files_valid, list_files_train_only, train_and_valid_files, train_only_files, 
-    temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks):
+    temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks):
     split_matrices_train=[]
     split_matrices_test=[]
     split_matrices_valid=[]
@@ -91,13 +91,13 @@ def build_one_fold(k, k_folds, list_files_valid, list_files_train_only, train_an
     for filename in list_files_train_only:
         split_matrices_train.extend(train_only_files[filename])
     
-    this_fold = {"train": from_block_list_to_folds(split_matrices_train, temporal_order, batch_size, None, num_max_contiguous_blocks),
-        "valid": from_block_list_to_folds(split_matrices_valid, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks),
-        "test": from_block_list_to_folds(split_matrices_test, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks)}
+    this_fold = {"train": from_block_list_to_folds(split_matrices_train, temporal_order, train_batch_size, None, num_max_contiguous_blocks),
+        "valid": from_block_list_to_folds(split_matrices_valid, temporal_order, None, long_range_pred, num_max_contiguous_blocks),
+        "test": from_block_list_to_folds(split_matrices_test, temporal_order, None, long_range_pred, num_max_contiguous_blocks)}
     return this_fold, this_valid_names, this_test_names
 
 
-def from_block_list_to_folds(list_blocks, temporal_order, batch_size, long_range_pred, num_max_contiguous_blocks):
+def from_block_list_to_folds(list_blocks, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks):
     # Shuffle the files lists
     random.shuffle(list_blocks)
 
@@ -111,11 +111,11 @@ def from_block_list_to_folds(list_blocks, temporal_order, batch_size, long_range
     for block_folder in list_blocks:
         if counter > num_max_contiguous_blocks:
             this_dict = {       
-                "batches": build_batches(this_list_of_valid_indices, batch_size),
+                "batches": build_batches(this_list_of_valid_indices, train_batch_size),
                 "chunks_folders": this_list_of_path
                 }
             if long_range_pred:
-                this_dict["batches_lr"] = build_batches(this_list_of_valid_indices_lr, batch_size)
+                this_dict["batches_lr"] = build_batches(this_list_of_valid_indices_lr, train_batch_size)
             blocks.append(this_dict)
             counter = 0
             time = 0
@@ -144,28 +144,35 @@ def from_block_list_to_folds(list_blocks, temporal_order, batch_size, long_range
     
     # Don't forget the last one !
     this_dict = {       
-        "batches": build_batches(this_list_of_valid_indices, batch_size),
+        "batches": build_batches(this_list_of_valid_indices, train_batch_size),
         "chunks_folders": this_list_of_path
         }
     if long_range_pred:
-        this_dict["batches_lr"] = build_batches(this_list_of_valid_indices_lr, batch_size)
+        this_dict["batches_lr"] = build_batches(this_list_of_valid_indices_lr, train_batch_size)
     blocks.append(this_dict)
 
     return blocks
 
-def build_batches(ind, batch_size):
+def build_batches(ind, train_batch_size):
         batches = []
         position = 0
         n_ind = len(ind)
         
-        n_batch = int(n_ind // batch_size)
+        train_batch_size = 250
 
-        # Shuffle indices
-        random.shuffle(ind)
-       
+        if train_batch_size:
+            n_batch = int(n_ind // train_batch_size)
+            # Shuffle indices
+            random.shuffle(ind)
+        else:
+            # One batch for valid and test, 
+            # and don't shuffle (useless)
+            n_batch = 1
+            train_batch_size = n_ind
+        
         for i in range(n_batch):
-            batches.append(ind[position:position+batch_size])
-            position += batch_size
+            batches.append(ind[position:position+train_batch_size])
+            position += train_batch_size
         # Smaller last batch
         if position < n_ind:
             batches.append(ind[position:n_ind])

@@ -182,7 +182,7 @@ class NADE_trainer(Standard_trainer):
 			feed_dict[self.mask_input] = mask
 			
 			loss_batch, preds_batch = sess.run([self.loss_val, self.preds], feed_dict)
-
+			
 			##############################
 			##############################
 			# DEBUG
@@ -209,6 +209,7 @@ class NADE_trainer(Standard_trainer):
 			
 			preds_mean_over_ordering = self.mean_parallel_prediction(batch_size, orch_pred)
 			loss_batch_mean = self.mean_parallel_prediction(batch_size, loss_batch)
+		
 		return loss_batch_mean, preds_mean_over_ordering
 
 	def mean_parallel_prediction(self, batch_size, matrix):

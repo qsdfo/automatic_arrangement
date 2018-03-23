@@ -166,13 +166,15 @@ if __name__ == '__main__':
 	generate_bool = pkl.load(open(context_folder + "/generate_bool.pkl","rb"))
 
 	import logging
-	formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
-	logger_config = logging.getLogger("worker")
-	hdlr = logging.FileHandler(context_folder + '/log')
+	logger = logging.getLogger('worker')
+	logger.setLevel(logging.INFO)
+	hdlr = logging.FileHandler(config_folder_fold + '/log.txt')	
+	hdlr.setLevel(logging.INFO)
+	formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 	hdlr.setFormatter(formatter)
-	logger_config.addHandler(hdlr)
+	logger.addHandler(hdlr)
 
 	train_wrapper(parameters, model_params, model_name, 
 		dimensions, config_folder_fold, K_fold,
 		test_names, valid_names, track_paths_generation, 
-		save_model, generate_bool, logger_config)
+		save_model, generate_bool, logger)

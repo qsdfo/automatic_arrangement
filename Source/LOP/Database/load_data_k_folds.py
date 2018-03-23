@@ -157,8 +157,6 @@ def build_batches(ind, train_batch_size):
         batches = []
         position = 0
         n_ind = len(ind)
-        
-        train_batch_size = 250
 
         if train_batch_size:
             n_batch = int(n_ind // train_batch_size)

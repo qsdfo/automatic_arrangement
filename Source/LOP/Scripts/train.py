@@ -295,7 +295,6 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 					logger_train, DEBUG)
 			valid_time = time.time() - valid_time
 			logger_train.info("Validation time : {}".format(valid_time))
-			import pdb; pdb.set_trace()
 
 			training_utils.mean_and_store_results(valid_results, valid_tabs, epoch)
 			training_utils.mean_and_store_results(valid_long_range_results, valid_tabs_LR, epoch)

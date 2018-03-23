@@ -226,6 +226,7 @@ class NADE_trainer(Standard_trainer):
 		return mean_over_ordering
 
 	def valid_step(self, sess, batch_index, piano, orch, mask_orch, PLOTING_FOLDER):
+		batch_index = batch_index[::20]
 		feed_dict, orch_t = Standard_trainer.build_feed_dict(self, batch_index, piano, orch, mask_orch)
 		loss_batch, preds_batch = self.generate_mean_ordering(sess, feed_dict, orch_t, PLOTING_FOLDER)
 		return loss_batch, preds_batch, orch_t

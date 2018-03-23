@@ -303,7 +303,8 @@ def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold,
 
 		text_pbs = """#!/bin/bash
 
-#PBS -N """ + script_name + """
+#PBS -j oe
+#PBS -N job_outputs/""" + script_name + """
 #PBS -l nodes=1:ppn=2:gpus=1
 #PBS -l walltime=""" + str(parameters['walltime']) + """:00:00
 

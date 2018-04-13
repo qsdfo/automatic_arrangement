@@ -77,7 +77,7 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, norm
 			recall_batch = recall_measure(orch_t, preds_batch)
 			true_accuracy_batch = true_accuracy_measure(orch_t, preds_batch)
 			f_score_batch = f_measure(orch_t, preds_batch)
-			
+
 			val_loss.extend(loss_batch)
 			accuracy.extend(accuracy_batch)
 			precision.extend(precision_batch)

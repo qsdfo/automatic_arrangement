@@ -38,6 +38,7 @@ def main():
 	result_folder =  config.result_root() + '/' + DATABASE + '/' + Model.name()
 	if not os.path.isdir(result_folder):
 		os.makedirs(result_folder)
+
 	# Parameters
 	parameters = config.parameters(result_folder)
 
@@ -274,8 +275,6 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names, valid_names,
 	track_paths_generation, save_model, wait_for_pretraing, pretraining_job_id, logger):
 	
-	import pdb; pdb.set_trace()
-	
 	context_folder = config_folder_fold + '/context'
 	os.mkdir(context_folder)
 
@@ -292,7 +291,11 @@ def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold,
 	pkl.dump(GENERATE , open(context_folder + '/generate_bool.pkl', 'wb'))
 
 	if config.local():
-		subprocess.check_output('python train_wrapper.py ' + config_folder_fold, shell=True)
+		# subprocess.check_output('python train_wrapper.py ' + config_folder_fold, shell=True)
+		train_wrapper.train_wrapper(parameters, model_params, MODEL_NAME, 
+			dimensions, config_folder_fold, K_fold,
+			test_names, valid_names, track_paths_generation, 
+			save_model, GENERATE, logger)
 	else:	
 		# Write pbs script
 		file_pbs = context_folder + '/submit.pbs'

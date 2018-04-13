@@ -4,6 +4,7 @@
 import numpy as np
 
 def build_batch(batch_index_list, piano, orch, mask_orch, batch_size, temporal_order):
+
     batch_index = np.asarray(batch_index_list)
     # Build batch
     piano_t = piano[batch_index]

@@ -5,8 +5,8 @@
 #PBS -l walltime=5:00:00
 
 module load foss/2015b
-module load Tensorflow/1.0.0-Python-2.7.12
-source ~/Virtualenvs/lop/bin/activate
+module load Tensorflow/1.0.0-Python-3.5.2
+source ~/Virtualenvs/tf_3/bin/activate
 
 SRC=/home/crestel/automatic_arrangement/Source/LOP/Database
 cd $SRC

@@ -14,7 +14,6 @@
 #################################################
 #################################################
 
-
 import os
 import glob
 import shutil
@@ -23,7 +22,7 @@ import numpy as np
 import LOP.Scripts.config as config
 import build_data_aux
 import build_data_aux_no_piano
-import cPickle as pkl
+import pickle as pkl
 import avoid_tracks 
 # memory issues
 import gc

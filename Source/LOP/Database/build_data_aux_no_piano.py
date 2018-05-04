@@ -42,14 +42,14 @@ def get_instru_and_pr_from_folder_path_NP(folder_path, quantization):
     total_time = get_pianoroll_time(pianoroll)
 
     try:
-        with open(csv_file_path, 'rb') as ff:
+        with open(csv_file_path, 'r') as ff:
             rr = csv.DictReader(ff, delimiter=';')
             instru = next(rr)
     except:
         import pdb; pdb.set_trace()
 
     # Simplify names : keep only tracks not marked as useless
-    instru_simple = {k: simplify_instrumentation(v) for k, v in instru.iteritems()}
+    instru_simple = {k: simplify_instrumentation(v) for k, v in instru.items()}
     # Files name, no extensions
     name = re.sub(r'\.(mid|csv)$', '', music_file)
 

@@ -3,7 +3,7 @@
 
 import glob
 import re
-import unicodecsv as csv
+import csv
 from unidecode import unidecode
 import numpy as np
 from LOP_database.midi.read_midi import Read_midi
@@ -46,8 +46,8 @@ def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
         instru1 = next(r1)
 
     # Simplify names : keep only tracks not marked as useless
-    instru0_simple = {k: simplify_instrumentation(v) for k, v in instru0.iteritems()}
-    instru1_simple = {k: simplify_instrumentation(v) for k, v in instru1.iteritems()}
+    instru0_simple = {k: simplify_instrumentation(v) for k, v in instru0.items()}
+    instru1_simple = {k: simplify_instrumentation(v) for k, v in instru1.items()}
     # Files name, no extensions
     mid_file_0 = re.sub('\.mid', '', mid_files[0])
     mid_file_1 = re.sub('\.mid', '', mid_files[1])
@@ -56,12 +56,12 @@ def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
 
 
 def unmixed_instru(instru_string):
-    instru_list = re.split(ur' and ', instru_string)
+    instru_list = re.split(r' and ', instru_string)
     return instru_list
 
 
 def instru_pitch_range(instrumentation, pr, instru_mapping):
-    for k, v in instrumentation.iteritems():
+    for k, v in instrumentation.items():
         if k not in pr.keys():
             # BAD BAD BAD
             # Shouldn't happen, but sometimes midi files contain empty tracks
@@ -159,7 +159,7 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
     t_min = time
     t_max = time + duration
     # Parse pr_small
-    for track_name, pr_instru in pr_small.iteritems():
+    for track_name, pr_instru in pr_small.items():
         track_name = unidecode(track_name)
         if len(instru) == 0:
             # Then this is the piano score

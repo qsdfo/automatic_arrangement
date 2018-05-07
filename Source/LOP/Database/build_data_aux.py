@@ -39,7 +39,7 @@ def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
 
     if len(csv_files) != 2:
         raise Exception('There should be two csv files in ' + folder_path)
-    with open(csv_files[0], 'rb') as f0, open(csv_files[1], 'rb') as f1:
+    with open(csv_files[0], 'r') as f0, open(csv_files[1], 'r') as f1:
         r0 = csv.DictReader(f0, delimiter=';')
         instru0 = next(r0)
         r1 = csv.DictReader(f1, delimiter=';')

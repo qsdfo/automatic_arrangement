@@ -52,8 +52,12 @@ def update_instru_mapping(folder_path, instru_mapping, T, quantization):
 		pr_piano, _, _, instru_piano, _, pr_orch, _, _, instru_orch, _, duration =\
 			build_data_aux.process_folder(folder_path, quantization, temporal_granularity, gapopen=3, gapextend=1)
 	else:
-		pr_piano, _, _, instru_piano, _, pr_orch, _, _, instru_orch, _, duration =\
-			build_data_aux_no_piano.process_folder_NP(folder_path, quantization, temporal_granularity)
+		try:
+			pr_piano, _, _, instru_piano, _, pr_orch, _, _, instru_orch, _, duration =\
+				build_data_aux_no_piano.process_folder_NP(folder_path, quantization, temporal_granularity)
+		except:
+			duration=None
+			logging.warning("Could not read file in " + folder_path)
 	
 	# if len(set(instru_orch.values())) < 4:
 	#     import pdb; pdb.set_trace()
@@ -137,7 +141,7 @@ def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path, quant
 	##########################################################################################
 	# Build the index_min and index_max in the instru_mapping dictionary
 	counter = 0
-	for k, v in instru_mapping.iteritems():
+	for k, v in instru_mapping.items():
 		if k == 'Piano':
 			index_min = 0
 			index_max = v['pitch_max'] - v['pitch_min']
@@ -191,11 +195,15 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 
 		# Get pr, warped and duration
 		if is_piano:
-			new_pr_piano, _, new_duration_piano, _, _, new_pr_orchestra, _, new_duration_orch, new_instru_orchestra, _, duration\
+			new_pr_piano, _, new_duration_piano, _, new_name_piano, new_pr_orchestra, _, new_duration_orch, new_instru_orchestra, _, duration\
 				= build_data_aux.process_folder(folder_path, quantization, temporal_granularity, gapopen=3, gapextend=1)
 		else:
-			new_pr_piano, _, new_duration_piano, _, _, new_pr_orchestra, _, new_duration_orch, new_instru_orchestra, _, duration\
-				= build_data_aux_no_piano.process_folder_NP(folder_path, quantization, temporal_granularity)
+			try:
+				new_pr_piano, _, new_duration_piano, _, new_name_piano, new_pr_orchestra, _, new_duration_orch, new_instru_orchestra, _, duration\
+					= build_data_aux_no_piano.process_folder_NP(folder_path, quantization, temporal_granularity)
+			except:
+				logging.warning("Could not read file in " + folder_path)
+				continue
 
 		# Skip shitty files
 		if new_pr_piano is None:
@@ -207,6 +215,9 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 
 		pr_orch = build_data_aux.cast_small_pr_into_big_pr(new_pr_orchestra, new_instru_orchestra, 0, duration, instru_mapping, np.zeros((duration, N_orchestra)))
 		pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, 0, duration, instru_mapping, np.zeros((duration, N_piano)))
+
+		# Small section for generating piano only midi files (pour Mathieu, train embeddings)
+		write_midi(new_pr_piano, 1000, "/fast-1/leo/database/Piano_files_for_embeddings/" + new_name_piano, tempo=80)
 
 		#############
 		# Split
@@ -272,7 +283,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 	pitch_orch = np.zeros((N_orchestra), dtype="int8")-1
 	instru_orch = np.zeros((N_orchestra), dtype="int8")-1
 	counter = 0
-	for k, v in instru_mapping.iteritems():
+	for k, v in instru_mapping.items():
 		if k == "Piano":
 			continue
 		pitch_orch[v['index_min']:v['index_max']] = np.arange(v['pitch_min'], v['pitch_max']) % 12
@@ -349,19 +360,19 @@ if __name__ == '__main__':
 	else:
 		DATABASE_NAMES = [
 			DATABASE_PATH + "/bouliane", 
-			DATABASE_PATH + "/hand_picked_Spotify", 
-			DATABASE_PATH + "/liszt_classical_archives", 
-			DATABASE_PATH + "/imslp"
+			# DATABASE_PATH + "/hand_picked_Spotify", 
+			# DATABASE_PATH + "/liszt_classical_archives", 
+			# DATABASE_PATH + "/imslp"
 		]
 	
 	if DEBUG:
 		DATABASE_NAMES_PRETRAINING = [DATABASE_PATH_PRETRAINING + "/debug"]
 	else:
 		DATABASE_NAMES_PRETRAINING = [
-			DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
-			DATABASE_PATH_PRETRAINING + "/Musicalion", 
-			DATABASE_PATH_PRETRAINING + "/Mutopia", 
-			DATABASE_PATH_PRETRAINING + "/OpenMusicScores"
+			# DATABASE_PATH_PRETRAINING + "/OpenMusicScores",
+			# DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
+			# DATABASE_PATH_PRETRAINING + "/Musicalion", 
+			# DATABASE_PATH_PRETRAINING + "/Mutopia"
 		]
 
 	data_folder = config.data_root() + '/Data'
@@ -383,13 +394,12 @@ if __name__ == '__main__':
 				this_path = os.path.join(path, file_name)
 				folder_paths.append(this_path)
 		return folder_paths
-	
+
 	folder_paths = []
 	for path in DATABASE_NAMES:
 		folder_paths += build_filepaths_list(path)
 
 	folder_paths_pretraining = []
-	
 	if pretraining_bool:
 		for path in DATABASE_NAMES_PRETRAINING:
 			folder_paths_pretraining += build_filepaths_list(path)

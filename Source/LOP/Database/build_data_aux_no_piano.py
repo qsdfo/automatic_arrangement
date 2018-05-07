@@ -36,7 +36,7 @@ def get_instru_and_pr_from_folder_path_NP(folder_path, quantization):
         reader_midi = Read_midi(music_file_path, quantization)
         pianoroll = reader_midi.read_file()
     else:
-        csv_file_path = re.sub(r'\.xml$', '.csv', music_file_path)
+        csv_file_path = re.sub(r'\.xml$', '.csv', music_file_path)    
         pianoroll, articulation = mxml.scoreToPianoroll(music_file_path, quantization)
         
     total_time = get_pianoroll_time(pianoroll)

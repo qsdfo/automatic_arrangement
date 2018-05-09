@@ -66,7 +66,7 @@ def no_valid_tracks():
 	# with open(config.data_root() + "/few_instrument_files_pretraining.txt", 'rb') as ff:
 	# 	for line in ff:
 	# 		tracks_with_too_few_instruments.append(os.path.join(config.database_pretraining_root(), line.rstrip("\n")))
-	with open(config.data_root() + "/few_instrument_files.txt", 'rb') as ff:
+	with open(config.data_root() + "/few_instrument_files.txt", 'r') as ff:
 		for line in ff:
 			tracks_with_too_few_instruments.append(os.path.join(config.database_root(), line.rstrip("\n")))
 	

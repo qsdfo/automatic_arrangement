@@ -1,7 +1,7 @@
 #!/usr/bin/env pyth
 # -*- coding: utf8 -*-
 
-import cPickle as pkl
+import pickle as pkl
 import subprocess
 import random
 import logging
@@ -251,6 +251,8 @@ def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None,
 	# Load data and build K_folds
 	time_load_0 = time.time()
 	
+	import pdb; pdb.set_trace()
+
 	# K_folds[fold_index]['train','test' or 'valid'][index split]['batches' : [[0,10,14..],[..],[..]], 'matrices_path':[path_0,path_1,..]]
 	if num_k_folds == 0:
 		# this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, 10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)

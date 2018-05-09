@@ -12,12 +12,12 @@ import build_data_aux_no_piano
 
 def list_tracks(folder_path):
     csv_files = glob.glob(folder_path + '/*.csv')
-    csv_files_clean = [e for e in csv_files if not(re.search(u'metadata.csv', e)) and not(re.search(ur'.*_solo\.csv$', e))]
+    csv_files_clean = [e for e in csv_files if not(re.search('metadata.csv', e)) and not(re.search(r'.*_solo\.csv$', e))]
     if len(csv_files_clean) != 1:
         import pdb; pdb.set_trace()
-    with open(csv_files_clean[0], 'rb') as ff:
+    with open(csv_files_clean[0], 'r') as ff:
         csvreader = csv.DictReader(ff, delimiter=";")
-        row = csvreader.next()
+        row = next(csvreader)
     return len(set(row.values()))
 
 if __name__ == '__main__':
@@ -51,7 +51,7 @@ if __name__ == '__main__':
         if num_instru < MIN_INSTRU:
             rotten_files.append(track)
 
-    with open(config.data_root() + "/few_instrument_files.txt", 'wb') as ff:
+    with open(config.data_root() + "/few_instrument_files.txt", 'w') as ff:
         for rotten_file in rotten_files:
             # Get only the last part
             split_filename = re.split('/', rotten_file)
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         num_instru = list_tracks(track)
         if num_instru < MIN_INSTRU:
             rotten_files_pretraining.append(track)
-    with open(config.data_root() + "/few_instrument_files_pretraining.txt", 'wb') as ff:
+    with open(config.data_root() + "/few_instrument_files_pretraining.txt", 'w') as ff:
         for rotten_file in rotten_files_pretraining:
             # Get only the last part
             split_filename = re.split('/', rotten_file)

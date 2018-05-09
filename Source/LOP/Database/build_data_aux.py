@@ -166,7 +166,8 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
             instru_names = ['Piano']
         else:
             # unmix instrusi
-            instru_names = unmixed_instru(instru[track_name.rstrip('\x00')])
+            track_name_processed = (track_name.rstrip('\x00')).replace('\r', '')
+            instru_names = unmixed_instru(instru[track_name_processed])
         
         for instru_name in instru_names:
             # "Remove" tracks

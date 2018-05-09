@@ -37,6 +37,6 @@ def mean_and_store_results(results, tabs, epoch):
 # Remove useless part of measures curves
 def remove_tail_training_curves(dico, epoch):
 	ret = {}
-	for k, v in dico.iteritems():
+	for k, v in dico.items():
 		ret[k] = v[:epoch]
 	return ret

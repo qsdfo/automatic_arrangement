@@ -44,7 +44,7 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 	which_trainer = model.trainer()
 
 	# Save it for generation. SO UGLY
-	with open(os.path.join(config_folder, 'which_trainer'), 'wb') as ff:
+	with open(os.path.join(config_folder, 'which_trainer'), 'w') as ff:
 		ff.write(which_trainer)
 	if which_trainer == 'standard_trainer':
 		from LOP.Scripts.standard_learning.standard_trainer import Standard_trainer as Trainer
@@ -86,8 +86,8 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 	############################################################
 	# Display informations about the models
 	num_parameters = model_statistics.count_parameters(tf.get_default_graph())
-	logger_train.info((u'** Num trainable parameters :  {}'.format(num_parameters)).encode('utf8'))
-	with open(os.path.join(config_folder, 'num_parameters.txt'), 'wb') as ff:
+	logger_train.info('** Num trainable parameters :  {}'.format(num_parameters))
+	with open(os.path.join(config_folder, 'num_parameters.txt'), 'w') as ff:
 		ff.write("{:d}".format(num_parameters))
 
 	############################################################
@@ -183,13 +183,11 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 		# 	sess = tf_debug.LocalCLIDebugWrapperSession(sess)
 		# 	sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
 			
+		N_matrix_files = len(train_splits_batches)
+		
 		#######################################
 		# Load first matrix
 		#######################################
-		N_matrix_files = len(train_splits_batches)
-
-		global_time_start = time.time()
-		
 		load_data_start = time.time()
 		pool = ThreadPool(processes=1)
 		async_train = pool.apply_async(async_load_mat, (normalizer, train_splits_batches[0]['chunks_folders'], parameters))
@@ -320,25 +318,23 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 			# Log training
 			#######################################
 			logger_train.info("############################################################")
-			logger_train.info(('Epoch : {} , Training loss : {} , Validation loss : {} \n \
+			logger_train.info('Epoch : {} , Training loss : {} , Validation loss : {} \n \
 Validation accuracy : {:.3f} %, precision : {:.3f} %, recall : {:.3f} % \n \
 True_accuracy : {:.3f} %, f_score : {:.3f} %, Xent : {:.6f}\n \
 Sparse_loss : {:.3f}'
 							  .format(epoch, mean_loss,
 								valid_tabs['loss'][epoch], valid_tabs['accuracy'][epoch], valid_tabs['precision'][epoch],
 								valid_tabs['recall'][epoch], valid_tabs['true_accuracy'][epoch], valid_tabs['f_score'][epoch], valid_tabs['Xent'][epoch],
-								np.mean(sparse_loss_epoch))
-							  .encode('utf8')))
+								np.mean(sparse_loss_epoch)))
 
-			logger_train.info(('Time : {}'
+			logger_train.info('Time : {}'
 							  .format(end_time_epoch - start_time_epoch))
-							  .encode('utf8'))
 
 			#######################################
 			# Best model ?
 			# Xent criterion
 			start_time_saving = time.time()
-			for measure_name, measure_curve in valid_tabs.iteritems():
+			for measure_name, measure_curve in valid_tabs.items():
 				best_measure_so_far = measure_curve[best_epoch[measure_name]]
 				measure_for_this_epoch = measure_curve[epoch]
 				if (measure_for_this_epoch <= best_measure_so_far) or (epoch==0):
@@ -353,7 +349,7 @@ Sparse_loss : {:.3f}'
 					if os.path.isdir(DEBUG["save_measures"]):
 						shutil.rmtree(DEBUG["save_measures"])
 					os.makedirs(DEBUG["save_measures"])
-					for measure_name, measure_tab in valid_results.iteritems():
+					for measure_name, measure_tab in valid_results.items():
 						np.save(os.path.join(DEBUG["save_measures"], measure_name + '.npy'), measure_tab[:2000])
 					np.save(os.path.join(DEBUG["save_measures"], 'preds.npy'), np.asarray(preds_val[:2000]))
 					np.save(os.path.join(DEBUG["save_measures"], 'truth.npy'), np.asarray(truth_val[:2000]))
@@ -394,17 +390,15 @@ Sparse_loss : {:.3f}'
 		training_utils.mean_and_store_results(test_long_range_results, test_tab_LR, None)
 
 		logger_train.info("############################################################")
-		logger_train.info(("""## Test Scores
+		logger_train.info("""## Test Scores
 Loss : {}
 Validation accuracy : {:.3f} %, precision : {:.3f} %, recall : {:.3f} %
 True_accuracy : {:.3f} %, f_score : {:.3f} %, Xent : {:.6f}"""
 		.format(
 			test_tab['loss'], test_tab['accuracy'], test_tab['precision'],
-			test_tab['recall'], test_tab['true_accuracy'], test_tab['f_score'], test_tab['Xent'])
-		.encode('utf8')))
-		logger_train.info(('Time : {}'
+			test_tab['recall'], test_tab['true_accuracy'], test_tab['f_score'], test_tab['Xent']))
+		logger_train.info('Time : {}'
 						  .format(test_time))
-						  .encode('utf8'))
 
 
 		#######################################

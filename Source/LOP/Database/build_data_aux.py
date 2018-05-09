@@ -13,7 +13,7 @@ from LOP_database.utils.event_level import get_event_ind_dict
 from LOP_database.utils.pianoroll_processing import sum_along_instru_dim
 from LOP_database.utils.pianoroll_reduction import remove_unmatched_silence, remove_match_silence, remove_silence
 from LOP_database.utils.align_pianorolls import align_pianorolls
-from simplify_instrumentation import get_simplify_mapping
+from LOP.Database.simplify_instrumentation import get_simplify_mapping
 
 def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
     # There should be 2 files

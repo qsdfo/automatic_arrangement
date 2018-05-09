@@ -71,9 +71,9 @@ def main():
 	logging.info('#'*60)
 	logging.info('#'*60)
 	logging.info('* L * O * P *')
-	logging.info((u'** Model : ' + Model.name()).encode('utf8'))
-	for k, v in parameters.iteritems():
-		logging.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
+	logging.info('** Model : ' + Model.name())
+	for k, v in parameters.items():
+		logging.info('** ' + k + ' : ' + str(v))
 	logging.info('#'*60)
 	logging.info('#'*60)
 
@@ -119,7 +119,7 @@ def main():
 	# The result.csv file containing id;result is created from the directory, rebuilt from time to time
 
 	if DEFINED_CONFIG:
-		for config_id, model_parameters in configs.iteritems():
+		for config_id, model_parameters in configs.items():
 			config_folder = parameters['result_folder'] + '/' + config_id
 			if os.path.isdir(config_folder):
 				shutil.rmtree(config_folder)
@@ -164,9 +164,9 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 	logger_config.info('#'*60)
 	logger_config.info('#### ' + config_folder)
 	logger_config.info('#### Model parameters')
-	logger_config.info((u'** Model : ' + Model.name()).encode('utf8'))
-	for k, v in model_params.iteritems():
-		logger_config.info((u'** ' + k + ' : ' + str(v)).encode('utf8'))
+	logger_config.info('** Model : ' + Model.name())
+	for k, v in model_params.items():
+		logger_config.info('** ' + k + ' : ' + str(v))
 	
 	# Get tvt splits. Dictionnary form :
 	# K_folds[fold_index]['train','test' or 'valid'][split_matrix_index]
@@ -246,14 +246,12 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 
 def get_folds(database_path, num_k_folds, parameters, model_params, suffix=None, logger=None):
 	# Sadly, with the split of the database, shuffling the files can only be performed inside a same split
-	logger.info((u'##### Building folds').encode('utf8'))
+	logger.info('##### Building folds')
 	
 	# Load data and build K_folds
 	time_load_0 = time.time()
-	
-	import pdb; pdb.set_trace()
 
-	# K_folds[fold_index]['train','test' or 'valid'][index split]['batches' : [[0,10,14..],[..],[..]], 'matrices_path':[path_0,path_1,..]]
+	# K_folds[fold_index]['train','test' or 'valid'][index split]['batches' : [[234,14,54..],[..],[..]], 'matrices_path':[path_0,path_1,..]]
 	if num_k_folds == 0:
 		# this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, 10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
 		K_folds, K_folds_pretraining, valid_names, test_names = build_folds(database_path, 10, model_params["temporal_order"], parameters["batch_size"], 

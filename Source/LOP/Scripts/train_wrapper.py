@@ -10,7 +10,7 @@ import time
 import shutil
 import csv
 import numpy as np
-import cPickle as pkl
+import pickle as pkl
 from import_functions import import_model, import_normalizer
 from train import train
 from generate_midi import generate_midi
@@ -28,10 +28,10 @@ def train_wrapper(parameters, model_params, model_name,
 	test_folds = K_fold['test']
 	
 	# Write filenames of this split
-	with open(os.path.join(config_folder_fold, "test_names.txt"), "wb") as f:
+	with open(os.path.join(config_folder_fold, "test_names.txt"), "w") as f:
 		for filename in test_names:
 			f.write(filename + "\n")
-	with open(os.path.join(config_folder_fold, "valid_names.txt"), "wb") as f:
+	with open(os.path.join(config_folder_fold, "valid_names.txt"), "w") as f:
 		for filename in valid_names:
 			f.write(filename + "\n")
 	
@@ -75,9 +75,9 @@ def train_wrapper(parameters, model_params, model_name,
 	n_val_batches = count_number_batch(valid_folds)
 	n_test_batches = count_number_batch(test_folds)
 
-	logger.info((u'# n_train_batch :  {}'.format(n_train_batches)).encode('utf8'))
-	logger.info((u'# n_val_batch :  {}'.format(n_val_batches)).encode('utf8'))
-	logger.info((u'# n_test_batch :  {}'.format(n_test_batches)).encode('utf8'))
+	logger.info('# n_train_batch :  {}'.format(n_train_batches))
+	logger.info('# n_val_batch :  {}'.format(n_val_batches))
+	logger.info('# n_test_batch :  {}'.format(n_test_batches))
 
 	parameters['n_train_batches'] = n_train_batches
 	parameters['n_val_batches'] = n_val_batches
@@ -98,10 +98,10 @@ def train_wrapper(parameters, model_params, model_name,
 	time_train_1 = time.time()
 	training_time = time_train_1-time_train_0
 	logger.info('TTT : Training data took {} seconds'.format(training_time))
-	logger.info((u'# Best loss obtained at epoch :  {}'.format(best_epoch['loss'])).encode('utf8'))
-	logger.info((u'# Loss :  {}'.format(valid_tabs['loss'][best_epoch['loss']])).encode('utf8'))
-	logger.info((u'# Accuracy :  {}'.format(valid_tabs['accuracy'][best_epoch['accuracy']])).encode('utf8'))
-	logger.info((u'###################\n').encode('utf8'))
+	logger.info('# Best loss obtained at epoch :  {}'.format(best_epoch['loss']))
+	logger.info('# Loss :  {}'.format(valid_tabs['loss'][best_epoch['loss']]))
+	logger.info('# Accuracy :  {}'.format(valid_tabs['accuracy'][best_epoch['accuracy']]))
+	logger.info('###################\n')
 
 	############################################################
 	# Write result in a txt file
@@ -110,24 +110,24 @@ def train_wrapper(parameters, model_params, model_name,
 	os.mkdir(os.path.join(config_folder_fold, 'results_long_range'))
 	
 	# Short range
-	for measure_name, measure_curve in valid_tabs.iteritems():
+	for measure_name, measure_curve in valid_tabs.items():
 		np.savetxt(os.path.join(config_folder_fold, 'results_short_range', measure_name + '.txt'), measure_curve, fmt='%.6f')
-		with open(os.path.join(config_folder_fold, 'results_short_range', measure_name + '_best_epoch.txt'), 'wb') as f:
+		with open(os.path.join(config_folder_fold, 'results_short_range', measure_name + '_best_epoch.txt'), 'w') as f:
 			f.write("{:d}".format(best_epoch[measure_name]))
 
 	# Long range
-	for measure_name, measure_curve in valid_tabs_LR.iteritems():
+	for measure_name, measure_curve in valid_tabs_LR.items():
 		np.savetxt(os.path.join(config_folder_fold, 'results_long_range', measure_name + '.txt'), measure_curve, fmt='%.6f')
-		with open(os.path.join(config_folder_fold, 'results_long_range', measure_name + '_best_epoch.txt'), 'wb') as f:
+		with open(os.path.join(config_folder_fold, 'results_long_range', measure_name + '_best_epoch.txt'), 'w') as f:
 			f.write("{:d}".format(best_epoch[measure_name]))
 
 	# Test scores
-	with open(os.path.join(config_folder_fold, 'test_score.csv'), 'wb') as csvfile:
+	with open(os.path.join(config_folder_fold, 'test_score.csv'), 'w') as csvfile:
 		fieldnames = test_score.keys()
 		writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=";")
 		writer.writeheader()
 		writer.writerow(test_score)
-	with open(os.path.join(config_folder_fold, 'test_score_LR.csv'), 'wb') as csvfile:
+	with open(os.path.join(config_folder_fold, 'test_score_LR.csv'), 'w') as csvfile:
 		fieldnames = test_score_LR.keys()
 		writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=";")
 		writer.writeheader()

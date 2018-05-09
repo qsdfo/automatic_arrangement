@@ -4,8 +4,8 @@
 import random
 import load_matrices
 import LOP.Scripts.config
-import avoid_tracks
-import cPickle as pkl
+import LOP.Database.avoid_tracks
+import pickle as pkl
 
 def build_folds(store_folder, k_folds=10, temporal_order=20, train_batch_size=100, long_range_pred=1, training_mode=0, num_max_contiguous_blocks=100,
     random_seed=None, logger_load=None):
@@ -18,10 +18,10 @@ def build_folds(store_folder, k_folds=10, temporal_order=20, train_batch_size=10
     pre_train_and_valid_files = pkl.load(open(store_folder + '/train_and_valid_files_pretraining.pkl', 'rb'))
     pre_train_only_files = pkl.load(open(store_folder + '/train_only_files_pretraining.pkl', 'rb'))
     
-    list_files_valid = train_and_valid_files.keys()
-    list_files_train_only = train_only_files.keys()
-    pre_list_files_valid = pre_train_and_valid_files.keys()
-    pre_list_files_train_only = pre_train_only_files.keys()
+    list_files_valid = list(train_and_valid_files.keys())
+    list_files_train_only = list(train_only_files.keys())
+    pre_list_files_valid = list(pre_train_and_valid_files.keys())
+    pre_list_files_train_only = list(pre_train_only_files.keys())
 
     # Folds are built on files, not directly the indices
     # By doing so, we prevent the same file being spread over train, test and validate sets
@@ -48,7 +48,7 @@ def build_folds(store_folder, k_folds=10, temporal_order=20, train_batch_size=10
         # Pretraining files are added only to the training set of files
         train_only_files.update(pre_train_and_valid_files)
         train_only_files.update(pre_train_only_files)
-        list_files_train_only = train_only_files.keys()
+        list_files_train_only = list(train_only_files.keys())
         # Reshuffle
         random.shuffle(list_files_train_only)
 

@@ -3,7 +3,7 @@
 
 
 import logging
-import cPickle as pkl
+import pickle as pkl
 import re
 import numpy as np
 import os
@@ -39,7 +39,7 @@ def load_solo(piano_midi, quantization, temporal_granularity):
     else:
         event_piano = None
 
-    name_piano = re.sub(ur'/.*\.mid', '', piano_midi)
+    name_piano = re.sub(r'/.*\.mid', '', piano_midi)
 
     duration = get_pianoroll_time(pr_piano)
 
@@ -85,7 +85,7 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
 
     ########################
     # Load data
-    if re.search(ur'mid$', score_source):
+    if re.search(r'mid$', score_source):
         pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration = load_solo(score_source, quantization, temporal_granularity)
     else:
         pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration = load_from_pair(score_source, quantization, temporal_granularity)
@@ -114,7 +114,7 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     N_orchestra = parameters['N_orchestra']
     if pr_orch:
         pr_orchestra_gen = np.zeros((seed_size, N_orchestra), dtype=np.float32)
-        orch_seed_beginning = {k: v[:seed_size] for k, v in pr_orch.iteritems()}
+        orch_seed_beginning = {k: v[:seed_size] for k, v in pr_orch.items()}
         pr_orchestra_gen = build_data_aux.cast_small_pr_into_big_pr(orch_seed_beginning, instru_orch, 0, seed_size, instru_mapping, pr_orchestra_gen)
         pr_orchestra_truth = np.zeros((duration_gen, N_orchestra), dtype=np.float32)
         pr_orchestra_truth = build_data_aux.cast_small_pr_into_big_pr(pr_orch, instru_orch, 0, duration_gen, instru_mapping, pr_orchestra_truth)
@@ -149,7 +149,7 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
 
     ########################
     # Get trainer
-    with open(os.path.join(config_folder, 'which_trainer'), 'rb') as ff:
+    with open(os.path.join(config_folder, 'which_trainer'), 'r') as ff:
         which_trainer = ff.read()
     # Trainer
     if which_trainer == 'standard_trainer':
@@ -178,7 +178,7 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     # Reconstruct and write
     ############################################################
     def reconstruct_write_aux(generated_sequences, prefix):
-        for write_counter in xrange(generated_sequences.shape[0]):
+        for write_counter in range(generated_sequences.shape[0]):
             # To distinguish when seed stop, insert a sustained note
             this_seq = generated_sequences[write_counter] * 127
             this_seq[:seed_size, 0] = 20

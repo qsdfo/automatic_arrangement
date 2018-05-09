@@ -3,7 +3,7 @@
 
 import os
 import numpy as np
-import cPickle as pkl
+import pickle as pkl
 import tensorflow as tf
 from keras import backend as K
 

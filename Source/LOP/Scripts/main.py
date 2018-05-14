@@ -19,7 +19,7 @@ import train_wrapper
 import config
 from LOP.Database.load_data_k_folds import build_folds
 
-MODEL_NAME="mlp_K"
+MODEL_NAME="LSTM_plugged_base"
 # MODEL_NAME="Odnade_mlp"
 GENERATE=True
 SAVE=False

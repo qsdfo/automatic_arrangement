@@ -219,6 +219,8 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 			sparse_loss_epoch = []
 
 			train_time = time.time()
+
+			temp_time = time.time()
 			for file_ind_CURRENT in range(N_matrix_files):
 
 				#######################################
@@ -241,9 +243,12 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 				# Train
 				#######################################
 				for batch_index in train_index:
-					
+					BBB=time.time()-temp_time
+					ttt=time.time()
 					loss_batch, _, debug_outputs, summary = trainer.training_step(sess, batch_index, piano_transformed, orch, mask_orch, summarize_dict)
-
+					aaa=time.time()-ttt
+					logger_train.info("Step: {:.3f} seconds".format(aaa))
+					import pdb; pdb.set_trace()
 					# Keep track of cost
 					train_cost_epoch.append(loss_batch)
 					sparse_loss_batch = debug_outputs[0]

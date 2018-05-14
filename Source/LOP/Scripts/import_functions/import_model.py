@@ -5,6 +5,8 @@ def import_model(name):
 		from LOP.Models.Real_time.LSTM_plugged_base import LSTM_plugged_base as Model
 	elif name=="Odnade_mlp":
 		from LOP.Models.NADE.odnade_mlp import Odnade_mlp as Model
+	elif name=="linear_regression":
+		from LOP.Models.Real_time.Baseline.linear_regression import Linear_regression as Model
 	else:
 		raise Exception("Not a model name")
 	# from LOP.Models.Real_time.Baseline.random import Random as Model

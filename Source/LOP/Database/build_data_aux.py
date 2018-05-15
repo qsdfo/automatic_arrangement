@@ -49,8 +49,8 @@ def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
     instru0_simple = {k: simplify_instrumentation(v) for k, v in instru0.items()}
     instru1_simple = {k: simplify_instrumentation(v) for k, v in instru1.items()}
     # Files name, no extensions
-    mid_file_0 = re.sub('\.mid', '', mid_files[0])
-    mid_file_1 = re.sub('\.mid', '', mid_files[1])
+    mid_file_0 = re.sub('.mid', '', mid_files[0])
+    mid_file_1 = re.sub('.mid', '', mid_files[1])
 
     return pianoroll_0, instru0_simple, T0, mid_file_0, pianoroll_1, instru1_simple, T1, mid_file_1
 

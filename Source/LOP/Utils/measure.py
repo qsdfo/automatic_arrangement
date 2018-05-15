@@ -105,6 +105,7 @@ def recall_measure(true_frame, pred_frame):
     false_negative = np.sum((1 - pred_frame) * true_frame, axis=axis)
 
     quotient = true_positive + false_negative
+    import pdb; pdb.set_trace()
 
     recall_measure = np.where(quotient == 0, 0, true_positive / quotient)
 

@@ -30,9 +30,7 @@ import sys
 
 import LOP.Scripts.config as config
 
-from LOP_database.midi.write_midi import write_midi
-
-DEBUG=False
+DEBUG=True
 
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization):

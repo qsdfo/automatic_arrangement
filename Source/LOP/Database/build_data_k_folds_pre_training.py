@@ -219,11 +219,11 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 		pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, 0, duration, instru_mapping, np.zeros((duration, N_piano)))
 
 		# Small section for generating piano only midi files (pour Mathieu, train embeddings)
-		new_file_name = re.split('/', new_name_piano)[-1]
-		try:
-			write_midi(new_pr_piano, 1000, "/fast-1/leo/database/Piano_files_for_embeddings/" + new_file_name, tempo=80)
-		except:
-			logging.warning("Failed writing")
+		# new_file_name = re.split('/', new_name_piano)[-1]
+		# try:
+		# 	write_midi(new_pr_piano, 1000, "Piano_files_for_embeddings/" + new_file_name, tempo=80)
+		# except:
+		# 	logging.warning("Failed writing")
 
 		#############
 		# Split
@@ -369,6 +369,10 @@ if __name__ == '__main__':
 			DATABASE_PATH + "/hand_picked_Spotify", 
 			DATABASE_PATH + "/liszt_classical_archives", 
 			DATABASE_PATH + "/imslp"
+			# DATABASE_PATH_PRETRAINING + "/OpenMusicScores",
+			# DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
+			# DATABASE_PATH_PRETRAINING + "/Musicalion", 
+			# DATABASE_PATH_PRETRAINING + "/Mutopia"
 		]
 	
 	if DEBUG:
@@ -387,6 +391,8 @@ if __name__ == '__main__':
 	if pretraining_bool:
 		data_folder += '_pretraining'
 	data_folder += '_tempGran' + str(quantization)
+
+	# data_folder += '_pretraining_only'
 	
 	if os.path.isdir(data_folder):
 		shutil.rmtree(data_folder)

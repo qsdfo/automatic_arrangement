@@ -314,11 +314,11 @@ module load foss/2015b
 module load Tensorflow/1.0.0-Python-3.5.2
 source ~/Virtualenvs/tf_3/bin/activate
 
-SRC=/home/crestel/automatic_arrangement/Source/LOP/Scripts
+SRC=/home/crestel/Source/automatic_arrangement/Source/LOP/Scripts
 cd $SRC
 python train_wrapper.py '""" + config_folder_fold + "'"
 
-		with open(file_pbs, 'wb') as f:
+		with open(file_pbs, 'w') as f:
 			f.write(text_pbs)
 
 		# Launch script

@@ -66,18 +66,21 @@ def train_wrapper(parameters, model_params, model_name,
 	############################################################
 	# Update train_param and model_param dicts with new information from load data
 	############################################################
-	def count_number_batch(fold):
-		counter = 0
+	def count_batch(fold):
+		counter_batch = 0
+		counter_points = 0
 		for chunk in fold:
-			counter += len(chunk["batches"])
-		return counter
-	n_train_batches = count_number_batch(train_folds)
-	n_val_batches = count_number_batch(valid_folds)
-	n_test_batches = count_number_batch(test_folds)
+			counter_batch += len(chunk["batches"])
+			for batch in chunk["batches"]:
+				counter_points += len(batch)
+		return counter_batch, counter_points
+	n_train_batches, _ = count_batch(train_folds)
+	n_val_batches, n_val_points = count_batch(valid_folds)
+	n_test_batches, n_test_points = count_batch(test_folds)
 
-	logger.info('# n_train_batch :  {}'.format(n_train_batches))
-	logger.info('# n_val_batch :  {}'.format(n_val_batches))
-	logger.info('# n_test_batch :  {}'.format(n_test_batches))
+	logger.info('# Num train batch :  {}'.format(n_train_batches))
+	logger.info('# Num val points :  {}'.format(n_val_points))
+	logger.info('# Num test points :  {}'.format(n_test_points))
 
 	parameters['n_train_batches'] = n_train_batches
 	parameters['n_val_batches'] = n_val_batches

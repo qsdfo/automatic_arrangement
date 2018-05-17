@@ -59,10 +59,10 @@ if __name__ == '__main__':
 	DATABASE_PATH_PRETRAINING = config.database_pretraining_root()
 	
 	DATABASE_NAMES = [
-		# DATABASE_PATH + "/bouliane", 
-		# DATABASE_PATH + "/hand_picked_Spotify", 
-		# DATABASE_PATH + "/liszt_classical_archives", 
-		# DATABASE_PATH + "/imslp"
+		DATABASE_PATH + "/bouliane", 
+		DATABASE_PATH + "/hand_picked_Spotify", 
+		DATABASE_PATH + "/liszt_classical_archives", 
+		DATABASE_PATH + "/imslp"
 		# DATABASE_PATH_PRETRAINING + "/OpenMusicScores",
 		# DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
 		# DATABASE_PATH_PRETRAINING + "/Musicalion", 
@@ -70,10 +70,10 @@ if __name__ == '__main__':
 	]
 	
 	DATABASE_NAMES_PRETRAINING = [
-		DATABASE_PATH_PRETRAINING + "/OpenMusicScores",
-		DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
-		DATABASE_PATH_PRETRAINING + "/Musicalion", 
-		DATABASE_PATH_PRETRAINING + "/Mutopia"
+		# DATABASE_PATH_PRETRAINING + "/OpenMusicScores",
+		# DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
+		# DATABASE_PATH_PRETRAINING + "/Musicalion", 
+		# DATABASE_PATH_PRETRAINING + "/Mutopia"
 	]
 
 	# Create a list of paths

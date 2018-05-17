@@ -3,8 +3,9 @@
 
 import numpy as np
 
+_EPSILON = 1e-100
 
-def accuracy_measure(true_frame, pred_frame):
+def accuracy_measure(true_frame, pred_frame):    
     axis = len(true_frame.shape) - 1
 
     true_positive = np.sum(pred_frame * true_frame, axis=axis)
@@ -13,7 +14,7 @@ def accuracy_measure(true_frame, pred_frame):
 
     quotient = true_positive + false_negative + false_positive
 
-    accuracy_measure = np.where(quotient==0., 0., np.true_divide(true_positive, quotient))
+    accuracy_measure = np.where(quotient==0., 0., np.true_divide(true_positive, (quotient+_EPSILON)))
 
     return accuracy_measure
 
@@ -44,10 +45,9 @@ def accuracy_measure_test_2(true_frame, pred_frame):
     K = 1.8 + 500*0.01 + 2*(1-0.8)
     # C = 0
     # K = 0
-    epsilon = 1e-20
     
-    pred_frame_log = np.log(pred_frame + epsilon)
-    non_pred_frame_log = np.log(1 - pred_frame + epsilon)
+    pred_frame_log = np.log(pred_frame + _EPSILON)
+    non_pred_frame_log = np.log(1 - pred_frame + _EPSILON)
     
     true_positive = np.sum(pred_frame_log * true_frame, axis=axis)
     false_negative = np.sum(non_pred_frame_log * true_frame, axis=axis)
@@ -70,16 +70,15 @@ def true_accuracy_measure(true_frame, pred_frame):
 
     quotient = true_positive + false_negative + false_positive + true_negative
 
-    accuracy_measure = np.true_divide((true_negative + true_positive), quotient)
+    accuracy_measure = np.true_divide((true_negative + true_positive), (quotient + _EPSILON))
 
     return accuracy_measure
 
 
 def f_measure(true_frame, pred_frame):
-    epsilon = 1e-20
     precision = precision_measure(true_frame, pred_frame)
     recall = recall_measure(true_frame, pred_frame)
-    f_measure = 2 * np.true_divide((precision * recall), (precision + recall + epsilon))
+    f_measure = 2 * np.true_divide((precision * recall), (precision + recall + _EPSILON))
     return f_measure
 
 
@@ -93,7 +92,7 @@ def accuracy_measure_continuous(true_frame, pred_frame):
 
     quotient = tp + false
 
-    accuracy_measure =  np.where(quotient==0., 0, tp/quotient)
+    accuracy_measure =  np.where(quotient==0., 0, np.true_divide(tp, quotient + _EPSILON))
 
     return accuracy_measure
 
@@ -104,9 +103,9 @@ def recall_measure(true_frame, pred_frame):
     true_positive = np.sum(pred_frame * true_frame, axis=axis)
     false_negative = np.sum((1 - pred_frame) * true_frame, axis=axis)
 
-    quotient = true_positive + false_negative
+    quotient = true_positive + false_negative + 1e-20
 
-    recall_measure = np.where(quotient==0., 1., true_positive / quotient)
+    recall_measure = np.where(quotient==0., 1., np.true_divide(true_positive, (quotient + _EPSILON)))
 
     return recall_measure
 
@@ -117,32 +116,31 @@ def precision_measure(true_frame, pred_frame):
     true_positive = np.sum(pred_frame * true_frame, axis=axis)
     false_positive = np.sum(pred_frame * (1 - true_frame), axis=axis)
 
-    quotient = true_positive + false_positive
+    quotient = true_positive + false_positive + 1e-20
 
-    precision_measure = np.where(quotient==0., 1., true_positive / quotient)
+    precision_measure = np.where(quotient==0., 1., np.true_divide(true_positive, (quotient + _EPSILON)))
 
     return precision_measure
 
 
 def binary_cross_entropy(true_frame, pred_frame):
     axis = true_frame.ndim - 1
-    epsilon = 1e-20
-    cross_entr_dot = np.multiply(true_frame, np.log(pred_frame+epsilon)) + np.multiply((1-true_frame), np.log((1-pred_frame+epsilon)))
+    cross_entr_dot = np.multiply(true_frame, np.log(pred_frame + _EPSILON)) + np.multiply((1-true_frame), np.log((1-pred_frame+_EPSILON)))
     # Mean over feature dimension
     cross_entr = - np.mean(cross_entr_dot, axis=axis)
     return cross_entr
 
 
-def compute_numerical_gradient(measure_fun, true_frame, pred_frame, epsilon):
+def compute_numerical_gradient(measure_fun, true_frame, pred_frame):
     num_batch, num_dim = pred_frame.shape
     # Cost function are one dimensional
     numeric_grad = np.zeros((num_batch, num_dim))
     for i in range(num_dim):
         ei = np.zeros((num_batch, num_dim))
         ei[:, i] = 1
-        f_neg = measure_fun(true_frame, pred_frame-epsilon*ei)
-        f_pos = measure_fun(true_frame, pred_frame+epsilon*ei)
-        numeric_grad[:, i] = (f_pos - f_neg) / (2*epsilon)
+        f_neg = measure_fun(true_frame, pred_frame - _EPSILON * ei)
+        f_pos = measure_fun(true_frame, pred_frame + _EPSILON * ei)
+        numeric_grad[:, i] = (f_pos - f_neg) / (2 * _EPSILON)
     return numeric_grad
 
 

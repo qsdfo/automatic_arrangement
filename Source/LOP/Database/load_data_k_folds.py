@@ -76,6 +76,8 @@ def build_one_fold(k, k_folds, list_files_valid, list_files_train_only, train_an
     # Keep track of files used for validating and testing
     this_valid_names=[]
     this_test_names=[]
+
+    valid_batch_size = 10000 # Still se batches to avoid OOM errors
         
     for counter, filename in enumerate(list_files_valid):
         counter_fold = counter + k
@@ -92,8 +94,8 @@ def build_one_fold(k, k_folds, list_files_valid, list_files_train_only, train_an
         split_matrices_train.extend(train_only_files[filename])
     
     this_fold = {"train": from_block_list_to_folds(split_matrices_train, temporal_order, train_batch_size, None, num_max_contiguous_blocks),
-        "valid": from_block_list_to_folds(split_matrices_valid, temporal_order, None, long_range_pred, num_max_contiguous_blocks),
-        "test": from_block_list_to_folds(split_matrices_test, temporal_order, None, long_range_pred, num_max_contiguous_blocks)}
+        "valid": from_block_list_to_folds(split_matrices_valid, temporal_order, valid_batch_size, long_range_pred, num_max_contiguous_blocks),
+        "test": from_block_list_to_folds(split_matrices_test, temporal_order, valid_batch_size, long_range_pred, num_max_contiguous_blocks)}
     return this_fold, this_valid_names, this_test_names
 
 

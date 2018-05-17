@@ -3,7 +3,7 @@
 
 import numpy as np
 
-_EPSILON = 1e-100
+_EPSILON = 1e-20
 
 def accuracy_measure(true_frame, pred_frame):    
     axis = len(true_frame.shape) - 1

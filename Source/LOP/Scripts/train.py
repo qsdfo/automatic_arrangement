@@ -3,10 +3,12 @@
 
 import tensorflow as tf
 from tensorflow.python import debug as tf_debug
+import torch
 from keras import backend as K
 import numpy as np
 import time
 import os
+import pickle as pkl
 import shutil
 from multiprocessing.pool import ThreadPool
 # from multiprocessing.pool import Pool
@@ -17,7 +19,11 @@ import LOP.Utils.model_statistics as model_statistics
 from LOP.Scripts.asynchronous_load_mat import async_load_mat
 import training_utils
 
+# Plot weights
 import LOP.Results_process.plot_weights as plot_weights
+
+# Embedding classes
+from LOP.Embedding.EmbedModel import embedDenseNet, ChordLevelAttention
 
 from validate import validate
 
@@ -234,8 +240,32 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 				# Load matrix thread
 				#######################################
 				async_train = pool.apply_async(async_load_mat, (normalizer, next_chunks, parameters))
+				
+				piano_transformed, orch = matrices_from_thread
 
-				piano_transformed, orch, duration_piano, mask_orch = matrices_from_thread
+				#######################################
+				# Embed piano
+				#######################################
+				start_embed = time.time()
+				EMB_DIM = 100
+				batch_size_EMB = 1000
+				# Init matices
+				piano_embedded = np.zeros([piano_transformed.shape[0], EMB_DIM])
+				piano_resize = np.zeros((batch_size_EMB, 1, 128)) # Embeddings accetp size 128 samples
+				# Load model
+				embedding_path = "/fast-1/leo/database/Orchestration/Embeddings/embedding_mathieu/Model_complete_JSB_3_DICT.pth"
+				embedding_model = embedDenseNet(380, 12, (1500,500), 100, 1500, 2, 3, 12, 0.5, 0, False, True)
+				embedding_model.load_state_dict(torch.load(embedding_path))
+
+				index_batch = 0
+				import pdb; pdb.set_trace()
+				while index_batch < len(piano_transformed):
+					piano_resize[:, 0, piano_mapping['pitch_min']:piano_mapping['pitch_max']] = piano_transformed[index_batch*batch_size_EMB:(index_batch+1)*batch_size_EMB]
+					piano_resize_TORCH = torch.tensor(piano_resize)
+					piano_embedded_part = embedding_model(piano_resize_TORCH.float(), 0)
+					piano_embedded[index_batch*batch_size_EMB:(index_batch+1)*batch_size_EMB] = piano_embedded_part
+				logger_train.info("Embedding time : {}".format(time.time()-start_embed))
+				import pdb; pdb.set_trace()
 
 				#######################################
 				# Train

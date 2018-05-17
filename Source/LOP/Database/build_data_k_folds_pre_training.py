@@ -24,11 +24,13 @@ import build_data_aux
 import build_data_aux_no_piano
 import pickle as pkl
 import avoid_tracks 
+import torch
 # memory issues
 import gc
 import sys
 
 import LOP.Scripts.config as config
+from LOP.Utils.process_data import process_data_piano, process_data_orch
 
 DEBUG=True
 
@@ -216,12 +218,18 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 		pr_orch = build_data_aux.cast_small_pr_into_big_pr(new_pr_orchestra, new_instru_orchestra, 0, duration, instru_mapping, np.zeros((duration, N_orchestra)))
 		pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, 0, duration, instru_mapping, np.zeros((duration, N_piano)))
 
-		# Small section for generating piano only midi files (pour Mathieu, train embeddings)
-		# new_file_name = re.split('/', new_name_piano)[-1]
-		# try:
-		# 	write_midi(new_pr_piano, 1000, "Piano_files_for_embeddings/" + new_file_name, tempo=80)
-		# except:
-		# 	logging.warning("Failed writing")
+		import pdb; pdb.set_trace()
+		pr_piano_transformed = process_data_piano(pr_piano, duration_piano, binary_piano)
+    	pr_orch_transformed = process_data_orch(pr_orch, binary_orch)
+
+		#######################################
+		# Embed piano
+		#######################################
+		# Init matices
+		piano_resize_emb = np.zeros((piano_transformed.shape[0], 1, 128)) # Embeddings accetp size 128 samples
+		piano_resize_emb[:, 0, instru_mapping['Piano']['pitch_min']:instru_mapping['Piano']['pitch_max']] = pr_piano_transformed
+		piano_resize_emb_TT = torch.tensor(piano_resize_emb)
+		piano_embedded = embedding_model(piano_resize_emb_TT.float(), 0)
 
 		#############
 		# Split
@@ -233,13 +241,17 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 			os.mkdir(this_split_folder)
 			end_index = min(start_index + chunk_size, last_index)
 		
-			section = pr_piano[start_index: end_index]
+			section = pr_piano_transformed[start_index: end_index]
 			section_cast = section.astype(np.float32)
-			np.save(this_split_folder + '/pr_piano.npy', section_cast)
+			np.save(this_split_folder + '/pr_piano_transformed.npy', section_cast)
 
-			section = pr_orch[start_index: end_index]
+			section = piano_embedded[start_index: end_index]
 			section_cast = section.astype(np.float32)
-			np.save(this_split_folder + '/pr_orch.npy', section_cast)
+			np.save(this_split_folder + '/pr_piano_embedded.npy', section_cast)
+
+			section = pr_orch_transformed[start_index: end_index]
+			section_cast = section.astype(np.float32)
+			np.save(this_split_folder + '/pr_orch_transformed.npy', section_cast)
 
 			section = new_duration_piano[start_index: end_index]
 			section_cast = np.asarray(section, dtype=np.int8)
@@ -275,11 +287,18 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 	statistics = {}
 	statistics_pretraining = {}
 
+	# Load embedding model
+	embedding_path = "/fast-1/leo/database/Orchestration/Embeddings/embedding_mathieu/Model_complete_JSB_3_DICT.pth"
+	embedding_model = embedDenseNet(380, 12, (1500,500), 100, 1500, 2, 3, 12, 0.5, 0, False, True)
+	embedding_model.load_state_dict(torch.load(embedding_path))
+
 	temp = pkl.load(open(meta_info_path, 'rb'))
 	instru_mapping = temp['instru_mapping']
 	quantization = temp['quantization']
 	N_orchestra = temp['N_orchestra']
 	N_piano = instru_mapping['Piano']['index_max']
+	# Remplacer ça par le load d'un .pkl avec les arguments utiulisés dans le main
+	N_piano_embedded = 100
 
 	# Build the pitch and instru indicator vectors
 	# We use integer to identify pitches and instrument
@@ -306,8 +325,8 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 	pretraining_split_folder = os.path.join(store_folder, "split_matrices_pretraining")
 	os.mkdir(pretraining_split_folder)
 
-	train_and_valid_files, train_only_files = build_split_matrices(folder_paths, training_split_folder, chunk_size, instru_mapping, N_piano, N_orchestra)
-	pre_train_and_valid_files, pre_train_only_files = build_split_matrices(folder_paths_pretraining, pretraining_split_folder, chunk_size, instru_mapping, N_piano, N_orchestra)
+	train_and_valid_files, train_only_files = build_split_matrices(folder_paths, training_split_folder, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model, N_piano_embedded)
+	pre_train_and_valid_files, pre_train_only_files = build_split_matrices(folder_paths_pretraining, pretraining_split_folder, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model, N_piano_embedded)
 
 	# Save files' lists
 	pkl.dump(train_and_valid_files, open(store_folder + '/train_and_valid_files.pkl', 'wb'))
@@ -319,6 +338,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 	metadata['quantization'] = quantization
 	metadata['N_orchestra'] = N_orchestra
 	metadata['N_piano'] = N_piano
+	metadata['N_piano_embedded'] = N_piano_embedded
 	metadata['chunk_size'] = chunk_size
 	metadata['instru_mapping'] = instru_mapping
 	metadata['quantization'] = quantization
@@ -354,6 +374,9 @@ if __name__ == '__main__':
 	temporal_granularity='event_level'
 	quantization=8
 	pretraining_bool=False
+	binary_piano=True
+	binary_orch=True
+	duration_piano=False
 
 	# Database have to be built jointly so that the ranges match
 	DATABASE_PATH = config.database_root()
@@ -388,6 +411,12 @@ if __name__ == '__main__':
 		data_folder += '_DEBUG'
 	if pretraining_bool:
 		data_folder += '_pretraining'
+	if binary_piano:
+		data_folder += '_bp'
+	if binary_orch:
+		data_folder += '_bo'
+	if duration_piano:
+		data_folder += '_dp'
 	data_folder += '_tempGran' + str(quantization)
 
 	# data_folder += '_pretraining_only'
@@ -427,5 +456,7 @@ if __name__ == '__main__':
 			   meta_info_path=data_folder + '/temp.pkl',
 			   quantization=quantization,
 			   temporal_granularity=temporal_granularity,
+			   binary_piano=binary_piano,
+			   binary_orch=binary_orch,
 			   store_folder=data_folder,
 			   logging=logging)

@@ -4,9 +4,6 @@
 import numpy as np
 import re
 import os
-import pickle as pkl
-from LOP.Utils.process_data import process_data_piano, process_data_orch
-import time
 
 def load_matrices(chunk_path_list, parameters):
     """Input : 
@@ -14,50 +11,29 @@ def load_matrices(chunk_path_list, parameters):
 
     This function build the matrix corresponing to a coherent ensemble of files, for example only train files
     """
-    time=0
+    tt=0
     T_max = len(chunk_path_list)*parameters["chunk_size"] 
-    orch = np.zeros((T_max, parameters["N_orchestra"]), dtype=np.float16)
-    piano = np.zeros((T_max, parameters["N_piano"]), dtype=np.float16)
-    if parameters['duration_piano']:
-        duration_piano = np.zeros((T_max, 1))
-    else:
-        duration_piano = None
-
+    orch_transformed = np.zeros((T_max, parameters["N_orchestra"]), dtype=np.float16)
+    piano_transformed = np.zeros((T_max, parameters["N_piano"]), dtype=np.float16)
+    piano_embedded = np.zeros((T_max, parameters["N_piano_embedded"]), dtype=np.float16)
+    
     for block_folder in chunk_path_list:
-        pr_piano, pr_orch, this_duration = load_matrix_NO_PROCESSING(block_folder, parameters['duration_piano'])
-        length = pr_piano.shape[0]
-        piano[time:time+length]=pr_piano
-        orch[time:time+length]=pr_orch
-        if parameters['duration_piano']:
-            duration_piano[time:time+length] = this_duration
-        time += length
+        pr_piano_transformed, pr_piano_embedded, pr_orch_transformed = load_matrix_NO_PROCESSING(block_folder, parameters['duration_piano'])
+        length = pr_piano_transformed.shape[0]
+        piano_transformed[tt:tt+length]=pr_piano_transformed
+        piano_embedded[tt:tt+length]=pr_piano_embedded
+        orch_transformed[tt:tt+length]=pr_orch_transformed
+        tt += length
 
-    piano = process_data_piano(piano, duration_piano, parameters)
-    orch = process_data_orch(orch, parameters)
-
-    ##################################################
-    ##################################################
-    ##################################################
-    # Data augmentation ici ?
-    duration_piano = None
-    mask_orch = None 
-    ##################################################
-    ##################################################
-    ##################################################
-
-    return piano, orch, duration_piano, mask_orch
+    return piano_transformed, piano_embedded, orch_transformed
 
 def load_matrix_NO_PROCESSING(block_folder, duration_piano_bool):
-    piano_file = os.path.join(block_folder, 'pr_piano.npy')
+    piano_file = os.path.join(block_folder, 'pr_piano_transformed.npy')
     orch_file = re.sub('piano', 'orch', piano_file)
-    pr_piano = np.load(piano_file)
-    pr_orch = np.load(orch_file)
-    
-    if duration_piano_bool:
-        duration_piano_file = re.sub('piano', 'duration_piano', piano_file)
-        this_duration = np.load(duration_piano_file)
-    else:
-        this_duration = None
+    piano_embedded_file = re.sub('piano_transformed', 'piano_embedded', piano_file)
+    pr_piano_transformed = np.load(piano_file)
+    pr_piano_embedded = np.load(piano_embedded_file)
+    pr_orch_transformed = np.load(orch_file)
 
     # if parameters['mask_orch']:
     #     mask_orch_file = re.sub('piano', 'mask_orch', piano_file)
@@ -65,4 +41,4 @@ def load_matrix_NO_PROCESSING(block_folder, duration_piano_bool):
     # else:
     #     mask_orch = None
 
-    return pr_piano, pr_orch, this_duration
+    return pr_piano_transformed, pr_piano_embedded, pr_orch_transformed

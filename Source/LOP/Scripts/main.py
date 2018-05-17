@@ -175,7 +175,7 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 
 	# Get dimensions of batches (will be the same for pretraining)
 	dimensions = {'temporal_order': model_params['temporal_order'],
-				  'piano_dim': parameters["N_piano"],
+				  'piano_embedded_dim': parameters["N_piano_embedded"],
 				  'orch_dim': parameters['N_orchestra']}
 	pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
 	

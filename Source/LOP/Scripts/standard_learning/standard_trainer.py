@@ -19,9 +19,9 @@ class Standard_trainer(object):
 	def build_variables_nodes(self, model, parameters):
 		# Build nodes
 		# Inputs
-		self.piano_t_ph = tf.placeholder(tf.float32, shape=(None, model.piano_transformed_dim), name="piano_t")
-		self.piano_past_ph = tf.placeholder(tf.float32, shape=(None, self.temporal_order-1, model.piano_transformed_dim), name="piano_past")
-		self.piano_future_ph = tf.placeholder(tf.float32, shape=(None, self.temporal_order-1, model.piano_transformed_dim), name="piano_future")
+		self.piano_t_ph = tf.placeholder(tf.float32, shape=(None, model.piano_dim), name="piano_t")
+		self.piano_past_ph = tf.placeholder(tf.float32, shape=(None, self.temporal_order-1, model.piano_dim), name="piano_past")
+		self.piano_future_ph = tf.placeholder(tf.float32, shape=(None, self.temporal_order-1, model.piano_dim), name="piano_future")
 		#
 		self.orch_t_ph = tf.placeholder(tf.float32, shape=(None, model.orch_dim), name="orch_t")
 		self.orch_past_ph = tf.placeholder(tf.float32, shape=(None, self.temporal_order-1, model.orch_dim), name="orch_past")
@@ -140,9 +140,9 @@ class Standard_trainer(object):
 		self.keras_learning_phase = tf.get_collection("keras_learning_phase")[0]
 		return
 
-	def build_feed_dict(self, batch_index, piano, orch, mask_orch):
+	def build_feed_dict(self, batch_index, piano, orch, duration_piano, mask_orch):
 		# Build batch
-		piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t = build_batch(batch_index, piano, orch, mask_orch, len(batch_index), self.temporal_order)
+		piano_t, piano_past, piano_future, orch_past, orch_future, orch_t, mask_orch_t = build_batch(batch_index, piano, orch, duration_piano, mask_orch, len(batch_index), self.temporal_order)
 
 		# Train step
 		feed_dict = {self.piano_t_ph: piano_t,
@@ -154,7 +154,12 @@ class Standard_trainer(object):
 			self.mask_orch_ph: mask_orch_t}
 		return feed_dict, orch_t
 
-	def build_feed_dict_long_range(self, t, piano_extracted, orch_extracted, orch_gen):
+	def build_feed_dict_long_range(self, t, piano_extracted, orch_extracted, orch_gen, duration_piano_extracted):
+		if duration_piano_extracted is not None:
+			dur_shape = duration_piano_extracted.shape
+			dur_reshape = duration_piano_extracted.reshape([dur_shape[0], dur_shape[1], 1])
+			piano_extracted = np.concatenate((piano_extracted, dur_reshape), axis=2)
+
 		# We cannot use build_batch function here, but getting the matrices is quite easy
 		piano_t = piano_extracted[:, t, :]
 		piano_past = piano_extracted[:, t-(self.temporal_order-1):t, :]
@@ -174,8 +179,8 @@ class Standard_trainer(object):
 			self.mask_orch_ph: mask_orch_t}
 		return feed_dict, orch_t
 
-	def training_step(self, sess, batch_index, piano, orch, mask_orch, summarize_dict):
-		feed_dict, _ = self.build_feed_dict(batch_index, piano, orch, mask_orch)
+	def training_step(self, sess, batch_index, piano, orch, duration_piano, mask_orch, summarize_dict):
+		feed_dict, _ = self.build_feed_dict(batch_index, piano, orch, duration_piano, mask_orch)
 		feed_dict[self.keras_learning_phase] = True
 
 		SUMMARIZE = summarize_dict['bool']
@@ -205,20 +210,20 @@ class Standard_trainer(object):
 
 		return loss_batch, preds_batch, debug_outputs, summary
 
-	def valid_step(self, sess, batch_index, piano, orch, mask_orch, PLOTING_FOLDER):
+	def valid_step(self, sess, batch_index, piano, orch, duration_piano, mask_orch, PLOTING_FOLDER):
 		# Almost the same function as training_step here,  but in the case of NADE learning for instance, it might be ver different.
-		feed_dict, orch_t = self.build_feed_dict(batch_index, piano, orch, mask_orch)
+		feed_dict, orch_t = self.build_feed_dict(batch_index, piano, orch, duration_piano, mask_orch)
 		feed_dict[self.keras_learning_phase] = False
 		loss_batch, preds_batch = sess.run([self.loss_val, self.preds], feed_dict)
 		return loss_batch, preds_batch, orch_t
 
-	def valid_long_range_step(self, sess, t, piano_extracted, orch_extracted, orch_gen):
-		feed_dict, orch_t = self.build_feed_dict_long_range(t, piano_extracted, orch_extracted, orch_gen)
+	def valid_long_range_step(self, sess, t, piano_extracted, orch_extracted, orch_gen, duration_piano_extracted):
+		feed_dict, orch_t = self.build_feed_dict_long_range(t, piano_extracted, orch_extracted, orch_gen, duration_piano_extracted)
 		feed_dict[self.keras_learning_phase] = False
 		loss_batch, preds_batch = sess.run([self.loss_val, self.preds], feed_dict)
 		return loss_batch, preds_batch, orch_t
 
-	def generation_step(self, sess, batch_index, piano, orch_gen, mask_orch):
+	def generation_step(self, sess, batch_index, piano, orch_gen, duration_gen, mask_orch):
 		# Exactly the same as the valid_step in the case of the standard_learner
-		loss_batch, preds_batch, orch_t = self.valid_step(sess, batch_index, piano, orch_gen, mask_orch, None)
+		loss_batch, preds_batch, orch_t = self.valid_step(sess, batch_index, piano, orch_gen, duration_gen, mask_orch, None)
 		return preds_batch

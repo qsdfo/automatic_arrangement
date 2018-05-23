@@ -8,6 +8,7 @@ import re
 import numpy as np
 import os
 import time
+import torch
 
 from generate import generate
 
@@ -20,6 +21,9 @@ from LOP_database.utils.pianoroll_processing import get_pianoroll_time, extract_
 from LOP_database.utils.event_level import get_event_ind_dict, from_event_to_frame
 from LOP_database.utils.time_warping import warp_pr_aux
 from LOP_database.utils.reconstruct_pr import instrument_reconstruction, instrument_reconstruction_piano
+
+# Embeddings
+from LOP.Embedding.EmbedModel import embedDenseNet, ChordLevelAttention
 
 def load_from_pair(tracks_path, quantization, temporal_granularity):
     ############################################################
@@ -95,8 +99,11 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     # Shorten
     # Keep only the beginning of the pieces (let's say a 100 events)
     pr_piano = extract_pianoroll_part(pr_piano, 0, duration_gen)
-    duration_piano = duration_piano[:duration_gen]
-    event_piano = event_piano[:duration_gen] 
+    if parameters["duration_piano"]:
+        duration_piano = np.asarray(duration_piano[:duration_gen])
+    else:
+        duration_piano = None
+    event_piano = event_piano[:duration_gen]
     pr_orch = extract_pianoroll_part(pr_orch, 0, duration_gen)
     ########################
 
@@ -127,15 +134,38 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     # Process data
     if duration_gen is None:
         duration_gen = duration
-    pr_piano_gen = process_data_piano(pr_piano_gen, duration_piano, parameters)
+    pr_piano_gen = process_data_piano(pr_piano_gen, parameters)
     pr_orchestra_truth = process_data_orch(pr_orchestra_truth, parameters)
     pr_orchestra_gen = process_data_orch(pr_orchestra_gen, parameters)
     ########################
-    
+
+    #######################################
+    # Embed piano
+    time_embedding = time.time()
+    if parameters['embedded_piano']:
+        # Load model
+        embedding_path = parameters["embedding_path"]
+        embedding_model = embedDenseNet(380, 12, (1500,500), 100, 1500, 2, 3, 12, 0.5, 0, False, True)
+        embedding_model.load_state_dict(torch.load(embedding_path))
+
+        # Build embedding (no need to batch here, len(pr_piano_gen) is sufficiently small)
+        piano_resize_emb = np.zeros((len(pr_piano_gen), 1, 128)) # Embeddings accetp size 128 samples
+        piano_resize_emb[:, 0, instru_mapping['Piano']['pitch_min']:instru_mapping['Piano']['pitch_max']] = pr_piano_gen
+        piano_resize_emb_TT = torch.tensor(piano_resize_emb)
+        piano_embedded_TT = embedding_model(piano_resize_emb_TT.float(), 0)
+        pr_piano_gen_embedded = piano_embedded_TT.numpy()
+    else:
+        pr_piano_gen_embedded = pr_piano_gen
+    time_embedding = time.time() - time_embedding
+    #######################################
+
     ########################
     # Inputs' normalization
     normalizer = pkl.load(open(os.path.join(config_folder, 'normalizer.pkl'), 'rb'))
-    pr_piano_gen_norm = normalizer.transform(pr_piano_gen)
+    if parameters["embedded_piano"]:        # When using embedding, no normalization
+        pr_piano_gen_norm = pr_piano_gen_embedded
+    else:
+        pr_piano_gen_norm = normalizer.transform(pr_piano_gen_embedded)
     ########################
     
     ########################
@@ -170,7 +200,7 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     generated_sequences = {}
     for measure_name in parameters['save_measures']:
         model_path = 'model_' + measure_name
-        generated_sequences[measure_name] = generate(trainer, pr_piano_gen_norm, silence_piano, config_folder, model_path, pr_orchestra_gen, batch_size=number_of_version)
+        generated_sequences[measure_name] = generate(trainer, pr_piano_gen_norm, silence_piano, duration_piano, config_folder, model_path, pr_orchestra_gen, batch_size=number_of_version)
     time_generate_1 = time.time()
     logger_generate.info('TTT : Generating data took {} seconds'.format(time_generate_1-time_generate_0))
 
@@ -207,8 +237,6 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     else:
         A = pr_piano_gen
     B = A * 127
-    if parameters['duration_piano']:
-        B = B[:, :-1]  # Remove duration column
     piano_reconstructed = instrument_reconstruction_piano(B, instru_mapping)
     write_path = generated_folder + '/piano_reconstructed.mid'
     if rhythmic_reconstruction:

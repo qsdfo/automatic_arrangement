@@ -17,15 +17,11 @@ def process_data_orch(orch, binarize_piano):
         orch = orch / 127
     return orch
 
-def process_data_piano(piano, duration_piano, binarize_piano):
+def process_data_piano(piano, binarize_piano):
     # Binarize inputs ?
     if binarize_piano:
         piano[np.nonzero(piano)] = 1
     else:
         piano = piano / 127
 
-    # Add duration of the piano score ?
-    if duration_piano:
-        duration_piano_reshape = np.reshape(duration_piano, [-1, 1])
-        piano = np.concatenate((piano, duration_piano_reshape), axis=1)
     return piano

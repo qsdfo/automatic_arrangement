@@ -3,9 +3,14 @@
 
 import numpy as np
 
-def build_batch(batch_index_list, piano, orch, mask_orch, batch_size, temporal_order):
+def build_batch(batch_index_list, piano, orch, duration_piano, mask_orch, batch_size, temporal_order):
 
     batch_index = np.asarray(batch_index_list)
+
+    # Add duration ?
+    if duration_piano is not None:
+        piano = np.concatenate((piano, duration_piano.reshape([-1,1])), axis=1)
+
     # Build batch
     piano_t = piano[batch_index]
     piano_past = build_sequence(piano, batch_index-1, batch_size, temporal_order-1)
@@ -81,7 +86,7 @@ def build_seed(pr, index, batch_size, length_seq):
     return seed_pr
 
 
-def initialization_generation(piano, orchestra, ind, generation_length, batch_generation_size, seed_size):
+def initialization_generation(piano, orchestra, duration_piano, ind, generation_length, batch_generation_size, seed_size):
     # Build piano generation
     piano_gen = build_seed(piano, ind,
                            batch_generation_size, generation_length)

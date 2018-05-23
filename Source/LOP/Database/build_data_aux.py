@@ -11,7 +11,6 @@ from LOP_database.utils.pianoroll_processing import clip_pr, get_pianoroll_time
 from LOP_database.utils.time_warping import needleman_chord_wrapper, warp_dictionnary_trace, remove_zero_in_trace, warp_pr_aux
 from LOP_database.utils.event_level import get_event_ind_dict
 from LOP_database.utils.pianoroll_processing import sum_along_instru_dim
-from LOP_database.utils.pianoroll_reduction import remove_unmatched_silence, remove_match_silence, remove_silence
 from LOP_database.utils.align_pianorolls import align_pianorolls
 from LOP.Database.simplify_instrumentation import get_simplify_mapping
 
@@ -175,8 +174,12 @@ def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, 
                 continue
 
             # For pr_instrument, remove the column out of pitch_min and pitch_max
-            pitch_min = instru_mapping[instru_name]['pitch_min']
-            pitch_max = instru_mapping[instru_name]['pitch_max']
+            try:
+                pitch_min = instru_mapping[instru_name]['pitch_min']
+                pitch_max = instru_mapping[instru_name]['pitch_max']
+            except KeyError:
+                print(instru_name + " instrument was not present in the training database")
+                continue
 
             # Determine thanks to instru_mapping the y_min and y_max in pr_big
             index_min = instru_mapping[instru_name]['index_min']
@@ -255,4 +258,4 @@ def process_folder(folder_path, quantization, temporal_granularity, gapopen=3, g
 
 
 if __name__ == '__main__':
-    process_folder('/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/imslp/72', 4, 'binary', 'frame_level')
+    process_folder('/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/imslp/72', 8, 'event_level')

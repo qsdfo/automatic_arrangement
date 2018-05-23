@@ -16,7 +16,7 @@ class PCA(object):
     """
     def __init__(self, train_folds, n_components, whiten, parameters):
         self.ipca = IncrementalPCA(n_components=n_components, whiten=whiten)
-        self.transformed_dim = n_components
+        self.norm_dim = n_components
         # Init variables
         self.fit(train_folds, parameters)
         return
@@ -24,7 +24,7 @@ class PCA(object):
 
     def fit(self, train_folds, parameters):
         for path_matrix, indices in train_folds.iteritems():
-            piano, _, _, _, _ = load_matrices(path_matrix, parameters)
+            piano, _, _, _ = load_matrices(path_matrix, parameters)
             flat_train_indices = [ind for batch in indices for ind in batch]
             mat_train = piano[flat_train_indices]
             try:

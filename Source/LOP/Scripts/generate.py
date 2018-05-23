@@ -7,10 +7,8 @@ import pickle as pkl
 import tensorflow as tf
 from keras import backend as K
 
-from LOP.Utils.build_batch import build_batch
 
-
-def generate(trainer, piano, silence_ind, path_to_config, model_name='model', orch_init=None, batch_size=5):
+def generate(trainer, piano, silence_ind, duration_gen, path_to_config, model_name='model', orch_init=None, batch_size=5):
     # Perform N=batch_size orchestrations
     # Sample by sample generation
     # Input : 
@@ -60,7 +58,7 @@ def generate(trainer, piano, silence_ind, path_to_config, model_name='model', or
                 # Just duplicate the temporal index to create batch generation
                 batch_index = np.tile(t, batch_size)
 
-                prediction = trainer.generation_step(sess, batch_index, piano, orch_gen, None)
+                prediction = trainer.generation_step(sess, batch_index, piano, orch_gen, duration_gen, None)
 
                 # prediction should be a probability distribution. Then we can sample from it
                 # Note that it doesn't need to be part of the graph since we don't use the sampled value to compute the backproped error

@@ -12,8 +12,7 @@ class Model_lop(object):
 	def __init__(self, model_param, dimensions):
 		# Dimensions
 		self.temporal_order = dimensions['temporal_order']
-		self.piano_dim = dimensions['piano_dim']
-		self.piano_transformed_dim = dimensions['piano_transformed_dim']
+		self.piano_dim = dimensions['piano_input_dim'] 	# Piano passed to Data are embedded then normalized, so we want piano_norm_dim as the input data
 		self.orch_dim = dimensions['orch_dim']
 
 		# Regularization paramters

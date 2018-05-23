@@ -9,13 +9,12 @@ Created on Thu Nov 16 12:17:39 2017
 
 import numpy as np
 from sklearn.decomposition import IncrementalPCA
-from load_matrices import load_matrices
 
 class no_normalization(object):
     """No normalization, just let the data go through
     """
     def __init__(self, dimensions):
-        self.transformed_dim = dimensions['piano_dim']
+        self.norm_dim = dimensions['piano_input_dim']
         return
 
     def transform(self, matrix):

@@ -130,7 +130,7 @@ def from_block_list_to_folds(list_blocks, temporal_order, train_batch_size, long
         this_list_of_path.append(block_folder)
         
         # Update the list of valid indices
-        pr_piano, pr_orch, _ = load_matrices.load_matrix_NO_PROCESSING(block_folder, duration_piano_bool=False)
+        pr_piano, _, pr_orch, _, _ = load_matrices.load_matrix_NO_PROCESSING(block_folder, duration_piano_bool=False, mask_orch_bool=False)
         duration = len(pr_piano)
         start_valid_ind = temporal_order - 1
         end_valid_ind = duration - temporal_order + 1

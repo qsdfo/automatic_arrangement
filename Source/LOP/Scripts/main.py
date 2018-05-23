@@ -175,8 +175,17 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 
 	# Get dimensions of batches (will be the same for pretraining)
 	dimensions = {'temporal_order': model_params['temporal_order'],
-				  'piano_embedded_dim': parameters["N_piano_embedded"],
-				  'orch_dim': parameters['N_orchestra']}
+		'orch_dim': parameters['N_orchestra']}
+	if parameters["embedded_piano"]:
+		dimensions['piano_embedded_dim'] = parameters["N_piano_embedded"]
+	else:
+		dimensions['piano_embedded_dim'] = parameters["N_piano"]
+	
+	if parameters["duration_piano"]:
+		dimensions['piano_input_dim'] = dimensions['piano_embedded_dim'] + 1
+	else:
+		dimensions['piano_input_dim'] = dimensions['piano_embedded_dim']
+
 	pkl.dump(dimensions, open(config_folder + '/dimensions.pkl', 'wb'))
 	
 	# Three options : pre-training then training or just concatenate everything

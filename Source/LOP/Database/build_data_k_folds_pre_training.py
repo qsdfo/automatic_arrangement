@@ -28,12 +28,14 @@ import torch
 # memory issues
 import gc
 import sys
+import time
 
 import LOP.Scripts.config as config
 from LOP.Utils.process_data import process_data_piano, process_data_orch
+from LOP.Embedding.EmbedModel import embedDenseNet, ChordLevelAttention
 
-DEBUG=True
-
+DEBUG=False
+ERASE=True
 
 def update_instru_mapping(folder_path, instru_mapping, T, quantization):
 	logging.info(folder_path)
@@ -168,7 +170,7 @@ def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path, quant
 
 	return
 
-def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_mapping, N_piano, N_orchestra):
+def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model, binary_piano, binary_orch):
 	file_counter = 0
 	train_only_files={}
 	train_and_valid_files={}
@@ -218,18 +220,27 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 		pr_orch = build_data_aux.cast_small_pr_into_big_pr(new_pr_orchestra, new_instru_orchestra, 0, duration, instru_mapping, np.zeros((duration, N_orchestra)))
 		pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, 0, duration, instru_mapping, np.zeros((duration, N_piano)))
 
-		import pdb; pdb.set_trace()
-		pr_piano_transformed = process_data_piano(pr_piano, duration_piano, binary_piano)
-    	pr_orch_transformed = process_data_orch(pr_orch, binary_orch)
+		pr_piano_transformed = process_data_piano(pr_piano, binary_piano)
+		pr_orch_transformed = process_data_orch(pr_orch, binary_orch)
 
 		#######################################
 		# Embed piano
 		#######################################
 		# Init matices
-		piano_resize_emb = np.zeros((piano_transformed.shape[0], 1, 128)) # Embeddings accetp size 128 samples
-		piano_resize_emb[:, 0, instru_mapping['Piano']['pitch_min']:instru_mapping['Piano']['pitch_max']] = pr_piano_transformed
-		piano_resize_emb_TT = torch.tensor(piano_resize_emb)
-		piano_embedded = embedding_model(piano_resize_emb_TT.float(), 0)
+		piano_embedded = []
+		len_piano = len(pr_piano_transformed)
+		batch_size = 500  			# forced to batch for memory issues
+		start_batch_index = 0
+		while start_batch_index < len_piano:
+			end_batch_index = min(start_batch_index+batch_size, len_piano)
+			this_batch_size = end_batch_index-start_batch_index
+			piano_resize_emb = np.zeros((this_batch_size, 1, 128)) # Embeddings accetp size 128 samples
+			piano_resize_emb[:, 0, instru_mapping['Piano']['pitch_min']:instru_mapping['Piano']['pitch_max']] = pr_piano_transformed[start_batch_index:end_batch_index]
+			piano_resize_emb_TT = torch.tensor(piano_resize_emb).cuda()
+			piano_embedded_TT = embedding_model(piano_resize_emb_TT.float(), 0)
+			piano_embedded.append(piano_embedded_TT.cpu().numpy())
+			start_batch_index+=batch_size
+		piano_embedded = np.concatenate(piano_embedded)
 
 		#############
 		# Split
@@ -271,7 +282,7 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 
 	return train_and_valid_files, train_only_files
 
-def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantization, temporal_granularity, store_folder, logging=None):
+def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantization, temporal_granularity, binary_piano, binary_orch, store_folder, logging=None):
 
 	# Get dimensions
 	if DEBUG:
@@ -289,8 +300,9 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 
 	# Load embedding model
 	embedding_path = "/fast-1/leo/database/Orchestration/Embeddings/embedding_mathieu/Model_complete_JSB_3_DICT.pth"
-	embedding_model = embedDenseNet(380, 12, (1500,500), 100, 1500, 2, 3, 12, 0.5, 0, False, True)
+	embedding_model = embedDenseNet(380, 12, (1500,500), 100, 1500, 2, 3, 12, 0.5, 0, False, True).cuda()
 	embedding_model.load_state_dict(torch.load(embedding_path))
+	embedding_path
 
 	temp = pkl.load(open(meta_info_path, 'rb'))
 	instru_mapping = temp['instru_mapping']
@@ -325,8 +337,10 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 	pretraining_split_folder = os.path.join(store_folder, "split_matrices_pretraining")
 	os.mkdir(pretraining_split_folder)
 
-	train_and_valid_files, train_only_files = build_split_matrices(folder_paths, training_split_folder, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model, N_piano_embedded)
-	pre_train_and_valid_files, pre_train_only_files = build_split_matrices(folder_paths_pretraining, pretraining_split_folder, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model, N_piano_embedded)
+	train_and_valid_files, train_only_files = build_split_matrices(folder_paths, training_split_folder, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model,
+		binary_piano, binary_orch)
+	pre_train_and_valid_files, pre_train_only_files = build_split_matrices(folder_paths_pretraining, pretraining_split_folder, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model,
+		binary_piano, binary_orch)
 
 	# Save files' lists
 	pkl.dump(train_and_valid_files, open(store_folder + '/train_and_valid_files.pkl', 'wb'))
@@ -344,6 +358,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 	metadata['quantization'] = quantization
 	metadata['temporal_granularity'] = temporal_granularity
 	metadata['store_folder'] = store_folder
+	metadata['embedding_path'] = embedding_path
 	with open(store_folder + '/metadata.pkl', 'wb') as outfile:
 		pkl.dump(metadata, outfile)
 	return
@@ -376,7 +391,6 @@ if __name__ == '__main__':
 	pretraining_bool=False
 	binary_piano=True
 	binary_orch=True
-	duration_piano=False
 
 	# Database have to be built jointly so that the ranges match
 	DATABASE_PATH = config.database_root()
@@ -415,15 +429,14 @@ if __name__ == '__main__':
 		data_folder += '_bp'
 	if binary_orch:
 		data_folder += '_bo'
-	if duration_piano:
-		data_folder += '_dp'
 	data_folder += '_tempGran' + str(quantization)
 
 	# data_folder += '_pretraining_only'
 	
-	if os.path.isdir(data_folder):
-		shutil.rmtree(data_folder)
-	os.makedirs(data_folder)
+	if ERASE:
+		if os.path.isdir(data_folder):
+			shutil.rmtree(data_folder)
+		os.makedirs(data_folder)
 
 	# Create a list of paths
 	def build_filepaths_list(path):

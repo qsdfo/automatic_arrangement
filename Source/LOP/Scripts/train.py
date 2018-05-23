@@ -3,7 +3,6 @@
 
 import tensorflow as tf
 from tensorflow.python import debug as tf_debug
-import torch
 from keras import backend as K
 import numpy as np
 import time
@@ -21,9 +20,6 @@ import training_utils
 
 # Plot weights
 import LOP.Results_process.plot_weights as plot_weights
-
-# Embedding classes
-from LOP.Embedding.EmbedModel import embedDenseNet, ChordLevelAttention
 
 from validate import validate
 
@@ -45,7 +41,7 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 		
 	###### PETIT TEST VALIDATION
 	# Use same validation and train set
-	# piano_valid, orch_validk, valid_index = piano_train, orch_train, train_index	
+	# piano_valid, orch_valid, valid_index = piano_train, orch_train, train_index	
 
 	which_trainer = model.trainer()
 
@@ -153,15 +149,9 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 	}
 
 	if parameters['memory_gpu']:
-		##############
-		##############
-		##############
 		# This apparently does not work
 		configSession = tf.ConfigProto()
 		configSession.gpu_options.per_process_gpu_memory_fraction = parameters['memory_gpu']
-		##############
-		##############
-		##############
 	else:
 		configSession = None
 
@@ -241,37 +231,13 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 				#######################################
 				async_train = pool.apply_async(async_load_mat, (normalizer, next_chunks, parameters))
 				
-				piano_transformed, orch = matrices_from_thread
-
-				#######################################
-				# Embed piano
-				#######################################
-				start_embed = time.time()
-				EMB_DIM = 100
-				batch_size_EMB = 1000
-				# Init matices
-				piano_embedded = np.zeros([piano_transformed.shape[0], EMB_DIM])
-				piano_resize = np.zeros((batch_size_EMB, 1, 128)) # Embeddings accetp size 128 samples
-				# Load model
-				embedding_path = "/fast-1/leo/database/Orchestration/Embeddings/embedding_mathieu/Model_complete_JSB_3_DICT.pth"
-				embedding_model = embedDenseNet(380, 12, (1500,500), 100, 1500, 2, 3, 12, 0.5, 0, False, True)
-				embedding_model.load_state_dict(torch.load(embedding_path))
-
-				index_batch = 0
-				import pdb; pdb.set_trace()
-				while index_batch < len(piano_transformed):
-					piano_resize[:, 0, piano_mapping['pitch_min']:piano_mapping['pitch_max']] = piano_transformed[index_batch*batch_size_EMB:(index_batch+1)*batch_size_EMB]
-					piano_resize_TORCH = torch.tensor(piano_resize)
-					piano_embedded_part = embedding_model(piano_resize_TORCH.float(), 0)
-					piano_embedded[index_batch*batch_size_EMB:(index_batch+1)*batch_size_EMB] = piano_embedded_part
-				logger_train.info("Embedding time : {}".format(time.time()-start_embed))
-				import pdb; pdb.set_trace()
-
+				piano_input, orch_transformed, duration_piano, mask_orch = matrices_from_thread
+				
 				#######################################
 				# Train
 				#######################################
 				for batch_index in train_index:
-					loss_batch, _, debug_outputs, summary = trainer.training_step(sess, batch_index, piano_transformed, orch, mask_orch, summarize_dict)
+					loss_batch, _, debug_outputs, summary = trainer.training_step(sess, batch_index, piano_input, orch_transformed, duration_piano, mask_orch, summarize_dict)
 					# Keep track of cost
 					train_cost_epoch.append(loss_batch)
 					sparse_loss_batch = debug_outputs[0]

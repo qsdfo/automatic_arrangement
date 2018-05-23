@@ -41,14 +41,17 @@ def train_wrapper(parameters, model_params, model_name,
 	Normalizer = import_normalizer.import_normalizer(parameters["normalizer"])
 	normalizer = Normalizer(dimensions)
 	pkl.dump(normalizer, open(os.path.join(config_folder_fold, 'normalizer.pkl'), 'wb'))
-	dimensions['piano_transformed_dim'] = normalizer.transformed_dim
+	if not parameters["embedded_piano"]:
+		# Normalization is by-passed when embedding is used
+		dimensions['piano_input_dim'] = normalizer.norm_dim
+
 
 	# Compute training data's statistics for improving learning (e.g. weighted Xent)
 	time_data_stats_0 = time.time()
 	activation_ratio = data_statistics.get_activation_ratio(train_folds, dimensions['orch_dim'], parameters)
 	mean_number_units_on = data_statistics.get_mean_number_units_on(train_folds, parameters)
 	mask_inter_orch_NADE = data_statistics.get_mask_inter_orch_NADE(train_folds, dimensions['orch_dim'], parameters)
-	mask_piano_orch_NADE = data_statistics.get_mask_piano_orch_NADE(train_folds, dimensions['piano_dim'], dimensions['orch_dim'], parameters)
+	mask_piano_orch_NADE = data_statistics.get_mask_piano_orch_NADE(train_folds, dimensions['piano_embedded_dim'], dimensions['orch_dim'], parameters)
 	# It's okay to add this value to the parameters now because we don't need it for persistency, 
 	# this is only training regularization
 	model_params['activation_ratio'] = activation_ratio

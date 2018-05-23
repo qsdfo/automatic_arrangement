@@ -31,6 +31,8 @@ def compare_Xent_acc_corresponding_preds(context, batches, save_folder):
     temporal_order = context['temporal_order']
     piano = context['piano']
     orch = context['orch']
+    duration_piano = context["duration_piano"]
+    mask_orch = context["mask_orch"]
     inputs_ph = context['inputs_ph']
     orch_t_ph = context['orch_t_ph']
     preds = context['preds']
@@ -42,7 +44,7 @@ def compare_Xent_acc_corresponding_preds(context, batches, save_folder):
     # Get all the predictions for the whole set
     for batch_index in batches:
         # Build batch
-        piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch, len(batch_index), temporal_order)
+        piano_t, piano_past, piano_future, orch_past, orch_future, orch_t = build_batch(batch_index, piano, orch, duration_piano, mask_orch, len(batch_index), temporal_order)
         # Input nodes
         feed_dict = {piano_t_ph: piano_t,
                     piano_past_ph: piano_past,

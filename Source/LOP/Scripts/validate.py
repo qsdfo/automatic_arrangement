@@ -57,8 +57,8 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, norm
 		#######################################
 		async_valid = pool.apply_async(async_load_mat, (normalizer, next_chunks, parameters))
 
-		piano_transformed, orch, duration_piano, mask_orch = matrices_from_thread
-	
+		piano_input, orch_input, duration_piano, mask_orch = matrices_from_thread
+		
 		#######################################
 		# Loop for short-term validation
 		#######################################
@@ -67,9 +67,9 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, norm
 				if os.path.isdir(DEBUG["plot_nade_ordering_preds"]):
 					shutil.rmtree(DEBUG["plot_nade_ordering_preds"])
 				os.makedirs(DEBUG["plot_nade_ordering_preds"])
-				loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch, PLOTING_FOLDER=DEBUG["plot_nade_ordering_preds"])
+				loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_input, orch_input, duration_piano, mask_orch, PLOTING_FOLDER=DEBUG["plot_nade_ordering_preds"])
 			else:
-				loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_transformed, orch, mask_orch, PLOTING_FOLDER=None)
+				loss_batch, preds_batch, orch_t = trainer.valid_step(sess, batch_index, piano_input, orch_input, duration_piano, mask_orch, PLOTING_FOLDER=None)
 				
 			Xent_batch = binary_cross_entropy(orch_t, preds_batch)
 			accuracy_batch = accuracy_measure(orch_t, preds_batch)
@@ -106,16 +106,23 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, norm
 			# Init
 			# Extract from piano and orchestra the matrices required for the task
 			seq_len = (temporal_order-1) * 2 + parameters["long_range"]
-			piano_dim = piano_transformed.shape[1]
-			orch_dim = orch.shape[1]
+			piano_dim = piano_input.shape[1] 
+			orch_dim = orch_input.shape[1]
 			piano_extracted = np.zeros((len(batch_index), seq_len, piano_dim))
 			orch_extracted = np.zeros((len(batch_index), seq_len, orch_dim))
+			if parameters["duration_piano"]:
+				duration_piano_extracted = np.zeros((len(batch_index), seq_len))
+			else:
+				duration_piano_extracted = None
 			orch_gen = np.zeros((len(batch_index), seq_len, orch_dim))
+
 			for ind_b, this_batch_ind in enumerate(batch_index):
 				start_ind = this_batch_ind-temporal_order+1
 				end_ind = start_ind + seq_len
-				piano_extracted[ind_b] = piano_transformed[start_ind:end_ind,:]
-				orch_extracted[ind_b] = orch[start_ind:end_ind,:]
+				piano_extracted[ind_b] = piano_input[start_ind:end_ind,:]
+				orch_extracted[ind_b] = orch_input[start_ind:end_ind,:]
+				if parameters["duration_piano"]:
+					duration_piano_extracted[ind_b] = duration_piano[start_ind:end_ind]
 			
 			# We know the past orchestration at the beginning...
 			orch_gen[:, :temporal_order-1, :] = orch_extracted[:, :temporal_order-1, :]
@@ -126,7 +133,7 @@ def validate(trainer, sess, init_matrices_validation, valid_splits_batches, norm
 
 			for t in range(temporal_order-1, temporal_order-1+parameters["long_range"]):
 
-				loss_batch, preds_batch, orch_t = trainer.valid_long_range_step(sess, t, piano_extracted, orch_extracted, orch_gen)
+				loss_batch, preds_batch, orch_t = trainer.valid_long_range_step(sess, t, piano_extracted, orch_extracted, orch_gen, duration_piano_extracted)
 				
 				prediction_sampled = np.random.binomial(1, preds_batch)
 				orch_gen[:, t, :] = prediction_sampled

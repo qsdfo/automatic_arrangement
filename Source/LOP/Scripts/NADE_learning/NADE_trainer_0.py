@@ -14,7 +14,6 @@ import random
 import time
 from keras import backend as K
 
-from LOP.Utils.build_batch import build_batch
 from LOP.Scripts.standard_learning.standard_trainer import Standard_trainer
 import LOP.Scripts.config as config
 
@@ -103,7 +102,7 @@ class NADE_trainer_0(Standard_trainer):
 		return
 
 	def training_step(self, sess, batch_index, piano, orch, mask_orch, summarize_dict):
-		feed_dict, orch_t = Standard_trainer.build_feed_dict(self, batch_index, piano, orch, mask_orch)
+		feed_dict, orch_t = Standard_trainer.build_feed_dict(self, batch_index, piano, orch, duration_piano, mask_orch)
 		feed_dict[self.keras_learning_phase] = True
 		
 		# Generate a mask for the input
@@ -233,13 +232,13 @@ class NADE_trainer_0(Standard_trainer):
 		return loss_batch_mean, preds_mean_over_ordering
 
 	def valid_step(self, sess, batch_index, piano, orch, mask_orch):
-		feed_dict, orch_t = Standard_trainer.build_feed_dict(self, batch_index, piano, orch, mask_orch)
+		feed_dict, orch_t = Standard_trainer.build_feed_dict(self, batch_index, piano, orch, duration_piano, mask_orch)
 		loss_batch, preds_batch = self.generate_mean_ordering(sess, feed_dict, orch_t)
 		return loss_batch, preds_batch, orch_t
 
 	def valid_long_range_step(self, sess, t, piano_extracted, orch_extracted, orch_gen):
 		# This takes way too much time in the case of NADE, so just remove it
-		feed_dict, orch_t = Standard_trainer.build_feed_dict_long_range(self, t, piano_extracted, orch_extracted, orch_gen)
+		feed_dict, orch_t = Standard_trainer.build_feed_dict_long_range(self, t, piano_extracted, orch_extracted, orch_gen, duration_piano)
 		# loss_batch, preds_batch  = self.generate_mean_ordering(sess, feed_dict, orch_t)
 		loss_batch = 0.
 		preds_batch = np.zeros_like(orch_t)

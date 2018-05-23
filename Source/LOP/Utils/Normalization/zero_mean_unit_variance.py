@@ -15,7 +15,7 @@ class zero_mean_unit_variance(object):
     """Basically just a wrapper for scikit PCA
     """
     def __init__(self, train_folds, parameters):
-        self.transformed_dim = None
+        self.norm_dim = None
         self.mean = 0
         self.var = 0
         # Init variables
@@ -25,7 +25,7 @@ class zero_mean_unit_variance(object):
     def get_mean(self, train_folds, parameters):
         length = 0
         for path_matrix, indices in train_folds.iteritems():
-            piano, _, _, _, _ = load_matrices(path_matrix, parameters)
+            piano, _, _, _ = load_matrices(path_matrix, parameters)
             if self.transformed_dim is None:
                 self.transformed_dim = piano.shape[1]
             flat_train_indices = [ind for batch in indices for ind in batch]
@@ -38,7 +38,7 @@ class zero_mean_unit_variance(object):
     def get_var(self, train_folds, parameters):
         length = 0
         for path_matrix, indices in train_folds.iteritems():
-            piano, _, _, _, _ = load_matrices(path_matrix, parameters)
+            piano, _, _, _ = load_matrices(path_matrix, parameters)
             flat_train_indices = [ind for batch in indices for ind in batch]
             mat_train = piano[flat_train_indices]
             self.var += np.sum(np.square(mat_train - self.mean), axis=0)

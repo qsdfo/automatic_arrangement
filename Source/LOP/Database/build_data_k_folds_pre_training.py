@@ -33,14 +33,14 @@ import time
 import LOP.Scripts.config as config
 from LOP.Embedding.EmbedModel import embedDenseNet, ChordLevelAttention
 
-DEBUG=True
+DEBUG=False
 ERASE=True
 
 cuda_gpu = torch.cuda.is_available()
 
-def update_instru_mapping(folder_path, instru_mapping, T, quantization):
+def update_instru_mapping(folder_path, instru_mapping, quantization):
 	if not os.path.isdir(folder_path):
-		return instru_mapping, T
+		return instru_mapping
 	
 	# Is there an original piano score or do we have to create it ?
 	num_music_file = max(len(glob.glob(folder_path + '/*.mid')), len(glob.glob(folder_path + '/*.xml')))
@@ -63,14 +63,9 @@ def update_instru_mapping(folder_path, instru_mapping, T, quantization):
 			duration=None
 			logging.warning("Could not read file in " + folder_path)
 	
-	# if len(set(instru_orch.values())) < 4:
-	#     import pdb; pdb.set_trace()
-
 	if duration is None:
 		# Files that could not be aligned
-		return instru_mapping, T
-	
-	T += duration
+		return instru_mapping
 	
 	# Modify the mapping from instrument to indices in pianorolls and pitch bounds
 	instru_mapping = build_data_aux.instru_pitch_range(instrumentation=instru_piano,
@@ -88,10 +83,10 @@ def update_instru_mapping(folder_path, instru_mapping, T, quantization):
 													   instru_mapping=instru_mapping,
 													   )
 
-	return instru_mapping, T
+	return instru_mapping
 
 
-def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path, quantization, temporal_granularity, T_limit, logging=None):
+def get_dim_matrix(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, quantization, temporal_granularity, T_limit, logging=None):
 	logging.info("##########")
 	logging.info("Get dimension informations")
 	# Determine the temporal size of the matrices
@@ -101,48 +96,33 @@ def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path, quant
 	instru_mapping = {}
 	# instru_mapping = {'piano': {'pitch_min': 24, 'pitch_max':117, 'ind_min': 0, 'ind_max': 92},
 	#                         'harp' ... }
-	folder_paths_splits = {}
-	folder_paths_pretraining_splits = {}
-
-	##########################################################################################
-	# Pre-train        
-	split_counter = 0
-	T_pretraining = 0
-	folder_paths_pretraining_split = []
-	for folder_path_pre in folder_paths_pretraining:
-		if T_pretraining>T_limit:
-			folder_paths_pretraining_splits[split_counter] = (T_pretraining, folder_paths_pretraining_split)
-			T_pretraining = 0
-			folder_paths_pretraining_split = []
-			split_counter+=1
-		folder_path_pre = folder_path_pre.rstrip()
-		instru_mapping, T_pretraining = update_instru_mapping(folder_path_pre, instru_mapping, T_pretraining, quantization)
-		folder_paths_pretraining_split.append(folder_path_pre)
-	if len(folder_paths_pretraining) > 0:
-		# Don't forget the last one !
-		folder_paths_pretraining_splits[split_counter] = (T_pretraining, folder_paths_pretraining_split)
-	##########################################################################################
-
-	##########################################################################################
-	# Train
-	split_counter = 0
-	T = 0
-	folder_paths_split = []
-	for folder_path in folder_paths:
-		if T>T_limit:
-			folder_paths_splits[split_counter] = (T, folder_paths_split)
-			T = 0
-			folder_paths_split = []
-			split_counter+=1
-		folder_path = folder_path.rstrip()
-		instru_mapping, T = update_instru_mapping(folder_path, instru_mapping, T, quantization)
-		folder_paths_split.append(folder_path)
-	# Don't forget the last one !
-	if len(folder_paths) > 0:
-		folder_paths_splits[split_counter] = (T, folder_paths_split)
-	##########################################################################################
 	
-	##########################################################################################
+	folder_paths_splits_A = {}
+	folder_paths_splits_B = {}
+	folder_paths_splits_C = {}
+
+	##############################
+	# Subset A
+	for folder_path in subset_A_paths:
+		folder_path = folder_path.rstrip()
+		instru_mapping = update_instru_mapping(folder_path, instru_mapping, quantization)
+	##############################
+
+	##############################
+	# Subset B
+	for folder_path in subset_B_paths:
+		folder_path = folder_path.rstrip()
+		instru_mapping = update_instru_mapping(folder_path, instru_mapping, quantization)
+	##############################
+
+	##############################
+	# Subset C
+	for folder_path in subset_C_paths:
+		folder_path = folder_path.rstrip()
+		instru_mapping = update_instru_mapping(folder_path, instru_mapping, quantization)
+	##############################
+
+	##############################
 	# Build the index_min and index_max in the instru_mapping dictionary
 	counter = 0
 	for k, v in instru_mapping.items():
@@ -157,16 +137,16 @@ def get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path, quant
 		index_max = counter
 		v['index_min'] = index_min
 		v['index_max'] = index_max
+	##############################
 
-	# Instanciate the matrices
+	##############################
+	# Save the parameters
 	temp = {}
 	temp['instru_mapping'] = instru_mapping
 	temp['quantization'] = quantization
-	temp['folder_paths_splits'] = folder_paths_splits
-	temp['folder_paths_pretraining_splits'] = folder_paths_pretraining_splits
 	temp['N_orchestra'] = counter
 	pkl.dump(temp, open(meta_info_path, 'wb'))
-	##########################################################################################
+	##############################
 
 	return
 
@@ -176,7 +156,7 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 	train_and_valid_files={}
 
 	for folder_path in folder_paths:
-		#############
+		###############################
 		# Read file
 		folder_path = folder_path.rstrip()
 		logging.info(" : " + folder_path)
@@ -224,11 +204,10 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 		assert (pr_orch.min() >= 0)
 		assert (pr_piano.max() <= 1)
 		assert (pr_piano.min() >= 0)
+		###############################
 		
-		#######################################
+		###############################
 		# Embed piano
-		#######################################
-		# Init matices
 		piano_embedded = []
 		len_piano = len(pr_piano)
 		batch_size = 500  			# forced to batch for memory issues
@@ -248,8 +227,9 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 				piano_embedded.append(piano_embedded_TT.numpy())
 			start_batch_index+=batch_size
 		piano_embedded = np.concatenate(piano_embedded)
+		###############################
 
-		#############
+		###############################
 		# Split
 		last_index = pr_piano.shape[0]
 		start_indices = range(0, pr_piano.shape[0], chunk_size)
@@ -286,18 +266,18 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 				train_and_valid_files[folder_path].append(this_split_folder)
 
 		file_counter+=1
+		###############################
 
 	return train_and_valid_files, train_only_files
 
-def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantization, temporal_granularity, binary_piano, binary_orch, store_folder, logging=None):
-
+def build_data(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, quantization, temporal_granularity, binary_piano, binary_orch, store_folder, logging=None):
 	# Get dimensions
 	if DEBUG:
 		T_limit = 20000
 	else:
 		T_limit = 1e6
 	
-	get_dim_matrix(folder_paths, folder_paths_pretraining, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
+	get_dim_matrix(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
 
 	logging.info("##########")
 	logging.info("Build data")
@@ -305,6 +285,7 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 	statistics = {}
 	statistics_pretraining = {}
 
+	###############################
 	# Load embedding model
 	embedding_path = config.database_embedding() + "/Model_complete_JSB_3_DICT.pth"
 	embedding_model = embedDenseNet(380, 12, (1500,500), 100, 1500, 2, 3, 12, 0.5, 0, False, True)
@@ -312,7 +293,10 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 		embedding_model.cuda()
 	embedding_model.load_state_dict(torch.load(embedding_path))
 	embedding_path
+	###############################
 
+	###############################
+	# Load temp.pkl
 	temp = pkl.load(open(meta_info_path, 'rb'))
 	instru_mapping = temp['instru_mapping']
 	quantization = temp['quantization']
@@ -320,7 +304,9 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 	N_piano = instru_mapping['Piano']['index_max']
 	# Remplacer ça par le load d'un .pkl avec les arguments utiulisés dans le main
 	N_piano_embedded = 100
+	###############################
 
+	###############################
 	# Build the pitch and instru indicator vectors
 	# We use integer to identify pitches and instrument
 	# Used for NADE rule-based masking, not for reconstruction
@@ -337,25 +323,29 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 	np.save(store_folder + '/pitch_orch.npy', pitch_orch)
 	np.save(store_folder + '/instru_orch.npy', instru_orch)
 	np.save(store_folder + '/pitch_piano.npy', pitch_piano)
+	###############################
 
 	###################################################################################################
 	# Build matrices
 	chunk_size = config.build_parameters()["chunk_size"]
-	training_split_folder = os.path.join(store_folder, "split_matrices")
-	os.mkdir(training_split_folder)
-	pretraining_split_folder = os.path.join(store_folder, "split_matrices_pretraining")
-	os.mkdir(pretraining_split_folder)
-
-	train_and_valid_files, train_only_files = build_split_matrices(folder_paths, training_split_folder, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model,
-		binary_piano, binary_orch)
-	pre_train_and_valid_files, pre_train_only_files = build_split_matrices(folder_paths_pretraining, pretraining_split_folder, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model,
-		binary_piano, binary_orch)
+	split_folder_A = os.path.join(store_folder, "A")
+	os.mkdir(split_folder_A)
+	split_folder_B = os.path.join(store_folder, "B")
+	os.mkdir(split_folder_B)
+	split_folder_C = os.path.join(store_folder, "C")
+	os.mkdir(split_folder_C)
+	
+	train_and_valid_A, train_only_A = build_split_matrices(subset_A_paths, split_folder_A, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model, binary_piano, binary_orch)
+	train_and_valid_B, train_only_B = build_split_matrices(subset_B_paths, split_folder_B, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model, binary_piano, binary_orch)
+	train_and_valid_C, train_only_C = build_split_matrices(subset_C_paths, split_folder_C, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model, binary_piano, binary_orch)
 
 	# Save files' lists
-	pkl.dump(train_and_valid_files, open(store_folder + '/train_and_valid_files.pkl', 'wb'))
-	pkl.dump(train_only_files, open(store_folder + '/train_only_files.pkl', 'wb'))
-	pkl.dump(pre_train_and_valid_files, open(store_folder + '/train_and_valid_files_pretraining.pkl', 'wb'))
-	pkl.dump(pre_train_only_files, open(store_folder + '/train_only_files_pretraining.pkl', 'wb'))
+	pkl.dump(train_and_valid_A, open(store_folder + '/train_and_valid_A.pkl', 'wb'))
+	pkl.dump(train_only_A, open(store_folder + '/train_only_A.pkl', 'wb'))
+	pkl.dump(train_and_valid_B, open(store_folder + '/train_and_valid_B.pkl', 'wb'))
+	pkl.dump(train_only_B, open(store_folder + '/train_only_B.pkl', 'wb'))
+	pkl.dump(train_and_valid_B, open(store_folder + '/train_and_valid_B.pkl', 'wb'))
+	pkl.dump(train_only_B, open(store_folder + '/train_only_B.pkl', 'wb'))
 
 	metadata = {}
 	metadata['quantization'] = quantization
@@ -397,50 +387,46 @@ if __name__ == '__main__':
 	# because train is data augmented but not test and validate
 	temporal_granularity='event_level'
 	quantization=8
-	pretraining_bool=False
 	binary_piano=True
 	binary_orch=True
 
 	# Database have to be built jointly so that the ranges match
-	DATABASE_PATH = config.database_root()
-	DATABASE_PATH_PRETRAINING = config.database_pretraining_root()
+	database_orchestration = config.database_root()
+	database_arrangement = config.database_pretraining_root()
 	
-	if DEBUG:
-		DATABASE_NAMES = [DATABASE_PATH + "/debug"] #, "imslp"]
-	else:
-		DATABASE_NAMES = [
-			DATABASE_PATH + "/bouliane", 
-			DATABASE_PATH + "/hand_picked_Spotify", 
-			DATABASE_PATH + "/liszt_classical_archives", 
-			DATABASE_PATH + "/imslp"
-			# DATABASE_PATH_PRETRAINING + "/OpenMusicScores",
-			# DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
-			# DATABASE_PATH_PRETRAINING + "/Musicalion", 
-			# DATABASE_PATH_PRETRAINING + "/Mutopia"
-		]
+	##############################
+	# Subsets
+	subset_A = [
+		database_orchestration + "/liszt_classical_archives", 
+	]
+
+	subset_B = [
+		database_orchestration + "/bouliane", 
+		# database_orchestration + "/hand_picked_Spotify", 
+		# database_orchestration + "/imslp"
+	]
 	
+	subset_C = [
+		# database_arrangement + "/OpenMusicScores",
+		# database_arrangement + "/Kunstderfuge", 
+		# database_arrangement + "/Musicalion", 
+		database_arrangement + "/Mutopia"
+	]
+	##############################
+
 	if DEBUG:
-		DATABASE_NAMES_PRETRAINING = [DATABASE_PATH_PRETRAINING + "/debug"]
-	else:
-		DATABASE_NAMES_PRETRAINING = [
-			DATABASE_PATH_PRETRAINING + "/OpenMusicScores",
-			DATABASE_PATH_PRETRAINING + "/Kunstderfuge", 
-			DATABASE_PATH_PRETRAINING + "/Musicalion", 
-			DATABASE_PATH_PRETRAINING + "/Mutopia"
-		]
+		subset_A = [database_orchestration + "/debug"]
+		subset_B = [database_orchestration + "/debug"] 
+		subset_C = [database_arrangement + "/debug"]
 
 	data_folder = config.data_root() + '/Data'
 	if DEBUG:
 		data_folder += '_DEBUG'
-	if pretraining_bool:
-		data_folder += '_pretraining'
 	if binary_piano:
 		data_folder += '_bp'
 	if binary_orch:
 		data_folder += '_bo'
 	data_folder += '_tempGran' + str(quantization)
-
-	# data_folder += '_pretraining_only'
 	
 	if ERASE:
 		if os.path.isdir(data_folder):
@@ -456,25 +442,31 @@ if __name__ == '__main__':
 				folder_paths.append(this_path)
 		return folder_paths
 
-	folder_paths = []
-	for path in DATABASE_NAMES:
-		folder_paths += build_filepaths_list(path)
+	subset_A_paths = []
+	for path in subset_A:
+		subset_A_paths += build_filepaths_list(path)
 
-	folder_paths_pretraining = []
-	if pretraining_bool:
-		for path in DATABASE_NAMES_PRETRAINING:
-			folder_paths_pretraining += build_filepaths_list(path)
+	subset_B_paths = []
+	for path in subset_B:
+		subset_B_paths += build_filepaths_list(path)
+
+	subset_C_paths = []
+	for path in subset_C:
+		subset_C_paths += build_filepaths_list(path)
 
 	# Remove garbage tracks
 	avoid_tracks_list = avoid_tracks.avoid_tracks()
-	folder_paths = [e for e in folder_paths if e not in avoid_tracks_list]
-	folder_paths_pretraining = [e for e in folder_paths_pretraining if e not in avoid_tracks_list]
+	subset_A_paths = [e for e in subset_A_paths if e not in avoid_tracks_list]
+	subset_B_paths = [e for e in subset_B_paths if e not in avoid_tracks_list]
+	subset_C_paths = [e for e in subset_C_paths if e not in avoid_tracks_list]
 
-	print("Training : " + str(len(folder_paths)))
-	print("Pretraining : " + str(len(folder_paths_pretraining)))
+	print("Subset A : " + str(len(subset_A_paths)))
+	print("Subset B : " + str(len(subset_B_paths)))
+	print("Subset C : " + str(len(subset_C_paths)))
 
-	build_data(folder_paths=folder_paths,
-			   folder_paths_pretraining=folder_paths_pretraining,
+	build_data(subset_A_paths=subset_A_paths,
+			   subset_B_paths=subset_B_paths,
+			   subset_C_paths=subset_C_paths,
 			   meta_info_path=data_folder + '/temp.pkl',
 			   quantization=quantization,
 			   temporal_granularity=temporal_granularity,

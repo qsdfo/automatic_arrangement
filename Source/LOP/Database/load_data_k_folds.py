@@ -7,6 +7,7 @@ import LOP.Scripts.config
 import LOP.Database.avoid_tracks
 import pickle as pkl
 
+
 def build_folds(store_folder, k_folds=10, temporal_order=20, train_batch_size=100, long_range_pred=1, training_mode=0, num_max_contiguous_blocks=100,
     random_seed=None, logger_load=None):
 
@@ -77,7 +78,7 @@ def build_one_fold(k, k_folds, list_files_valid, list_files_train_only, train_an
     this_valid_names=[]
     this_test_names=[]
 
-    valid_batch_size = 10000 # Still se batches to avoid OOM errors
+    valid_batch_size = 5000 # Still se batches to avoid OOM errors
         
     for counter, filename in enumerate(list_files_valid):
         counter_fold = counter + k

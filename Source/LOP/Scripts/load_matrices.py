@@ -54,10 +54,10 @@ def load_matrices(chunk_path_list, parameters):
     return piano_input_cropped, orch_transformed_cropped, duration_piano_cropped, mask_orch_cropped
 
 def load_matrix_NO_PROCESSING(block_folder, duration_piano_bool, mask_orch_bool):    
-    piano_file = os.path.join(block_folder, 'pr_piano_transformed.npy')
+    piano_file = os.path.join(block_folder, 'pr_piano.npy')
     orch_file = re.sub('piano', 'orch', piano_file)
-    piano_embedded_file = re.sub('piano_transformed', 'piano_embedded', piano_file)
-    duration_piano_file = re.sub('pr_piano_transformed', 'duration_piano', piano_file)
+    piano_embedded_file = re.sub('piano', 'piano_embedded', piano_file)
+    duration_piano_file = re.sub('pr_piano', 'duration_piano', piano_file)
 
     pr_piano_transformed = np.load(piano_file)
     pr_piano_embedded = np.load(piano_embedded_file)

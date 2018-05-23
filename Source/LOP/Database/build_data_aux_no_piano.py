@@ -53,7 +53,7 @@ def get_instru_and_pr_from_folder_path_NP(folder_path, quantization):
     return pianoroll, instru_simple, total_time, name
     
     
-def process_folder_NP(folder_path, quantization, temporal_granularity):
+def process_folder_NP(folder_path, quantization, binary_piano, binary_orch, temporal_granularity):
     """Get the pianoroll from a folder path with containing only an orchestral score. 
     Piano score is created by simply crushing all the instruments on 88 pitches
     """

@@ -83,7 +83,7 @@ def check_orchestration_alignment(path_db, subfolder_names, temporal_granularity
                 continue
 
             pr_piano_no_map, _, _, _, _, pr_orchestra_no_map, _, _, instru_orch, _, duration =\
-                build_data_aux.process_folder(folder_path, quantization, unit_type, temporal_granularity, gapopen, gapextend)
+                build_data_aux.process_folder(folder_path, quantization, binary_piano, binary_orch, temporal_granularity, gapopen, gapextend)
 
             # Apply the mapping
             pr_piano = {}

@@ -13,6 +13,7 @@ from LOP_database.utils.event_level import get_event_ind_dict
 from LOP_database.utils.pianoroll_processing import sum_along_instru_dim
 from LOP_database.utils.align_pianorolls import align_pianorolls
 from LOP.Database.simplify_instrumentation import get_simplify_mapping
+from LOP.Utils.process_data import process_data_piano, process_data_orch
 
 def get_instru_and_pr_from_folder_path(folder_path, quantization, clip=True):
     # There should be 2 files
@@ -115,36 +116,31 @@ def clean_event(event, trace, trace_prod):
             counter +=1
     return new_event
 
-
-def discriminate_between_piano_and_orchestra(pr0, event0, duration0, instru0, name0, pr1, event1, duration1, instru1, name1, duration):
+def discriminate_between_piano_and_orchestra(pr0, instru0, T0, name0, pr1, instru1, T1, name1):
     if len(set(instru0.values())) > len(set(instru1.values())):
         pr_orch = pr0
-        event_orch = event0
-        duration_orch = duration0
+        T_orch = T0
         instru_orch = instru0
         name_orch = name0
         #
         pr_piano = pr1
-        event_piano = event1
-        duration_piano = duration1
+        T_piano = T1
         instru_piano = instru1
         name_piano = name1
     elif len(set(instru0.values())) < len(set(instru1.values())):
         pr_orch = pr1
-        event_orch = event1
-        duration_orch = duration1
+        T_orch = T1
         instru_orch = instru1
         name_orch = name1
         #
         pr_piano = pr0
-        event_piano = event0
-        duration_piano = duration0
+        T_piano = T0
         instru_piano = instru0
         name_piano = name0
     else:
         # Both tracks have the same number of instruments
-        return [None] * 11
-    return pr_piano, event_piano, duration_piano, instru_piano, name_piano, pr_orch, event_orch, duration_orch, instru_orch, name_orch, duration
+        return [None] * 8
+    return pr_piano, instru_piano, T_piano, name_piano, pr_orch, instru_orch, T_orch, name_orch
 
 
 def cast_small_pr_into_big_pr(pr_small, instru, time, duration, instru_mapping, pr_big):
@@ -201,14 +197,20 @@ def simplify_instrumentation(instru_name_complex):
     link = " and "
     return link.join(instru_name_unmixed_simple)
 
-def process_folder(folder_path, quantization, temporal_granularity, gapopen=3, gapextend=1):
+def process_folder(folder_path, quantization, binary_piano, binary_orch, temporal_granularity, gapopen=3, gapextend=1):
     # Get instrus and prs from a folder name name
     pr0, instru0, T0, name0, pr1, instru1, T1, name1 = get_instru_and_pr_from_folder_path(folder_path, quantization)
 
+    pr_piano, instru_piano, T_piano, name_piano, pr_orch, instru_orch, T_orch, name_orch=\
+            discriminate_between_piano_and_orchestra(pr0, instru0, T0, name0, pr1, instru1, T1, name1)
+
+    pr_piano = process_data_piano(pr_piano, binary_piano)
+    pr_orch = process_data_orch(pr_orch, binary_orch)
+
     # Temporal granularity
     if temporal_granularity == 'event_level':
-        event_0 = get_event_ind_dict(pr0)
-        event_1 = get_event_ind_dict(pr1)
+        event_piano = get_event_ind_dict(pr_piano)
+        event_orch = get_event_ind_dict(pr_orch)
         def get_duration(event, last_time):
             start_ind = event[:]
             end_ind = np.zeros(event.shape, dtype=np.int)
@@ -216,46 +218,40 @@ def process_folder(folder_path, quantization, temporal_granularity, gapopen=3, g
             end_ind[-1] = last_time
             duration_list = end_ind - start_ind
             return duration_list
-        duration0 = get_duration(event_0, T0)
-        duration1 = get_duration(event_1, T1)
+        duration_piano = get_duration(event_piano, T_piano)
+        duration_orch = get_duration(event_orch, T_orch)
         # Get the duration of each event
-        pr0 = warp_pr_aux(pr0, event_0)
-        pr1 = warp_pr_aux(pr1, event_1)
+        pr_piano = warp_pr_aux(pr_piano, event_piano)
+        pr_orch = warp_pr_aux(pr_orch, event_orch)
     else:
-        event_0 = None
-        event_1 = None
+        event_piano = None
+        event_orch = None
 
     # Align tracks
-    pr0_aligned, trace_0, pr1_aligned, trace_1, trace_prod, total_time = align_pianorolls(pr0, pr1, gapopen, gapextend)
+    piano_aligned, trace_piano, orch_aligned, trace_orch, trace_prod, total_time = align_pianorolls(pr_piano, pr_orch, gapopen, gapextend)
     
     # Clean events
     if (temporal_granularity == 'event_level'):
-        if (trace_0 is None) or (trace_1 is None):
-            event0_aligned = None
-            event1_aligned = None
-            duration0_aligned = None
-            duration1_aligned = None
+        if (trace_piano is None) or (trace_orch is None):
+            event_piano_aligned = None
+            event_orch_aligned = None
+            duration_piano_aligned = None
+            duration_orch_aligned = None
         else:
-            event0_aligned = clean_event(event_0, trace_0, trace_prod)
-            event1_aligned = clean_event(event_1, trace_1, trace_prod)
-            duration0_aligned = clean_event(duration0, trace_0, trace_prod)
-            duration1_aligned = clean_event(duration1, trace_1, trace_prod)
+            event_piano_aligned = clean_event(event_piano, trace_piano, trace_prod)
+            event_orch_aligned = clean_event(event_orch, trace_orch, trace_prod)
+            duration_piano_aligned = clean_event(duration_piano, trace_piano, trace_prod)
+            duration_orch_aligned = clean_event(duration_orch, trace_orch, trace_prod)
     else:
-        event0_aligned = []
-        event1_aligned = []
-        duration0_aligned = []
-        duration1_aligned = []
+        event_piano_aligned = []
+        event_orch_aligned = []
+        duration_piano_aligned = []
+        duration_orch_aligned = []
 
-    # Find which pr is orchestra, which one is piano
-    pr_piano, event_piano, duration_piano, instru_piano, name_piano,\
-        pr_orch, event_orch, duration_orch, instru_orch, name_orch,\
-        total_time =\
-            discriminate_between_piano_and_orchestra(pr0_aligned, event0_aligned, duration0_aligned, instru0, name0,
-                                                 pr1_aligned, event1_aligned, duration1_aligned, instru1, name1,
-                                                 total_time)
-
-    return pr_piano, event_piano, duration_piano, instru_piano, name_piano, pr_orch, event_orch, duration_orch, instru_orch, name_orch, total_time
-
+    return piano_aligned, event_piano, duration_piano, instru_piano, name_piano, orch_aligned, event_orch, duration_orch, instru_orch, name_orch, total_time
 
 if __name__ == '__main__':
-    process_folder('/home/aciditeam-leo/Aciditeam/database/Orchestration/LOP_database_30_06_17/imslp/72', 8, 'event_level')
+    pr_piano, event_piano, duration_piano, instru_piano, name_piano, pr_orch, event_orch, duration_orch, instru_orch, name_orch, total_time = process_folder('/Users/leo/Recherche/automatic_orchestration/database/Orchestration/LOP_database_06_09_17/bouliane/0', 8, True, True, 'event_level')
+
+    
+

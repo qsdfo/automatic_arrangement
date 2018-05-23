@@ -33,10 +33,10 @@ def build_split_matrices(folder_paths, quantization, temporal_granularity):
 		# Get pr, warped and duration
 		if is_piano:
 			new_pr_piano, _, _, _, new_name_piano, _, _, _, _, _, duration\
-				= build_data_aux.process_folder(folder_path, quantization, temporal_granularity, gapopen=3, gapextend=1)
+				= build_data_aux.process_folder(folder_path, quantization, binary_piano, binary_orch, temporal_granularity, gapopen=3, gapextend=1)
 		else:
 			new_pr_piano, _, _, _, new_name_piano, _, _, _, _, _, duration\
-				= build_data_aux_no_piano.process_folder_NP(folder_path, quantization, temporal_granularity)
+				= build_data_aux_no_piano.process_folder_NP(folder_path, quantization, binary_piano, binary_orch, temporal_granularity)
 
 		if new_pr_piano is None:
 			print("FAIL !")

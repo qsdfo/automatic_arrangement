@@ -26,14 +26,12 @@ def get_number_of_file_per_composer(files):
                 orch_composer = row['orch_composer']
                 piano_composer = row['solo_composer']
                 path = DATABASE_PATH + '/' + row['path']
-                # Read midi files
-                pianoroll_0, instru_0, _, _, pianoroll_1, instru_1, _, _ = build_data_aux.get_instru_and_pr_from_folder_path(path, 100)
-                pr_piano, _, _, _,\
-                pr_orch, _, _, _,\
-                _ =\
-                build_data_aux.discriminate_between_piano_and_orchestra(pianoroll_0, 0, instru_0, 0,
-                                                         pianoroll_1, 0, instru_1, 0,
-                                                         0)
+                # Get instrus and prs from a folder name name
+                pr0, instru0, T0, name0, pr1, instru1, T1, name1 = get_instru_and_pr_from_folder_path(folder_path, quantization)
+
+                pr_piano, _, _, _, pr_orch, _, _, _=\
+                    discriminate_between_piano_and_orchestra(pr0, instru0, T0, name0, pr1, instru1, T1, name1)
+
 
                 if (pr_piano == None) or (pr_orch == None):
                     print("Skipping " + path)

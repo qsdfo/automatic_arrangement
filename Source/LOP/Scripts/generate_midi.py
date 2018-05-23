@@ -25,17 +25,19 @@ from LOP_database.utils.reconstruct_pr import instrument_reconstruction, instrum
 # Embeddings
 from LOP.Embedding.EmbedModel import embedDenseNet, ChordLevelAttention
 
-def load_from_pair(tracks_path, quantization, temporal_granularity):
+def load_from_pair(tracks_path, quantization, binarize_piano, binarize_orch, temporal_granularity):
     ############################################################
     # Read piano midi file and orchestra score if defined
     ############################################################
     pr_piano, event_piano, duration_piano, _, name_piano, pr_orch, _, _, instru_orch, _, duration =\
-        build_data_aux.process_folder(tracks_path, quantization, temporal_granularity)
+        build_data_aux.process_folder(tracks_path, quantization, binarize_piano, binarize_orch, temporal_granularity)
     return pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration
 
-def load_solo(piano_midi, quantization, temporal_granularity):
+def load_solo(piano_midi, quantization, binarize_piano, temporal_granularity):
     # Read piano pr
     pr_piano = Read_midi(path, quantization).read_file()
+    # Process pr_piano
+    pr_piano = process_data_piano(pr_piano, binarize_piano)
     # Take event level representation
     if temporal_granularity == 'event_level':
         event_piano = get_event_ind_dict(pr_piano)
@@ -67,7 +69,6 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
         Whether rythmic reconstrcution from event-level representation to frame-level reconstrcution is performed or not. If true is selected, the rhtyhmic structure of the original piano score is used.
     logger_generate : logger
         Instanciation of logging. Can be None
-    
     """
 
     logger_generate.info("#############################################")
@@ -90,9 +91,9 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     ########################
     # Load data
     if re.search(r'mid$', score_source):
-        pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration = load_solo(score_source, quantization, temporal_granularity)
+        pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration = load_solo(score_source, quantization, parameters["binarize_piano"], parameters["binarize_orch"], temporal_granularity)
     else:
-        pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration = load_from_pair(score_source, quantization, temporal_granularity)
+        pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration = load_from_pair(score_source, quantization, parameters["binarize_piano"], temporal_granularity)
     ########################
 
     ########################

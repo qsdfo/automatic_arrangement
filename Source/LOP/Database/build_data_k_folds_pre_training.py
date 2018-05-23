@@ -31,14 +31,14 @@ import sys
 import time
 
 import LOP.Scripts.config as config
-from LOP.Utils.process_data import process_data_piano, process_data_orch
 from LOP.Embedding.EmbedModel import embedDenseNet, ChordLevelAttention
 
-DEBUG=False
+DEBUG=True
 ERASE=True
 
+cuda_gpu = torch.cuda.is_available()
+
 def update_instru_mapping(folder_path, instru_mapping, T, quantization):
-	logging.info(folder_path)
 	if not os.path.isdir(folder_path):
 		return instru_mapping, T
 	
@@ -54,11 +54,11 @@ def update_instru_mapping(folder_path, instru_mapping, T, quantization):
 	# Read pr
 	if is_piano:
 		pr_piano, _, _, instru_piano, _, pr_orch, _, _, instru_orch, _, duration =\
-			build_data_aux.process_folder(folder_path, quantization, temporal_granularity, gapopen=3, gapextend=1)
+			build_data_aux.process_folder(folder_path, quantization, binary_piano, binary_orch, temporal_granularity, gapopen=3, gapextend=1)
 	else:
 		try:
 			pr_piano, _, _, instru_piano, _, pr_orch, _, _, instru_orch, _, duration =\
-				build_data_aux_no_piano.process_folder_NP(folder_path, quantization, temporal_granularity)
+				build_data_aux_no_piano.process_folder_NP(folder_path, quantization, binary_piano, binary_orch, temporal_granularity)
 		except:
 			duration=None
 			logging.warning("Could not read file in " + folder_path)
@@ -200,11 +200,11 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 		# Get pr, warped and duration
 		if is_piano:
 			new_pr_piano, _, new_duration_piano, _, new_name_piano, new_pr_orchestra, _, new_duration_orch, new_instru_orchestra, _, duration\
-				= build_data_aux.process_folder(folder_path, quantization, temporal_granularity, gapopen=3, gapextend=1)
+				= build_data_aux.process_folder(folder_path, quantization, binary_piano, binary_orch, temporal_granularity, gapopen=3, gapextend=1)
 		else:
 			try:
 				new_pr_piano, _, new_duration_piano, _, new_name_piano, new_pr_orchestra, _, new_duration_orch, new_instru_orchestra, _, duration\
-					= build_data_aux_no_piano.process_folder_NP(folder_path, quantization, temporal_granularity)
+					= build_data_aux_no_piano.process_folder_NP(folder_path, quantization, binary_piano, binary_orch, temporal_granularity)
 			except:
 				logging.warning("Could not read file in " + folder_path)
 				continue
@@ -220,25 +220,32 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 		pr_orch = build_data_aux.cast_small_pr_into_big_pr(new_pr_orchestra, new_instru_orchestra, 0, duration, instru_mapping, np.zeros((duration, N_orchestra)))
 		pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, 0, duration, instru_mapping, np.zeros((duration, N_piano)))
 
-		pr_piano_transformed = process_data_piano(pr_piano, binary_piano)
-		pr_orch_transformed = process_data_orch(pr_orch, binary_orch)
-
+		assert (pr_orch.max() <= 1)
+		assert (pr_orch.min() >= 0)
+		assert (pr_piano.max() <= 1)
+		assert (pr_piano.min() >= 0)
+		
 		#######################################
 		# Embed piano
 		#######################################
 		# Init matices
 		piano_embedded = []
-		len_piano = len(pr_piano_transformed)
+		len_piano = len(pr_piano)
 		batch_size = 500  			# forced to batch for memory issues
 		start_batch_index = 0
 		while start_batch_index < len_piano:
 			end_batch_index = min(start_batch_index+batch_size, len_piano)
 			this_batch_size = end_batch_index-start_batch_index
 			piano_resize_emb = np.zeros((this_batch_size, 1, 128)) # Embeddings accetp size 128 samples
-			piano_resize_emb[:, 0, instru_mapping['Piano']['pitch_min']:instru_mapping['Piano']['pitch_max']] = pr_piano_transformed[start_batch_index:end_batch_index]
-			piano_resize_emb_TT = torch.tensor(piano_resize_emb).cuda()
+			piano_resize_emb[:, 0, instru_mapping['Piano']['pitch_min']:instru_mapping['Piano']['pitch_max']] = pr_piano[start_batch_index:end_batch_index]
+			piano_resize_emb_TT = torch.tensor(piano_resize_emb)
+			if cuda_gpu:
+				piano_resize_emb_TT.cuda()
 			piano_embedded_TT = embedding_model(piano_resize_emb_TT.float(), 0)
-			piano_embedded.append(piano_embedded_TT.cpu().numpy())
+			if cuda_gpu:
+				piano_embedded.append(piano_embedded_TT.cpu().numpy())
+			else:
+				piano_embedded.append(piano_embedded_TT.numpy())
 			start_batch_index+=batch_size
 		piano_embedded = np.concatenate(piano_embedded)
 
@@ -252,17 +259,17 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 			os.mkdir(this_split_folder)
 			end_index = min(start_index + chunk_size, last_index)
 		
-			section = pr_piano_transformed[start_index: end_index]
+			section = pr_piano[start_index: end_index]
 			section_cast = section.astype(np.float32)
-			np.save(this_split_folder + '/pr_piano_transformed.npy', section_cast)
+			np.save(this_split_folder + '/pr_piano.npy', section_cast)
 
 			section = piano_embedded[start_index: end_index]
 			section_cast = section.astype(np.float32)
 			np.save(this_split_folder + '/pr_piano_embedded.npy', section_cast)
 
-			section = pr_orch_transformed[start_index: end_index]
+			section = pr_orch[start_index: end_index]
 			section_cast = section.astype(np.float32)
-			np.save(this_split_folder + '/pr_orch_transformed.npy', section_cast)
+			np.save(this_split_folder + '/pr_orch.npy', section_cast)
 
 			section = new_duration_piano[start_index: end_index]
 			section_cast = np.asarray(section, dtype=np.int8)
@@ -299,8 +306,10 @@ def build_data(folder_paths, folder_paths_pretraining, meta_info_path, quantizat
 	statistics_pretraining = {}
 
 	# Load embedding model
-	embedding_path = "/fast-1/leo/database/Orchestration/Embeddings/embedding_mathieu/Model_complete_JSB_3_DICT.pth"
-	embedding_model = embedDenseNet(380, 12, (1500,500), 100, 1500, 2, 3, 12, 0.5, 0, False, True).cuda()
+	embedding_path = config.database_embedding() + "/Model_complete_JSB_3_DICT.pth"
+	embedding_model = embedDenseNet(380, 12, (1500,500), 100, 1500, 2, 3, 12, 0.5, 0, False, True)
+	if cuda_gpu:
+		embedding_model.cuda()
 	embedding_model.load_state_dict(torch.load(embedding_path))
 	embedding_path
 

@@ -34,7 +34,7 @@ import LOP.Scripts.config as config
 from LOP.Embedding.EmbedModel import embedDenseNet, ChordLevelAttention
 
 DEBUG=False
-ERASE=True
+ERASE=False
 
 cuda_gpu = torch.cuda.is_available()
 
@@ -86,7 +86,7 @@ def update_instru_mapping(folder_path, instru_mapping, quantization):
 	return instru_mapping
 
 
-def get_dim_matrix(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, quantization, temporal_granularity, T_limit, logging=None):
+def build_instru_mapping(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, quantization, temporal_granularity, T_limit, logging=None):
 	logging.info("##########")
 	logging.info("Get dimension informations")
 	# Determine the temporal size of the matrices
@@ -219,7 +219,7 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 			piano_resize_emb[:, 0, instru_mapping['Piano']['pitch_min']:instru_mapping['Piano']['pitch_max']] = pr_piano[start_batch_index:end_batch_index]
 			piano_resize_emb_TT = torch.tensor(piano_resize_emb)
 			if cuda_gpu:
-				piano_resize_emb_TT.cuda()
+				piano_resize_emb_TT = piano_resize_emb_TT.cuda()
 			piano_embedded_TT = embedding_model(piano_resize_emb_TT.float(), 0)
 			if cuda_gpu:
 				piano_embedded.append(piano_embedded_TT.cpu().numpy())
@@ -277,7 +277,7 @@ def build_data(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, q
 	else:
 		T_limit = 1e6
 	
-	get_dim_matrix(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
+	# build_instru_mapping(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
 
 	logging.info("##########")
 	logging.info("Build data")
@@ -292,7 +292,6 @@ def build_data(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, q
 	if cuda_gpu:
 		embedding_model.cuda()
 	embedding_model.load_state_dict(torch.load(embedding_path))
-	embedding_path
 	###############################
 
 	###############################

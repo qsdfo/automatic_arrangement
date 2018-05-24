@@ -436,8 +436,10 @@ if __name__ == '__main__':
 		data_folder += '_DEBUG'
 	if binary_piano:
 		data_folder += '_bp'
+		open('binary_piano', 'wb').close()
 	if binary_orch:
 		data_folder += '_bo'
+		open('binary_orch', 'wb').close()
 	data_folder += '_tempGran' + str(quantization)
 	
 	if ERASE:

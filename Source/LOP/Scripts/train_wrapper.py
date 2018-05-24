@@ -82,8 +82,8 @@ def train_wrapper(parameters, model_params,
 	n_test_batches, n_test_points = count_batch(test_folds)
 
 	logger.info('# Num train batch :  {}'.format(n_train_batches))
-	logger.info('# Num val points :  {}'.format(n_val_points))
-	logger.info('# Num test points :  {}'.format(n_test_points))
+	logger.info('# Num val batch :  {}'.format(n_val_batches))
+	logger.info('# Num test batch :  {}'.format(n_test_batches))
 
 	parameters['n_train_batches'] = n_train_batches
 	parameters['n_val_batches'] = n_val_batches

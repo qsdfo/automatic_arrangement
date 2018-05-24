@@ -14,7 +14,7 @@ import numpy as np
 import hyperopt
 import copy
 
-from import_functions import import_model
+from import_functions import import_model, import_training_strategy
 import config
 
 GENERATE=True
@@ -38,6 +38,15 @@ def main():
 
 	# Parameters
 	parameters = config.parameters(result_folder)
+	if os.path.isfile(DATABASE_PATH + '/binary_piano'):
+		parameters["binarize_piano"] = True
+	else:
+		parameters["binarize_piano"] = False
+	if os.path.isfile(DATABASE_PATH + '/binary_orch'):
+		parameters["binarize_orch"] = True 
+	else:
+		parameters["binarize_orch"] = False
+
 	parameters["model_name"] = model_name
 
 	# Load the database metadata and add them to the script parameters to keep a record of the data processing pipeline
@@ -250,8 +259,8 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 
 	# Training procedure
 	# Structure :
-	# 	K_folds[fold_index]['train','test' or 'valid'][index split]['batches' : [[234,14,54..],[..],[..]], 'chunks_folders':[path_0,path_1,..]]
-	from LOP.Scripts.training_strategies.only_A import TS_only_A as Training_strategy
+	# 	K_folds[fold_index]['train','test' or 'valid'][index split]['batches' : [[234,14,54..],[..],[..]], 'chunks_folders':[path_0,path_1,..]] 
+	Training_strategy = import_training_strategy.import_training_strategy(parameters["training_strategy"])
 	training_strategy = Training_strategy(num_k_folds=10, config_folder=config_folder, database_path=database_path, logger=logger_config)
 	training_strategy.get_folds(parameters, model_params)
 	training_strategy.submit_jobs(parameters, model_params, dimensions, track_paths_generation, SAVE, GENERATE, config.local())

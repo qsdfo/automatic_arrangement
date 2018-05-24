@@ -91,9 +91,9 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
     ########################
     # Load data
     if re.search(r'mid$', score_source):
-        pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration = load_solo(score_source, quantization, parameters["binarize_piano"], parameters["binarize_orch"], temporal_granularity)
+        pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration = load_solo(score_source, quantization, parameters["binarize_piano"], temporal_granularity)
     else:
-        pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration = load_from_pair(score_source, quantization, parameters["binarize_piano"], temporal_granularity)
+        pr_piano, event_piano, duration_piano, name_piano, pr_orch, instru_orch, duration = load_from_pair(score_source, quantization, parameters["binarize_piano"], parameters["binarize_orch"], temporal_granularity)
     ########################
 
     ########################
@@ -131,15 +131,6 @@ def generate_midi(config_folder, score_source, number_of_version, duration_gen, 
         pr_orchestra_truth = None
     ########################
     
-    ########################
-    # Process data
-    if duration_gen is None:
-        duration_gen = duration
-    pr_piano_gen = process_data_piano(pr_piano_gen, parameters)
-    pr_orchestra_truth = process_data_orch(pr_orchestra_truth, parameters)
-    pr_orchestra_gen = process_data_orch(pr_orchestra_gen, parameters)
-    ########################
-
     #######################################
     # Embed piano
     time_embedding = time.time()

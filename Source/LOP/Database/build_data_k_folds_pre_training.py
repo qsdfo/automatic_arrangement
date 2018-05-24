@@ -34,7 +34,7 @@ import LOP.Scripts.config as config
 from LOP.Embedding.EmbedModel import embedDenseNet, ChordLevelAttention
 
 DEBUG=False
-ERASE=False
+ERASE=True
 
 cuda_gpu = torch.cuda.is_available()
 
@@ -200,10 +200,13 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 		pr_orch = build_data_aux.cast_small_pr_into_big_pr(new_pr_orchestra, new_instru_orchestra, 0, duration, instru_mapping, np.zeros((duration, N_orchestra)))
 		pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, 0, duration, instru_mapping, np.zeros((duration, N_piano)))
 
-		assert (pr_orch.max() <= 1)
-		assert (pr_orch.min() >= 0)
-		assert (pr_piano.max() <= 1)
-		assert (pr_piano.min() >= 0)
+		try:
+			assert (pr_orch.max() <= 1)
+			assert (pr_orch.min() >= 0)
+			assert (pr_piano.max() <= 1)
+			assert (pr_piano.min() >= 0)
+		except:
+			import pdb; pdb.set_trace()
 		###############################
 		
 		###############################
@@ -277,7 +280,7 @@ def build_data(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, q
 	else:
 		T_limit = 1e6
 	
-	# build_instru_mapping(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
+	build_instru_mapping(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
 
 	logging.info("##########")
 	logging.info("Build data")
@@ -324,8 +327,8 @@ def build_data(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, q
 	np.save(store_folder + '/pitch_piano.npy', pitch_piano)
 	###############################
 
-	###################################################################################################
-	# Build matrices
+	###############################
+	# Iinit folders
 	chunk_size = config.build_parameters()["chunk_size"]
 	split_folder_A = os.path.join(store_folder, "A")
 	os.mkdir(split_folder_A)
@@ -334,18 +337,27 @@ def build_data(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, q
 	split_folder_C = os.path.join(store_folder, "C")
 	os.mkdir(split_folder_C)
 	
+	###############################
+	# Build matrices
 	train_and_valid_A, train_only_A = build_split_matrices(subset_A_paths, split_folder_A, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model, binary_piano, binary_orch)
 	train_and_valid_B, train_only_B = build_split_matrices(subset_B_paths, split_folder_B, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model, binary_piano, binary_orch)
 	train_and_valid_C, train_only_C = build_split_matrices(subset_C_paths, split_folder_C, chunk_size, instru_mapping, N_piano, N_orchestra, embedding_model, binary_piano, binary_orch)
+	###############################
 
+	###############################
 	# Save files' lists
 	pkl.dump(train_and_valid_A, open(store_folder + '/train_and_valid_A.pkl', 'wb'))
 	pkl.dump(train_only_A, open(store_folder + '/train_only_A.pkl', 'wb'))
+	
 	pkl.dump(train_and_valid_B, open(store_folder + '/train_and_valid_B.pkl', 'wb'))
 	pkl.dump(train_only_B, open(store_folder + '/train_only_B.pkl', 'wb'))
-	pkl.dump(train_and_valid_B, open(store_folder + '/train_and_valid_B.pkl', 'wb'))
-	pkl.dump(train_only_B, open(store_folder + '/train_only_B.pkl', 'wb'))
+	
+	pkl.dump(train_and_valid_C, open(store_folder + '/train_and_valid_C.pkl', 'wb'))
+	pkl.dump(train_only_C, open(store_folder + '/train_only_C.pkl', 'wb'))
+	###############################
 
+	###############################
+	# Metadata
 	metadata = {}
 	metadata['quantization'] = quantization
 	metadata['N_orchestra'] = N_orchestra
@@ -359,6 +371,7 @@ def build_data(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, q
 	metadata['embedding_path'] = embedding_path
 	with open(store_folder + '/metadata.pkl', 'wb') as outfile:
 		pkl.dump(metadata, outfile)
+	###############################
 	return
 
 if __name__ == '__main__':

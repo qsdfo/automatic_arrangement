@@ -16,12 +16,12 @@ from train import train
 from generate_midi import generate_midi
 import LOP.Utils.data_statistics as data_statistics
 
-def train_wrapper(parameters, model_params, model_name,
+def train_wrapper(parameters, model_params,
 	dimensions, config_folder_fold, K_fold,
 	test_names, valid_names, track_paths_generation, 
 	save_model, generate_bool, logger):
 	
-	Model = import_model.import_model(model_name)
+	Model = import_model.import_model(parameters["model_name"])
 
 	train_folds = K_fold['train']
 	valid_folds = K_fold['valid']

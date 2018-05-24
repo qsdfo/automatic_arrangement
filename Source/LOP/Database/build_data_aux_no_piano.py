@@ -18,6 +18,8 @@ from LOP_database.utils.time_warping import warp_pr_aux
 from LOP_database.utils.pianoroll_processing import sum_along_instru_dim
 from LOP_database.utils.pianoroll_processing import get_pianoroll_time
 
+from LOP.Utils.process_data import process_data_piano, process_data_orch
+
 import Musicxml_parser.scoreToPianoroll as mxml
 from LOP_database.midi.read_midi import Read_midi
 
@@ -59,8 +61,13 @@ def process_folder_NP(folder_path, quantization, binary_piano, binary_orch, temp
     """
     # Get instrus and prs from a folder name name
     pr_orch, instru_orch, T, name = get_instru_and_pr_from_folder_path_NP(folder_path, quantization)
+    # Create the piano score
+    pr_piano = {'Piano': sum_along_instru_dim(pr_orch)}
+    # Process the two files (remember that even in this context, piano can be real-valued and orchestra discrete)
+    pr_piano = process_data_piano(pr_piano, binary_piano)
+    pr_orch = process_data_orch(pr_orch, binary_orch)
 
-    # Temporal granularity
+    # Temporal granularity (use only orchestra to compute events)
     if temporal_granularity == 'event_level':
         event_orch = get_event_ind_dict(pr_orch)
         T = len(event_orch)
@@ -74,11 +81,11 @@ def process_folder_NP(folder_path, quantization, binary_piano, binary_orch, temp
         duration_orch = get_duration(event_orch, T)
         # Get the duration of each event
         pr_orch = warp_pr_aux(pr_orch, event_orch)
+        pr_piano = warp_pr_aux(pr_piano, event_orch)
     else:
         event_orch = None
     
-    # Create the piano score
-    pr_piano = {'Piano': sum_along_instru_dim(pr_orch)}
+    # Fill identical values
     event_piano = event_orch
     duration_piano = duration_orch
     instru_piano = {'Piano': 'Piano'}

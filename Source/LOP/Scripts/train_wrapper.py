@@ -18,7 +18,7 @@ import LOP.Utils.data_statistics as data_statistics
 
 def train_wrapper(parameters, model_params,
 	dimensions, config_folder_fold, K_fold,
-	test_names, valid_names, track_paths_generation, 
+	track_paths_generation, 
 	save_model, generate_bool, logger):
 	
 	Model = import_model.import_model(parameters["model_name"])
@@ -26,14 +26,6 @@ def train_wrapper(parameters, model_params,
 	train_folds = K_fold['train']
 	valid_folds = K_fold['valid']
 	test_folds = K_fold['test']
-	
-	# Write filenames of this split
-	with open(os.path.join(config_folder_fold, "test_names.txt"), "w") as f:
-		for filename in test_names:
-			f.write(filename + "\n")
-	with open(os.path.join(config_folder_fold, "valid_names.txt"), "w") as f:
-		for filename in valid_names:
-			f.write(filename + "\n")
 	
 	# Instanciate a normalizer for the input
 	# normalizer = Normalizer(train_folds, n_components=20, whiten=True, parameters=parameters)
@@ -165,8 +157,6 @@ if __name__ == '__main__':
 	model_name = pkl.load(open(context_folder + "/model_name.pkl","rb"))
 	dimensions = pkl.load(open(context_folder + "/dimensions.pkl","rb")) 
 	K_fold = pkl.load(open(context_folder + "/K_fold.pkl","rb"))
-	test_names = pkl.load(open(context_folder + "/test_names.pkl","rb"))
-	valid_names = pkl.load(open(context_folder + "/valid_names.pkl","rb")) 
 	track_paths_generation = pkl.load(open(context_folder + "/track_paths_generation.pkl","rb"))
 	save_model = pkl.load(open(context_folder + "/save_model.pkl","rb"))
 	generate_bool = pkl.load(open(context_folder + "/generate_bool.pkl","rb"))
@@ -182,5 +172,5 @@ if __name__ == '__main__':
 
 	train_wrapper(parameters, model_params, model_name, 
 		dimensions, config_folder_fold, K_fold,
-		test_names, valid_names, track_paths_generation, 
+		track_paths_generation, 
 		save_model, generate_bool, logger)

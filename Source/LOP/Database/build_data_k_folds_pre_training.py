@@ -33,7 +33,7 @@ import time
 import LOP.Scripts.config as config
 from LOP.Embedding.EmbedModel import embedDenseNet, ChordLevelAttention
 
-DEBUG=False
+DEBUG=True
 ERASE=True
 
 cuda_gpu = torch.cuda.is_available()
@@ -86,7 +86,7 @@ def update_instru_mapping(folder_path, instru_mapping, quantization):
 	return instru_mapping
 
 
-def build_instru_mapping(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, quantization, temporal_granularity, T_limit, logging=None):
+def build_instru_mapping(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, quantization, temporal_granularity, logging=None):
 	logging.info("##########")
 	logging.info("Get dimension informations")
 	# Determine the temporal size of the matrices
@@ -274,13 +274,8 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 	return train_and_valid_files, train_only_files
 
 def build_data(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, quantization, temporal_granularity, binary_piano, binary_orch, store_folder, logging=None):
-	# Get dimensions
-	if DEBUG:
-		T_limit = 20000
-	else:
-		T_limit = 1e6
 	
-	build_instru_mapping(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, T_limit=T_limit, logging=logging)
+	build_instru_mapping(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
 
 	logging.info("##########")
 	logging.info("Build data")
@@ -425,11 +420,6 @@ if __name__ == '__main__':
 		database_arrangement + "/Mutopia"
 	]
 	##############################
-
-	if DEBUG:
-		subset_A = [database_orchestration + "/debug"]
-		subset_B = [database_orchestration + "/debug"] 
-		subset_C = [database_arrangement + "/debug"]
 
 	data_folder = config.data_root() + '/Data'
 	if DEBUG:

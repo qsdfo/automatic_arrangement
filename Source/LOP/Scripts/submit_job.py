@@ -7,7 +7,8 @@ import pickle as pkl
 import train_wrapper
 
 
-def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, test_names, valid_names,
+def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, 
+	train_names, valid_names, test_names,
 	track_paths_generation, save_bool, generate_bool, local, logger):
 	
 	context_folder = config_folder_fold + '/context'
@@ -19,16 +20,25 @@ def submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold,
 	pkl.dump(dimensions , open(context_folder + '/dimensions.pkl', 'wb'))
 	pkl.dump(K_fold, open(context_folder + '/K_fold.pkl', 'wb'))
 	pkl.dump(test_names, open(context_folder + '/test_names.pkl', 'wb'))
-	pkl.dump(valid_names , open(context_folder + '/valid_names.pkl', 'wb'))
 	pkl.dump(track_paths_generation, open(context_folder + '/track_paths_generation.pkl', 'wb'))
 	pkl.dump(save_bool , open(context_folder + '/save_bool.pkl', 'wb'))
 	pkl.dump(generate_bool , open(context_folder + '/generate_bool.pkl', 'wb'))
+	# Write filenames of this split
+	with open(os.path.join(config_folder_fold, "train_names.txt"), "w") as f:
+		for filename in train_names:
+			f.write(filename + "\n")
+	with open(os.path.join(config_folder_fold, "test_names.txt"), "w") as f:
+		for filename in test_names:
+			f.write(filename + "\n")
+	with open(os.path.join(config_folder_fold, "valid_names.txt"), "w") as f:
+		for filename in valid_names:
+			f.write(filename + "\n")
 
 	if local:
 		# subprocess.check_output('python train_wrapper.py ' + config_folder_fold, shell=True)
 		train_wrapper.train_wrapper(parameters, model_params, 
 			dimensions, config_folder_fold, K_fold,
-			test_names, valid_names, track_paths_generation, 
+			track_paths_generation, 
 			save_bool, generate_bool, logger)
 	else:	
 		# Write pbs script

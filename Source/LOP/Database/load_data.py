@@ -7,38 +7,49 @@ import LOP.Scripts.config
 import LOP.Database.avoid_tracks
 import pickle as pkl
 
-def build_one_fold(k, k_folds, list_files_valid, list_files_train_only, train_and_valid_files, train_only_files, 
-    temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks):
+def build_one_fold(k, k_folds, t_dict, tv_dict, tvt_dict, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks, random_inst):
     split_matrices_train=[]
     split_matrices_test=[]
     split_matrices_valid=[]
     # Keep track of files used for validating and testing
+    this_train_names=[]
     this_valid_names=[]
     this_test_names=[]
-        
-    for counter, filename in enumerate(list_files_valid):
+
+    for counter, filename in enumerate(tvt_dict.keys()):
         counter_fold = counter + k
         if (counter_fold % k_folds) < k_folds-2:
-            split_matrices_train.extend(train_and_valid_files[filename])
+            this_train_names.append(filename)
+            split_matrices_train.extend(tvt_dict[filename])
         elif (counter_fold % k_folds) == k_folds-2:
             this_valid_names.append(filename)
-            split_matrices_valid.extend(train_and_valid_files[filename])
+            split_matrices_valid.extend(tvt_dict[filename])
         elif (counter_fold % k_folds) == k_folds-1:
             this_test_names.append(filename)
-            split_matrices_test.extend(train_and_valid_files[filename])
+            split_matrices_test.extend(tvt_dict[filename])
 
-    for filename in list_files_train_only:
-        split_matrices_train.extend(train_only_files[filename])
+    for counter, filename in enumerate(tv_dict.keys()):
+        counter_fold = counter + k
+        if (counter_fold % k_folds) < k_folds-2:
+            this_train_names.append(filename)
+            split_matrices_train.extend(tv_dict[filename])
+        elif (counter_fold % k_folds) == k_folds-1:
+            this_valid_names.append(filename)
+            split_matrices_valid.extend(tv_dict[filename])
+
+    for filename in t_dict.keys():
+        this_train_names.append(filename)
+        split_matrices_train.extend(t_dict[filename])
     
-    this_fold = {"train": from_block_list_to_folds(split_matrices_train, temporal_order, train_batch_size, None, num_max_contiguous_blocks),
-        "valid": from_block_list_to_folds(split_matrices_valid, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks),
-        "test": from_block_list_to_folds(split_matrices_test, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks)}
-    return this_fold, this_valid_names, this_test_names
+    this_fold = {"train": from_block_list_to_folds(split_matrices_train, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks, random_inst),
+        "valid": from_block_list_to_folds(split_matrices_valid, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks, random_inst),
+        "test": from_block_list_to_folds(split_matrices_test, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks, random_inst)}
+    return this_fold, this_train_names, this_valid_names, this_test_names
 
 
-def from_block_list_to_folds(list_blocks, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks):
+def from_block_list_to_folds(list_blocks, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks, random_inst):
     # Shuffle the files lists
-    random.shuffle(list_blocks)
+    random_inst.shuffle(list_blocks)
 
     # Split them in blocks of size num_max_contiguous_blocks
     blocks = []
@@ -83,16 +94,16 @@ def from_block_list_to_folds(list_blocks, temporal_order, train_batch_size, long
     
     # Don't forget the last one !
     this_dict = {       
-        "batches": build_batches(this_list_of_valid_indices, train_batch_size),
+        "batches": build_batches(this_list_of_valid_indices, train_batch_size, random_inst),
         "chunks_folders": this_list_of_path
         }
     if long_range_pred:
-        this_dict["batches_lr"] = build_batches(this_list_of_valid_indices_lr, train_batch_size)
+        this_dict["batches_lr"] = build_batches(this_list_of_valid_indices_lr, train_batch_size, random_inst)
     blocks.append(this_dict)
 
     return blocks
 
-def build_batches(ind, train_batch_size):
+def build_batches(ind, train_batch_size, random_inst):
         batches = []
         position = 0
         n_ind = len(ind)
@@ -100,7 +111,7 @@ def build_batches(ind, train_batch_size):
         if train_batch_size:
             n_batch = int(n_ind // train_batch_size)
             # Shuffle indices
-            random.shuffle(ind)
+            random_inst.shuffle(ind)
         else:
             # One batch for valid and test, 
             # and don't shuffle (useless)

@@ -11,7 +11,7 @@ from LOP.Scripts.submit_job import submit_job
 from LOP.Database.load_data import build_one_fold
 
 
-class TS_only_A(object):
+class TS_full_A(object):
 	
 	def __init__(self, num_k_folds=10, config_folder=None, database_path=None, logger=None):
 		"""Train, validate and test only on A
@@ -21,40 +21,35 @@ class TS_only_A(object):
 		self.database_path = database_path
 		self.logger = logger
 		# Important for reproducibility
-		self.random_seed = 1234
+		self.random_inst = random.Random()
+		self.random_inst.seed(1234)
 		return
 
 	def __build_folds(self, total_number_folds, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks):
-		# Load files lists
-		train_and_valid_files = pkl.load(open(self.database_path + '/train_and_valid_A.pkl', 'rb'))
-		train_only_files = pkl.load(open(self.database_path + '/train_only_A.pkl', 'rb'))
+		t_dict = pkl.load(open(self.database_path + '/train_only_A.pkl', 'rb'))
+		tv_dict = {}
+		tvt_dict = pkl.load(open(self.database_path + '/train_and_valid_A.pkl', 'rb'))
 		
-		list_files_valid = list(train_and_valid_files.keys())
-		list_files_train_only = list(train_only_files.keys())
-
-		# Folds are built on files, not directly the indices
-		# By doing so, we prevent the same file being spread over train, test and validate sets
-		random.seed(self.random_seed)
-		random.shuffle(list_files_valid)
-		random.shuffle(list_files_train_only)
-
 		if total_number_folds == -1:
-			total_number_folds = len(list_files_valid)
+			total_number_folds = len(tvt_dict.keys())
 
 		folds = []
+		train_names = []
 		valid_names = []
 		test_names = []
 
 		# Build the list of split_matrices
 		for current_fold_number in range(total_number_folds):
-			one_fold, this_valid_names, this_test_names = build_one_fold(current_fold_number, total_number_folds, list_files_valid, list_files_train_only, 
-				train_and_valid_files, train_only_files, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks)
+			one_fold, this_train_names, this_valid_names, this_test_names = build_one_fold(current_fold_number, total_number_folds, t_dict, tv_dict, tvt_dict,
+			 	temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks, self.random_inst)
 			
 			folds.append(one_fold)
+			train_names.append(this_train_names)
 			valid_names.append(this_valid_names)
 			test_names.append(this_test_names)
 
 		self.K_folds = folds
+		self.train_names = train_names
 		self.valid_names = valid_names
 		self.test_names = test_names
 		return
@@ -69,6 +64,7 @@ class TS_only_A(object):
 			# this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, 10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
 			self.__build_folds(10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], parameters["num_max_contiguous_blocks"])
 			self.K_folds = [self.K_folds[0]]
+			self.train_names = [self.train_names[0]]
 			self.valid_names = [self.valid_names[0]]
 			self.test_names = [self.test_names[0]]
 		elif self.num_k_folds == -1:
@@ -87,5 +83,7 @@ class TS_only_A(object):
 				shutil.rmtree(config_folder_fold)
 			os.mkdir(config_folder_fold)
 			# Submit worker
-			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, self.test_names[K_fold_ind], self.valid_names[K_fold_ind], track_paths_generation, save_bool, generate_bool, local, self.logger)
+			submit_job(config_folder_fold, parameters, model_params, dimensions, K_fold, 
+				self.train_names[K_fold_ind], self.valid_names[K_fold_ind], self.test_names[K_fold_ind], 
+				track_paths_generation, save_bool, generate_bool, local, self.logger)
 		return

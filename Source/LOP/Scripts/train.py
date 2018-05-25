@@ -170,8 +170,9 @@ def train(model, train_splits_batches, valid_splits_batches, test_splits_batches
 			K.set_session(sess)
 		
 		# Initialize weights
+		import pdb; pdb.set_trace()
 		if parameters['pretrained_model']: 
-			trainer.saver.restore(sess, parameters['pretrained_model'])
+			trainer.saver.restore(sess, parameters['pretrained_model'] + '/model')
 		else:
 			sess.run(tf.global_variables_initializer())
 

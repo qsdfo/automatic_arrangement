@@ -25,6 +25,10 @@ class TS_trA_teB(object):
 		self.random_inst.seed(1234)
 		return
 
+	@staticmethod
+	def name():
+		return "TS_trA_teB"
+
 	def __build_folds(self, total_number_folds, temporal_order, train_batch_size, long_range_pred, num_max_contiguous_blocks, dataset_id):
 		# Load files lists
 		t_dict = pkl.load(open(self.database_path + '/train_only_' + dataset_id + '.pkl', 'rb'))

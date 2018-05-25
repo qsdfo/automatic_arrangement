@@ -128,6 +128,7 @@ class Standard_trainer(object):
 
 	def load_pretrained_model(self, path_to_model):
 		# Restore model and preds graph
+		import pdb; pdb.set_trace()
 		self.saver = tf.train.import_meta_graph(path_to_model + '/model.meta')
 		inputs_ph = tf.get_collection('inputs_ph')
 		self.piano_t_ph, self.piano_past_ph, self.piano_future_ph, self.orch_past_ph, self.orch_future_ph = inputs_ph

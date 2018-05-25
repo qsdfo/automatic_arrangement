@@ -191,6 +191,8 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 
 	Training_strategy = import_training_strategy.import_training_strategy(parameters["training_strategy"])
 	training_strategy = Training_strategy(num_k_folds=10, config_folder=config_folder, database_path=database_path, logger=logger_config)
+	with open(config_folder + "/K_fold_strategy", 'w') as ff:
+		ff.write(training_strategy.name() + '\n')
 	training_strategy.get_folds(parameters, model_params)
 	training_strategy.submit_jobs(parameters, model_params, dimensions, track_paths_generation, SAVE, GENERATE, config.local())
 	return

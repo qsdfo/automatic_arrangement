@@ -70,7 +70,7 @@ class TS_trC__B__A_teA(object):
 		# K_folds[fold_index]['train','test' or 'valid'][index split]['batches' : [[234,14,54..],[..],[..]], 'matrices_path':[path_0,path_1,..]]
 		if self.num_k_folds == 0:
 			# this_K_folds, this_valid_names, this_test_names = build_folds(tracks_start_end, piano, orch, 10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], RANDOM_SEED_FOLDS, logger_load=None)
-			folds_A, train_names_A, valid_names_A, test_names_A, self.K_folds_B, self.train_names_B, self.valid_names_B, self.test_names_B, self.folds_C, self.train_names_C, self.valid_names_C, self.test_names_C = \
+			folds_A, train_names_A, valid_names_A, test_names_A, self.K_folds_B, self.train_names_B, self.valid_names_B, self.test_names_B, self.K_folds_C, self.train_names_C, self.valid_names_C, self.test_names_C = \
 				self.__build_folds(10, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], parameters["num_max_contiguous_blocks"])
 			self.K_folds_A = [folds_A[0]]
 			self.train_names_A = [train_names_A[0]]
@@ -79,7 +79,7 @@ class TS_trC__B__A_teA(object):
 		elif self.num_k_folds == -1:
 			raise Exception("num_k_folds = -1 Doesn't really make sense here")
 		else:
-			self.K_folds_A, self.train_names_A, self.valid_names_A, self.test_names_A, self.K_folds_B, self.train_names_B, self.valid_names_B, self.test_names_B, self.folds_C, self.train_names_C, self.valid_names_C, self.test_names_C \
+			self.K_folds_A, self.train_names_A, self.valid_names_A, self.test_names_A, self.K_folds_B, self.train_names_B, self.valid_names_B, self.test_names_B, self.K_folds_C, self.train_names_C, self.valid_names_C, self.test_names_C \
 				= self.__build_folds(self.num_k_folds, model_params["temporal_order"], parameters["batch_size"], parameters["long_range"], parameters["num_max_contiguous_blocks"])
 		time_load = time.time() - time_load_0
 		self.logger.info('TTT : Building folds took {} seconds'.format(time_load))

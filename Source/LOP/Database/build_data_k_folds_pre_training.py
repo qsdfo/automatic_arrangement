@@ -33,8 +33,8 @@ import time
 import LOP.Scripts.config as config
 from LOP.Embedding.EmbedModel import embedDenseNet, ChordLevelAttention
 
-DEBUG=True
-ERASE=True
+DEBUG=False
+ERASE=False
 
 cuda_gpu = torch.cuda.is_available()
 
@@ -275,7 +275,7 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 
 def build_data(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, quantization, temporal_granularity, binary_piano, binary_orch, store_folder, logging=None):
 	
-	build_instru_mapping(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
+	# build_instru_mapping(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
 
 	logging.info("##########")
 	logging.info("Build data")
@@ -409,14 +409,14 @@ if __name__ == '__main__':
 
 	subset_B = [
 		database_orchestration + "/bouliane", 
-		# database_orchestration + "/hand_picked_Spotify", 
-		# database_orchestration + "/imslp"
+		database_orchestration + "/hand_picked_Spotify", 
+		database_orchestration + "/imslp"
 	]
 	
 	subset_C = [
-		# database_arrangement + "/OpenMusicScores",
-		# database_arrangement + "/Kunstderfuge", 
-		# database_arrangement + "/Musicalion", 
+		database_arrangement + "/OpenMusicScores",
+		database_arrangement + "/Kunstderfuge", 
+		database_arrangement + "/Musicalion", 
 		database_arrangement + "/Mutopia"
 	]
 	##############################
@@ -426,16 +426,17 @@ if __name__ == '__main__':
 		data_folder += '_DEBUG'
 	if binary_piano:
 		data_folder += '_bp'
-		open('binary_piano', 'wb').close()
 	if binary_orch:
 		data_folder += '_bo'
-		open('binary_orch', 'wb').close()
 	data_folder += '_tempGran' + str(quantization)
 	
 	if ERASE:
 		if os.path.isdir(data_folder):
 			shutil.rmtree(data_folder)
 		os.makedirs(data_folder)
+
+	open(data_folder + 'binary_piano', 'wb').close()
+	open(data_folder + 'binary_orch', 'wb').close()
 
 	# Create a list of paths
 	def build_filepaths_list(path):

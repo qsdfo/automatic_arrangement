@@ -7,4 +7,6 @@ def import_training_strategy(name):
 		from LOP.Scripts.training_strategies.AB.trAB_teA import TS_trAB_teA as Training_strategy
 	elif name=="trB__A_teA":
 		from LOP.Scripts.training_strategies.AB.trB__A_teA import TS_trB__A_teA as Training_strategy
+	elif name=="trC__B__A_teA":
+		from LOP.Scripts.training_strategies.ABC.trC__B__A_teA import TS_trC__B__A_teA as Training_strategy
 	return Training_strategy

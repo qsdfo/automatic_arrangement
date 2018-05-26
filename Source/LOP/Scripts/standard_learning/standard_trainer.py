@@ -112,6 +112,7 @@ class Standard_trainer(object):
 		tf.add_to_collection('orch_t_ph', self.orch_t_ph)
 		tf.add_to_collection('loss', self.loss)
 		tf.add_to_collection('loss_val', self.loss_val)
+		tf.add_to_collection('sparse_loss_mean', self.sparse_loss_mean)
 		tf.add_to_collection('mask_orch_ph', self.mask_orch_ph)
 		tf.add_to_collection('train_step', self.train_step)
 		tf.add_to_collection('keras_learning_phase', self.keras_learning_phase)
@@ -128,7 +129,6 @@ class Standard_trainer(object):
 
 	def load_pretrained_model(self, path_to_model):
 		# Restore model and preds graph
-		import pdb; pdb.set_trace()
 		self.saver = tf.train.import_meta_graph(path_to_model + '/model.meta')
 		inputs_ph = tf.get_collection('inputs_ph')
 		self.piano_t_ph, self.piano_past_ph, self.piano_future_ph, self.orch_past_ph, self.orch_future_ph = inputs_ph
@@ -136,6 +136,7 @@ class Standard_trainer(object):
 		self.preds = tf.get_collection("preds")[0]
 		self.loss = tf.get_collection("loss")[0]
 		self.loss_val = tf.get_collection("loss_val")[0]
+		self.sparse_loss_mean = tf.get_collection("sparse_loss_mean")[0]
 		self.mask_orch_ph = tf.get_collection("mask_orch_ph")[0]
 		self.train_step = tf.get_collection('train_step')[0]
 		self.keras_learning_phase = tf.get_collection("keras_learning_phase")[0]

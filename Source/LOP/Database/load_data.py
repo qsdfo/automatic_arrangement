@@ -61,11 +61,11 @@ def from_block_list_to_folds(list_blocks, temporal_order, train_batch_size, long
     for block_folder in list_blocks:
         if counter > num_max_contiguous_blocks:
             this_dict = {       
-                "batches": build_batches(this_list_of_valid_indices, train_batch_size),
+                "batches": build_batches(this_list_of_valid_indices, train_batch_size, random_inst),
                 "chunks_folders": this_list_of_path
                 }
             if long_range_pred:
-                this_dict["batches_lr"] = build_batches(this_list_of_valid_indices_lr, train_batch_size)
+                this_dict["batches_lr"] = build_batches(this_list_of_valid_indices_lr, train_batch_size, random_inst)
             blocks.append(this_dict)
             counter = 0
             time = 0

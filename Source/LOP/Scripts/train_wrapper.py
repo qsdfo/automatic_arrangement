@@ -20,7 +20,7 @@ def train_wrapper(parameters, model_params,
 	dimensions, config_folder_fold, K_fold,
 	track_paths_generation, 
 	save_model, generate_bool, logger):
-	
+
 	Model = import_model.import_model(parameters["model_name"])
 
 	train_folds = K_fold['train']
@@ -36,7 +36,6 @@ def train_wrapper(parameters, model_params,
 	if not parameters["embedded_piano"]:
 		# Normalization is by-passed when embedding is used
 		dimensions['piano_input_dim'] = normalizer.norm_dim
-
 
 	# Compute training data's statistics for improving learning (e.g. weighted Xent)
 	time_data_stats_0 = time.time()

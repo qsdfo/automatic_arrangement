@@ -14,7 +14,7 @@ def accuracy_measure(true_frame, pred_frame):
 
     quotient = true_positive + false_negative + false_positive
 
-    accuracy_measure = np.where(quotient==0., 0., np.true_divide(true_positive, (quotient+_EPSILON)))
+    accuracy_measure = np.where(quotient==0., 1., np.true_divide(true_positive, (quotient+_EPSILON)))
 
     return accuracy_measure
 
@@ -33,7 +33,7 @@ def accuracy_measure_test(true_frame, pred_frame):
 
     quotient = true_positive + false_negative + false_positive
     
-    accuracy_measure = np.where(quotient==0., 0., np.true_divide(true_positive + C, quotient + K))
+    accuracy_measure = np.where(quotient==0., 1., np.true_divide(true_positive + C, quotient + K))
 
     return accuracy_measure
 
@@ -55,7 +55,7 @@ def accuracy_measure_test_2(true_frame, pred_frame):
 
     quotient = true_positive + false_negative + false_positive
     
-    accuracy_measure = np.where(quotient==0., 0., np.log(np.true_divide(true_positive + C, quotient + K)))
+    accuracy_measure = np.where(quotient==0., 1., np.log(np.true_divide(true_positive + C, quotient + K)))
 
     return accuracy_measure
 
@@ -92,7 +92,7 @@ def accuracy_measure_continuous(true_frame, pred_frame):
 
     quotient = tp + false
 
-    accuracy_measure =  np.where(quotient==0., 0, np.true_divide(tp, quotient + _EPSILON))
+    accuracy_measure =  np.where(quotient==0., 1, np.true_divide(tp, quotient + _EPSILON))
 
     return accuracy_measure
 

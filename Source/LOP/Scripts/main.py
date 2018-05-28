@@ -194,7 +194,6 @@ def config_loop(Model, config_folder, model_params, parameters, database_path, t
 	with open(config_folder + "/K_fold_strategy", 'w') as ff:
 		ff.write(training_strategy.name() + '\n')
 	training_strategy.get_folds(parameters, model_params)
-	import pdb; pdb.set_trace()
 	training_strategy.submit_jobs(parameters, model_params, dimensions, track_paths_generation, SAVE, GENERATE, config.local())
 	return
 

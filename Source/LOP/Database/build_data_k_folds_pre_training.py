@@ -34,7 +34,7 @@ import LOP.Scripts.config as config
 from LOP.Embedding.EmbedModel import embedDenseNet, ChordLevelAttention
 
 DEBUG=False
-ERASE=False
+ERASE=True
 
 cuda_gpu = torch.cuda.is_available()
 
@@ -199,14 +199,6 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 
 		pr_orch = build_data_aux.cast_small_pr_into_big_pr(new_pr_orchestra, new_instru_orchestra, 0, duration, instru_mapping, np.zeros((duration, N_orchestra)))
 		pr_piano = build_data_aux.cast_small_pr_into_big_pr(new_pr_piano, {}, 0, duration, instru_mapping, np.zeros((duration, N_piano)))
-
-		try:
-			assert (pr_orch.max() <= 1)
-			assert (pr_orch.min() >= 0)
-			assert (pr_piano.max() <= 1)
-			assert (pr_piano.min() >= 0)
-		except:
-			import pdb; pdb.set_trace()
 		###############################
 		
 		###############################
@@ -275,7 +267,7 @@ def build_split_matrices(folder_paths, destination_folder, chunk_size, instru_ma
 
 def build_data(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path, quantization, temporal_granularity, binary_piano, binary_orch, store_folder, logging=None):
 	
-	# build_instru_mapping(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
+	build_instru_mapping(subset_A_paths, subset_B_paths, subset_C_paths, meta_info_path=meta_info_path, quantization=quantization, temporal_granularity=temporal_granularity, logging=logging)
 
 	logging.info("##########")
 	logging.info("Build data")
@@ -435,8 +427,9 @@ if __name__ == '__main__':
 			shutil.rmtree(data_folder)
 		os.makedirs(data_folder)
 
-	open(data_folder + 'binary_piano', 'wb').close()
-	open(data_folder + 'binary_orch', 'wb').close()
+	ff=open(data_folder + '/binary_piano', 'wb')
+	ff.close()
+	open(data_folder + '/binary_orch', 'wb').close()
 
 	# Create a list of paths
 	def build_filepaths_list(path):

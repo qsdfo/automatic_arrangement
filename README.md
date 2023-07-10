@@ -15,7 +15,7 @@ The first step is to build the database, i.e. read a corpus of midi file in an o
     cd Source/Database; python build_data.py
 
 The train/valid/test split is defined through indexing files, whose path is passed as an argument of the main function in *build_data.py*.
-A database can be found at <https://qsdfo.github.io/LOP/database/LOP_database.zip>. \
+A database can be found at <https://qsdfo.github.io/LOP/database/LOP_database_06_09_17.zip>. \
 We simplify orchestrations by mapping rare instruments to more common ones through the *simplify_instrumentation* table located in *build_data_aux.py* that you might want to edit.
 
 ### Training
